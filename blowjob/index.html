@@ -192,7 +192,7 @@ class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.i
 class Blow extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.03;this.touch=0;this.sens=.5;this.useMic=1;
-    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.oEnv=0;this.leak=.03;this.lvlDb=-99;this.flt=0;this.fx=0;this.fxs=0;this.fmix=0;this.y1=0;this.y2=0;this.y3=0;this.y4=0;this.flfo=0;this.ov=0;this.dbs=-90;this.hold=0;this.thrDb=0;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
+    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.oEnv=0;this.leak=.03;this.lvlDb=-99;this.flt=0;this.fx=0;this.fxs=0;this.fmix=0;this.y1=0;this.y2=0;this.y3=0;this.y4=0;this.flfo=0;this.ov=0;this.fl=0;this.pA=0;this.chf=0;this.dbs=-90;this.hold=0;this.thrDb=0;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
     this.mh=0;this.ml=0;this.ml2=0;this.lb=new Float32Array(128);this.lw=new Float32Array(8);this.li=0;this.es=1e-6;this.ee=1e-6;this.noisy=0;this.mlast=0;this.micN=0;
     this.p=0;this.p2=0;this.pm=0;this.over=0;this.xm=.4;this.xc=0;this.thunder=0;this.th=0;this.crk=0;this.gust=0;this.gt=0;this.sweep=[0,0,0];this.sw=[R(),R(),R()];
     this.f1=new SVF();this.f2=new SVF();this.f3=new SVF();this.f4=new SVF();this.f5=new SVF();this.cc=0;
@@ -257,7 +257,7 @@ class Blow extends AudioWorkletProcessor{
       let s=0;const e=this.eng;
       if((this.cc++&31)===0){
         if(e===0){this.f1.set(500+Math.pow(A,1.4)*5200,.8,sr);this.f2.set(720,4,sr);this.f3.set(1750,5,sr);this.f4.set(2600,2,sr)}
-        else if(e===1){this.f4.set(f*(2+this.ov*2),3,sr);this.f1.set(3000+A*5000,.7,sr)}
+        else if(e===1){const fo=f*(1+this.ov);this.f4.set(fo,22,sr);this.f2.set(fo*3,14,sr);this.f3.set(fo*2.2,4,sr);this.f1.set(2200+A*2600,.6,sr);this.f5.set(f*.5,.7,sr)}
         else if(e===2){this.f1.set(1150,6,sr);this.f2.set(2800,5,sr);this.f3.set(1400+A*3200,.7,sr);this.f4.set(3200,2,sr)}
         else if(e===3){for(let i=0;i<3;i++){this.sw[i]+=(R()-.5)*.02;this.sw[i]=Math.max(-1,Math.min(1,this.sw[i]))}
           this.f1.set(f*Math.pow(2,this.sw[0]*.4),18+A*30,sr);this.f2.set(f*1.5*Math.pow(2,this.sw[1]*.5),14+A*20,sr);this.f3.set(f*2.3*Math.pow(2,this.sw[2]*.6),10+A*20,sr);this.f4.set(180+A*2400,.7,sr);this.f5.set(60,.8,sr)}
@@ -270,12 +270,18 @@ class Blow extends AudioWorkletProcessor{
         const lp=this.f1.run(x);this.f2.run(lp);this.f3.run(lp);this.f4.run(nz);
         s=(lp*.7+this.f2.bp*.9+this.f3.bp*.6)*A+this.f4.bp*.25*A;
         s=Math.tanh(s*1.6)*.7;
-      }else if(e===1){ // FLUTE: soft tone + breath; blowing harder gradually shifts the weight to the overtones
-        const ot=Math.min(1,Math.max(0,(A-.45)/.5)),ots=ot*ot*(3-2*ot);this.ov+=(ots-this.ov)*.0005;const o=this.ov;
-        const ff=f*vib;this.p+=ff/sr;if(this.p>=1)this.p-=1;const ph=TAU*this.p;
-        this.f4.run(nz);
-        const tone=Math.sin(ph)*(.8-.55*o)+Math.sin(2*ph)*(.1*A+.55*o)+Math.sin(3*ph)*(.05+.22*o*o)+Math.sin(4*ph)*.08*o*o*o;
-        s=tone*Math.pow(A,1.2)+this.f4.bp*(.18+.25*A+.15*o)*A+nz*(.03+.04*o)*A;
+      }else if(e===1){ // FLUTE: round pan-flute pipe; the breath sings ON the pitch, only a touch of loose wind
+        const ot=Math.min(1,Math.max(0,(A-.55)/.45)),ots=ot*ot*(3-2*ot);this.ov+=(ots-this.ov)*.0004;const o=this.ov;
+        this.fl+=( (R()*2-1)-this.fl)*.002;                                   // slow breath flutter
+        const ff=f*vib*(1+this.fl*.0015);this.p+=ff/sr;if(this.p>=1)this.p-=1;const ph=TAU*this.p;
+        // stopped pipe: strong fundamental, a soft 3rd harmonic, almost no even ones; overblowing slides weight up gently
+        const tone=Math.sin(ph)*(.9-.45*o)+Math.sin(2*ph)*(.02+.42*o)+Math.sin(3*ph)*(.1+.08*o)+Math.sin(5*ph)*.025;
+        // chiff: a soft breathy 'tu' when a note starts
+        if(A>.04&&this.pA<=.04)this.chf=1;this.pA=A;this.chf*=.9992;
+        const nzs=(R()*2-1);this.f4.run(nzs);this.f2.run(nzs);this.f3.run(nzs);
+        const airTone=this.f4.bp/22*7+this.f2.bp/14*2.2;                      // narrow noise right on the pitch = the hollow 'whoo'
+        const amp=Math.pow(A,1.15)*(1+this.fl*.08);
+        s=tone*amp*.85+airTone*amp*(.35+.25*o)+this.f3.bp*.35*this.chf*Math.min(1,A*3)+nz*.008*A;
         s=this.f1.run(s);
       }else if(e===2){ // HOBO (oboe): narrow nasal pulse through hard formants
         const dt=f*vib/sr;this.p+=dt;if(this.p>=1)this.p-=1;
