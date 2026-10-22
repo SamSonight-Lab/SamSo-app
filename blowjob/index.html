@@ -59,6 +59,17 @@ body{position:fixed;inset:0;width:100%}
 .col{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;gap:6px;min-width:0}
 .pill{font-family:var(--f-label);font-size:11px;letter-spacing:.1em;width:58px;height:40px;border-radius:20px;color:#fff;background:var(--red-deep);border:1px solid var(--red);cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
 .pill small{font-family:var(--f-jp);font-size:7px;color:#ffc4bb}
+.pill.on small{color:#fff}
+#intro{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,4,5,.86);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#intro.gone{display:none}
+#intro .ibox{max-width:360px;width:100%;border:1px solid var(--gold);border-radius:6px;padding:16px 16px 14px;background:linear-gradient(#1a1012,#0b0809);box-shadow:0 0 0 4px #000,0 0 0 5px var(--red),0 10px 40px rgba(0,0,0,.7)}
+#intro .ih{font-family:var(--f-title,serif);font-size:28px;color:#fff;font-style:italic}
+#intro .ih b{color:#fff}
+#intro .ijp{font-family:var(--f-jp);font-size:11px;color:var(--gold);letter-spacing:.2em;margin:2px 0 10px}
+#intro ol{margin:0;padding-left:18px;color:#e9dcc4;font:13px/1.4 var(--f-label,system-ui)}
+#intro li{margin:0 0 7px}#intro li b{color:var(--gold-hi,#f3d28a)}
+#intro .icta{margin:12px 0 6px;text-align:center;font:600 14px/1 var(--f-label,system-ui);letter-spacing:.2em;color:#fff;background:var(--red);border-radius:20px;padding:12px 0;box-shadow:0 0 18px rgba(208,26,31,.55)}
+#intro .inote{font-size:10px;color:#a8977c;text-align:center;line-height:1.35}
 .pill.on{background:var(--red);border-color:#ff6a5f;box-shadow:0 0 16px rgba(208,26,31,.6)}
 .notebox .rng{font:600 8px/1 ui-monospace,monospace;letter-spacing:.12em;color:var(--gold);opacity:.75;margin-top:4px;border-top:1px solid rgba(201,160,90,.35);padding-top:4px}
 .notebox{cursor:pointer;width:58px;border:1px solid var(--gold);border-radius:3px;padding:5px 0 4px;text-align:center;background:radial-gradient(120% 140% at 50% 0%,#1b1410,#0a0809)}
@@ -131,6 +142,19 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
 @media (max-height:700px){.dial{width:40px;height:40px}.k .kj:not(.v){display:none}.eng{height:30px}.eng small{display:none}.pill{height:34px}}
 </style>
 
+<div id="intro" role="dialog" aria-label="Uitleg">
+  <div class="ibox">
+    <div class="ih">The <b>Blowjob</b></div><div class="ijp">吹く · 傾ける · 遊ぶ</div>
+    <ol>
+      <li><b>Blaas</b> in de onderkant van je iPhone, bij de microfoon. Harder = voller en feller.</li>
+      <li><b>Kantel</b> voor/achter voor de toonhoogte. Tik op het notenvak voor 2, 3 of 4 octaven.</li>
+      <li><b>FILTER</b> (links boven): links/rechts kantelen = filter. Nog een tik: filter + <b>LFO</b>, die sneller wiebelt als je harder blaast.</li>
+      <li><b>CAL</b>, eerste keer: tik CAL → 1 s stil → hij speelt 1 s zelf → 2 s <b>hard</b> blazen. Daarna kent hij jouw adem.</li>
+    </ol>
+    <div class="icta">TIK OM TE SPELEN</div>
+    <div class="inote" id="inote">Safari vraagt één keer om de microfoon en de bewegingssensor: kies Sta toe.</div>
+  </div>
+</div>
 <div class="rack">
   <header class="band">
     <h1><small>The</small>Blowjob</h1>
@@ -148,7 +172,7 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
     <div class="status"><span class="ar">▸▸▸</span><span id="msg">tik START · blaas in het mondstuk</span><span class="ar">◂◂◂</span></div>
     <div class="main">
       <div class="col" id="colL">
-        <button class="pill" id="start" type="button">START<small>スタート</small></button>
+        <button class="pill" id="flt" type="button"><span id="fltT">FILTER</span><small id="fltS">OFF</small></button>
       </div>
       <div class="stage"><canvas id="bell" aria-label="Kelk, buis en mondstuk. Blaas in de onderkant van je iPhone, of houd je vinger op het scherm: hoger is harder, links-rechts is toonhoogte."></canvas></div>
       <div class="col" id="colR">
@@ -168,13 +192,13 @@ class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.i
 class Blow extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.03;this.touch=0;this.sens=.5;this.useMic=1;
-    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.oEnv=0;this.leak=.03;this.lvlDb=-99;this.ov=0;this.dbs=-90;this.hold=0;this.thrDb=0;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
+    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.oEnv=0;this.leak=.03;this.lvlDb=-99;this.flt=0;this.fx=0;this.fxs=0;this.fmix=0;this.y1=0;this.y2=0;this.y3=0;this.y4=0;this.flfo=0;this.ov=0;this.dbs=-90;this.hold=0;this.thrDb=0;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
     this.mh=0;this.ml=0;this.ml2=0;this.lb=new Float32Array(128);this.lw=new Float32Array(8);this.li=0;this.es=1e-6;this.ee=1e-6;this.noisy=0;this.mlast=0;this.micN=0;
     this.p=0;this.p2=0;this.pm=0;this.over=0;this.xm=.4;this.xc=0;this.thunder=0;this.th=0;this.crk=0;this.gust=0;this.gt=0;this.sweep=[0,0,0];this.sw=[R(),R(),R()];
     this.f1=new SVF();this.f2=new SVF();this.f3=new SVF();this.f4=new SVF();this.f5=new SVF();this.cc=0;
     this.lev=0;this.dc=[0,0];this.post=0;
     this.port.onmessage=e=>{const d=e.data;if(d.eng!==undefined){this.eng=d.eng;this.over=0}if(d.f)this.tf=d.f;if(d.glide!==undefined)this.glide=d.glide;
-      if(d.touch!==undefined)this.touch=d.touch;if(d.cal!==undefined){this.cal=d.cal;if(d.cal&&d.cal.leak)this.leak=Math.max(this.leak,d.cal.leak)}if(d.calMode!==undefined){this.calMode=d.calMode;this.calAcc=[]}if(d.sens!==undefined)this.sens=d.sens;if(d.useMic!==undefined)this.useMic=d.useMic};
+      if(d.touch!==undefined)this.touch=d.touch;if(d.flt!==undefined)this.flt=d.flt;if(d.fx!==undefined)this.fx=d.fx;if(d.cal!==undefined){this.cal=d.cal;if(d.cal&&d.cal.leak)this.leak=Math.max(this.leak,d.cal.leak)}if(d.calMode!==undefined){this.calMode=d.calMode;this.calAcc=[]}if(d.sens!==undefined)this.sens=d.sens;if(d.useMic!==undefined)this.useMic=d.useMic};
   }
   process(ins,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr,inp=ins[0]&&ins[0][0];
@@ -275,6 +299,19 @@ class Blow extends AudioWorkletProcessor{
         s=(fm*.35+this.f1.bp*.5)*A+(R()*2-1)*this.crk*.6+low*this.thunder*2.2;
         s=Math.tanh(s*1.5)*.7;
       }
+      // FILTER: 4-pole ladder with a squelchy resonance (DFAM-ish); left/right tilt = cutoff, LFO speeds up with breath
+      this.fmix+=((this.flt?1:0)-this.fmix)*.002;
+      if(this.fmix>.001){
+        this.fxs+=(this.fx-this.fxs)*.003;
+        let oct=(this.fxs+1)*3.3+A*.9;
+        if(this.flt===2){this.flfo+=(.25*Math.pow(2,A*4.8))/sr;if(this.flfo>1)this.flfo-=1;oct+=Math.sin(TAU*this.flfo)*1.8}
+        const fc=Math.min(sr*.42,200*Math.pow(2,oct)),g=1-Math.exp(-TAU*fc/sr),kq=3.3;
+        const xin=Math.tanh(s*1.4-kq*this.y4);
+        this.y1+=g*(xin-this.y1);this.y2+=g*(this.y1-this.y2);this.y3+=g*(this.y2-this.y3);this.y4+=g*(this.y3-this.y4);
+        if(!(this.y4===this.y4)){this.y1=this.y2=this.y3=this.y4=0}
+        const fo=this.y4*(1+kq*.42);
+        s=s+(fo-s)*this.fmix;
+      }
       // leveller + DC block
       s*=.35+.65*Math.min(1,A*1.2);
       const d=this.dc;const y=s-d[0]+.995*d[1];d[0]=s;d[1]=y;s=y;
@@ -319,7 +356,7 @@ async function makeNode(){
   node.port.onmessage=e=>{const d=e.data;st.b=d.b;st.spec=d.spec;st.ns=d.ns;st.lv=d.lv;st.th=d.th;lastHb=performance.now();if(d.cal&&calRun)calRun.vals.push(...d.cal)};
   node.onprocessorerror=()=>rescue();lastHb=performance.now();
   node.connect(G.in);if(micSrc)micSrc.connect(node);
-  node.port.postMessage({eng,sens:S.sens,useMic:micOn?1:0,glide:glideT(),cal:calib});
+  node.port.postMessage({eng,sens:S.sens,useMic:micOn?1:0,glide:glideT(),cal:calib,flt:fltMode});
 }
 let rebuilding=false;
 async function rescue(){if(rebuilding||!ctx)return;rebuilding=true;try{if(ctx.state!=='running')await ctx.resume();await makeNode();say('▸ engine herstart',0,1200)}catch(e){}rebuilding=false}
@@ -356,7 +393,8 @@ function askMic(){
   return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).catch(()=>null);
 }
 function askTilt(){
-  try{const DO=window.DeviceOrientationEvent;if(DO&&typeof DO.requestPermission==='function')return DO.requestPermission().then(p=>p==='granted').catch(()=>false);return Promise.resolve(!!DO)}catch(e){return Promise.resolve(false)}
+  try{const DM=window.DeviceMotionEvent;if(DM&&typeof DM.requestPermission==='function')DM.requestPermission().catch(()=>{});
+    const DO=window.DeviceOrientationEvent;if(DO&&typeof DO.requestPermission==='function')return DO.requestPermission().then(p=>p==='granted').catch(()=>false);return Promise.resolve(!!DO)}catch(e){return Promise.resolve(false)}
 }
 async function useMic(stream){
   if(!stream){micOn=false;$('ledMic').classList.remove('on');$('mic').classList.remove('on');if(micTried)say('geen microfoon hier · houd je vinger op de kelk om te blazen',0,4500);return}
@@ -365,24 +403,38 @@ async function useMic(stream){
 }
 function onOrient(e){if(e.beta==null)return;beta=e.beta;lastOrient=performance.now();if(tiltOn&&tiltZero===null)tiltZero=beta}
 let lastOrient=0,listening=false;
+const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+let roll=0,rollSeen=false;
+function onMotion(e){const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const m=Math.hypot(a.x,a.y||0,a.z||0)||9.81;
+  const r=Math.max(-1,Math.min(1,(isIOS?1:-1)*a.x/m));roll+=(r-roll)*.35;rollSeen=true}
 function useTilt(ok){
   if(!ok){say('geen kantelsensor hier · links-rechts op de kelk is toonhoogte',0,3500);return}
-  if(!listening){window.addEventListener('deviceorientation',onOrient);listening=true}
+  if(!listening){window.addEventListener('deviceorientation',onOrient);window.addEventListener('devicemotion',onMotion);listening=true}
   setTimeout(()=>{if(performance.now()-lastOrient<1500){tiltOn=true;tiltZero=beta;$('ledTilt').classList.add('on');$('tilt').classList.add('on')}},700);
 }
-const startB=$('start');
-startB.addEventListener('click',()=>{
-  if(running){running=false;if(G.master)G.master.gain.setTargetAtTime(0,ctx.currentTime,.05);startB.classList.remove('on');startB.firstChild.textContent='START';return}
-  const pm=micOn?null:askMic(),pt=tiltOn?null:askTilt();     // both asked inside the tap (iOS)
-  makeCtx();boot().then(async()=>{await ctx.resume();running=true;G.master.gain.setTargetAtTime(.85,ctx.currentTime,.05);startB.classList.add('on');startB.firstChild.textContent='STOP'});
+// one tap on the intro starts everything (iOS needs a single touch before sound, mic and motion)
+function startAll(){
+  if(running)return;
+  const pm=micOn?null:askMic(),pt=tiltOn?null:askTilt();     // asked inside the tap (iOS)
+  makeCtx();boot().then(async()=>{await ctx.resume();running=true;G.master.gain.setTargetAtTime(.85,ctx.currentTime,.05);
+    if(!calib)setTimeout(()=>say('eerste keer? tik CAL om je blaaskracht in te stellen',1,5000),3200)});
   if(pm)pm.then(useMic);if(pt)pt.then(useTilt);
-});
+}
+const intro=$('intro');
+intro.addEventListener('click',()=>{intro.classList.add('gone');startAll()});
+if(calib)$('inote').textContent='CAL is al gedaan op deze telefoon. Safari vraagt soms opnieuw om de microfoon: kies Sta toe.';
+// FILTER: OFF -> TILT (left/right = cutoff) -> TILT + LFO
+let fltMode=0;try{fltMode=+localStorage.getItem('blowFlt')||0}catch(e){}
+function showFlt(){$('fltS').textContent=['OFF','TILT','LFO'][fltMode];$('flt').classList.toggle('on',fltMode>0);if(node)node.port.postMessage({flt:fltMode})}
+showFlt();
+$('flt').addEventListener('click',()=>{fltMode=(fltMode+1)%3;showFlt();try{localStorage.setItem('blowFlt',fltMode)}catch(e){}
+  say(['FILTER uit','FILTER · kantel links/rechts','FILTER + LFO · harder blazen = sneller'][fltMode],1,1800)});
 $('mic').addEventListener('click',()=>{
   if(micOn){micOn=false;if(node)node.port.postMessage({useMic:0});$('ledMic').classList.remove('on');$('mic').classList.remove('on');say('MIC uit · blaas met je vinger op de kelk',0,2000);return}
   askMic().then(useMic)});
 // CAL: one second of quiet, then two seconds of blowing hard; stored on this phone
 $('cal').addEventListener('click',async()=>{
-  if(!micOn){say('zet eerst de microfoon aan (START of MIC)',0,2500);return}
+  if(!micOn){say('zet eerst de microfoon aan (MIC)',0,2500);return}
   if(calRun)return;$('cal').classList.add('on');
   const pct=(a,q)=>{const b=a.slice().sort((x,y)=>x-y);return b[Math.min(b.length-1,Math.max(0,Math.floor(q*(b.length-1))))]};
   const phase=(mode,ms,label)=>new Promise(res=>{calRun={vals:[]};node.port.postMessage({calMode:mode});let t0=performance.now();
@@ -470,7 +522,7 @@ function midiFor(pos){
 const bell=$('bell'),bx=bell.getContext('2d');let W=1,H=1,dpr=1;
 function bellPos(e){const r=bell.getBoundingClientRect();let x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
   if(uiRot===-90){const t=x;x=1-y;y=t}else if(uiRot===90){const t=x;x=y;y=1-t}return[Math.min(1,Math.max(0,x)),Math.min(1,Math.max(0,y))]}
-bell.addEventListener('pointerdown',e=>{bell.setPointerCapture(e.pointerId);touch=bellPos(e);makeCtx();if(!running)startB.click();e.preventDefault()});
+bell.addEventListener('pointerdown',e=>{bell.setPointerCapture(e.pointerId);touch=bellPos(e);makeCtx();if(!running)startAll();e.preventDefault()});
 bell.addEventListener('pointermove',e=>{if(touch)touch=bellPos(e)});
 const tup=()=>{touch=null};bell.addEventListener('pointerup',tup);bell.addEventListener('pointercancel',tup);
 
@@ -550,7 +602,7 @@ function draw(now,dt,b,midi){
 }
 
 // ---------- main loop ----------
-let last=performance.now(),sentF=0,sentT=-1;
+let last=performance.now(),sentF=0,sentT=-1,sentX=9;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   // pitch position 0..1 over RANGE octaves (±50° tilt)
@@ -558,6 +610,7 @@ function frame(now){
   else if(tiltOn&&beta!=null&&tiltZero!=null){let d=beta-tiltZero;if(d>180)d-=360;if(d<-180)d+=360;pitchPos=Math.min(1,Math.max(0,.5+d/100))}
   if(tiltOn&&now-lastOrient>2000){tiltOn=false;$('ledTilt').classList.remove('on');$('tilt').classList.remove('on')}
   const midi=midiFor(pitchPos);curMidi=midi;
+  if(node&&fltMode){const fx=Math.round((rollSeen?Math.max(-1,Math.min(1,roll/.7)):0)*200)/200;if(fx!==sentX){node.port.postMessage({fx});sentX=fx}}
   const tb=touch?Math.min(1,Math.max(0,1.08-touch[1]*1.15)):0;
   if(node){const f=440*Math.pow(2,(midi-69)/12);if(Math.abs(f-sentF)>.05){node.port.postMessage({f});sentF=f}if(tb!==sentT){node.port.postMessage({touch:tb});sentT=tb}
     if(running&&ctx.state!=='running')ctx.resume();else if(running&&now-lastHb>1500)rescue()}
@@ -567,7 +620,7 @@ function frame(now){
   $('cents').textContent=SCALES[scIdx()][1]?SCALES[scIdx()][0]:(cents>=0?'+':'')+cents+'¢';
   if(eng===4)document.documentElement.style.setProperty('--eng',engColor(now));
   draw(now,dt,b,midi);
-  if(now>msgHold){if(!running)say('tik START · blaas in de microfoon');else if(b>.05)say('▸ '+ENG[eng].n+' · '+KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1)+(SCALES[scIdx()][1]?' · '+KEYS[keyIdx()]+' '+SCALES[scIdx()][0]:' · vrij'),b>.6);
+  if(now>msgHold){if(!running)say('tik het scherm om te beginnen');else if(b>.05)say('▸ '+ENG[eng].n+' · '+KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1)+(SCALES[scIdx()][1]?' · '+KEYS[keyIdx()]+' '+SCALES[scIdx()][0]:' · vrij'),b>.6);
     else say(micOn?'blaas in de onderkant · kantel voor toonhoogte':'houd je vinger op de kelk · hoger = harder')}
   requestAnimationFrame(frame);
 }
