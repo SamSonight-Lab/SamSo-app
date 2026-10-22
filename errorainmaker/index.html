@@ -150,19 +150,21 @@ const MAT=[
   [140,2600,1,.16,0,0,0,.62,3,0,11000],                // FM NOISE
   [300,3000,1.5,.03,.01,.2,.002,.95,1,0,16000]];      // GLITCH
 const SCALE=[0,3,5,7,10];
+const ST=new Float32Array(4097);for(let i=0;i<=4096;i++)ST[i]=Math.sin(TAU*i/4096);
+function sn(c){c-=Math.floor(c);const x=c*4096,i=x|0;return ST[i]+(ST[i+1]-ST[i])*(x-i)}
 class Rain extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
-    this.q=[];this.v=[];for(let i=0;i<72;i++)this.v.push({on:0});this.vi=0;
+    this.q=[];this.qi=0;this.now=0;this.v=[];for(let i=0;i<40;i++)this.v.push({on:0,t:0});this.vi=0;this.hb=0;
     this.mat=0;this.tune=0;this.f0=200;this.body=.35;
     this.cN=Math.ceil(sr/40)+4;this.cL=new Float32Array(this.cN);this.cR=new Float32Array(this.cN);this.cw=0;this.lpL=0;this.lpR=0;this.dc=[0,0,0,0];
     this.port.onmessage=e=>{const d=e.data;
-      if(d.ev)for(let i=0;i<d.ev.length;i+=4)this.q.push({t:d.ev[i],a:d.ev[i+1],x:d.ev[i+2],p:d.ev[i+3]});
+      if(d.ev){if(this.qi>0){this.q=this.q.slice(this.qi);this.qi=0}for(let i=0;i<d.ev.length;i+=4)this.q.push({at:this.now+d.ev[i],a:d.ev[i+1],x:d.ev[i+2],p:d.ev[i+3]});this.q.sort((a,b)=>a.at-b.at);if(this.q.length>160)this.q=this.q.slice(this.q.length-160)}
       if(d.mat!==undefined)this.mat=d.mat;if(d.tune!==undefined)this.tune=d.tune;if(d.f0!==undefined)this.f0=d.f0};
   }
   quant(f){const m=12*Math.log2(f/220);const o=Math.floor(m/12);const r=m-o*12;let best=0,bd=99;for(const s of SCALE.concat([12])){const d=Math.abs(s-r);if(d<bd){bd=d;best=s}}return 220*Math.pow(2,(o*12+best)/12)}
   start(a,x,pitch){
     const sr=this.sr,M=MAT[this.mat];let v=null;for(const w of this.v)if(!w.on){v=w;break}
-    if(!v){this.vi=(this.vi+1)%this.v.length;v=this.v[this.vi]}
+    if(!v){let old=this.v[0];for(const w of this.v)if(w.t>old.t)old=w;v=old}
     let f=M[0]*Math.pow(M[1]/M[0],pitch);
     const ty=M[8],tn=ty===2?Math.max(this.tune,.85):this.tune;let d1=M[3],d2=M[4];
     if(tn>0){f=f*(1-tn)+this.quant(f)*tn;d1*=1+tn*5;d2*=1+tn*3}
@@ -170,29 +172,28 @@ class Rain extends AudioWorkletProcessor{
     const f2=f*M[2]*(1+(R()-.5)*.04);
     const mk=(fr,dec)=>{fr=Math.min(fr,sr*.45);const r=Math.exp(-1/(dec*sr));return{c:2*r*Math.cos(TAU*fr/sr),r2:r*r,y1:0,y2:0}};
     v.on=1;v.t=0;v.a=a*M[7]*tg;v.pl=Math.cos(x*Math.PI/2)*1.3;v.pr=Math.sin(x*Math.PI/2)*1.3;
-    v.m1=mk(f,d1);v.m2=mk(f2,d2);v.k1=Math.sin(TAU*Math.min(f,sr*.45)/sr);v.k2=Math.sin(TAU*Math.min(f2,sr*.45)/sr);v.nz=M[5];v.nd=Math.exp(-1/(M[6]*sr));v.ne=1;v.len=Math.max(d1,d2)*sr*7+64;
+    v.m1=mk(f,d1);v.m2=mk(f2,d2);v.k1=Math.sin(TAU*Math.min(f,sr*.45)/sr);v.k2=Math.sin(TAU*Math.min(f2,sr*.45)/sr);v.nz=M[5];v.nd=Math.exp(-1/(M[6]*sr));v.ne=1;v.len=Math.min(2.5,Math.max(d1,d2)*4.6)*sr+64;
     v.ty=ty;v.exl=Math.max(1,Math.round(M[9]*sr/1000));v.lpk=1-Math.exp(-TAU*M[10]/sr);v.lp=0;
-    if(ty===1){v.gf=f;v.gp=0;v.gdec=Math.exp(-1/(.025*sr));v.ge=1;v.bits=3+((R()*4)|0)}
-    if(ty===2){v.f=f;v.p=R();v.att=.012+R()*.02;v.dec=d1*(.7+R()*.6);v.bp=mk(f,.03);v.len=sr*(v.att+v.dec*6)}
-    if(ty===3){v.f=f;v.pc=0;v.pm=0;v.mr=[1.41,2.7,3.3,.5,7.1,1.005][(R()*6)|0];v.ix=4+R()*10;v.sw=(R()-.4)*3;v.dec=d1*(.5+R()*1.2);v.len=sr*v.dec*7}
+    if(ty===1){v.gf=f;v.gp=0;v.gdec=Math.exp(-1/(.025*sr));v.ge=1;v.q=Math.pow(2,3+((R()*4)|0));v.gfd=f*.6/(sr*.05)}
+    if(ty===2){v.f=f;v.p=R();const att=.012+R()*.02,dec=d1*(.7+R()*.6);v.ea=1;v.eak=Math.exp(-1/(att*sr));v.ed=1;v.edk=Math.exp(-1/(dec*sr));v.bp=mk(f,.03);v.len=Math.min(2.5,att+dec*4.6)*sr}
+    if(ty===3){v.f=f;v.pc=0;v.pm=0;v.mr=[1.41,2.7,3.3,.5,7.1,1.005][(R()*6)|0];v.ix=4+R()*10;v.sw=(R()-.4)*3;const dec=d1*(.5+R()*1.2);v.e=1;v.ek=Math.exp(-1/(dec*sr));v.ik=Math.exp(-1/(.05*sr));v.swk=Math.exp(-1/(.025*sr));v.len=Math.min(2.5,dec*4.6)*sr}
   }
   process(_,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr;
     const dl=Math.min(this.cN-2,Math.max(8,sr/this.f0));
     for(let k=0;k<n;k++){
-      for(let j=this.q.length-1;j>=0;j--){const e=this.q[j];if(--e.t<=0){this.start(e.a,e.x,e.p);this.q.splice(j,1)}}
+      this.now++;while(this.qi<this.q.length&&this.q[this.qi].at<=this.now){const e=this.q[this.qi++];this.start(e.a,e.x,e.p)}
       let l=0,r=0;
       for(const v of this.v){if(!v.on)continue;
         const ex=v.t<v.exl?(v.exl===1?v.a:v.a*Math.sin(Math.PI*(v.t+.5)/v.exl)*Math.PI/(2*v.exl)):0;
-        const nz=(R()*2-1)*v.ne*v.nz*v.a;v.ne*=v.nd;
+        let nz=0;if(v.ne>.001){nz=(R()*2-1)*v.ne*v.nz*v.a;v.ne*=v.nd}
         let s;
-        const tt=v.t/sr;
-        if(v.ty===2){const env=(1-Math.exp(-tt/v.att))*Math.exp(-tt/v.dec);v.p+=v.f*(1+.004*Math.sin(TAU*5.5*tt))/sr;v.p-=Math.floor(v.p);
+        if(v.ty===2){v.ea*=v.eak;v.ed*=v.edk;const env=(1-v.ea)*v.ed;v.p+=v.f/sr;if(v.p>=1)v.p-=1;
           const br=(R()*2-1),m=v.bp,yb=m.c*m.y1-m.r2*m.y2+br*.02;m.y2=m.y1;m.y1=yb;
-          s=(Math.sin(TAU*v.p)*.5+Math.sin(TAU*2*v.p)*.08+yb*.9+br*.05)*env*v.a}
-        else if(v.ty===3){const e=Math.exp(-tt/v.dec),fc=v.f*(1+v.sw*Math.exp(-tt/.025));v.pc+=fc/sr;v.pm+=fc*v.mr/sr;v.pc-=Math.floor(v.pc);v.pm-=Math.floor(v.pm);
-          const I=v.ix*Math.exp(-tt/.05)+.4;s=Math.sin(TAU*v.pc+I*Math.sin(TAU*v.pm))*e*v.a*.4}
-        else if(v.ty===1){v.gp+=v.gf*(1-v.t/(sr*.05)*.6)/sr;v.gp-=Math.floor(v.gp);v.ge*=v.gdec;const q=Math.pow(2,v.bits);s=Math.round((v.gp<.5?1:-1)*v.ge*q)/q*v.a*.3+nz*.4}
+          const q=sn(v.p);s=(q*.5+q*q*.08+yb*.9+br*.05)*env*v.a}
+        else if(v.ty===3){v.e*=v.ek;v.sw*=v.swk;v.ix*=v.ik;const fc=v.f*(1+v.sw);v.pc+=fc/sr;v.pm+=fc*v.mr/sr;if(v.pc>=1)v.pc-=Math.floor(v.pc);if(v.pm>=1)v.pm-=Math.floor(v.pm);
+          s=sn(v.pc+(v.ix+.4)*sn(v.pm)*.159155)*v.e*v.a*.4}
+        else if(v.ty===1){v.gf=Math.max(30,v.gf-v.gfd);v.gp+=v.gf/sr;if(v.gp>=1)v.gp-=1;v.ge*=v.gdec;const q=v.q;s=Math.round((v.gp<.5?1:-1)*v.ge*q)/q*v.a*.3+nz*.4}
         else{const m1=v.m1,m2=v.m2,x=ex+nz*.5;
           const y=m1.c*m1.y1-m1.r2*m1.y2+x;m1.y2=m1.y1;m1.y1=y;
           const z=m2.c*m2.y1-m2.r2*m2.y2+x;m2.y2=m2.y1;m2.y1=z;
@@ -209,7 +210,7 @@ class Rain extends AudioWorkletProcessor{
       ol=Math.tanh(yl*1.2)*.9;or=Math.tanh(yr*1.2)*.9;
       L[k]=ol===ol?ol:0;Rr[k]=or===or?or:0;
     }
-    if(this.q.length>400)this.q.splice(0,this.q.length-400);
+    if(++this.hb>=180){this.hb=0;this.port.postMessage({hb:1})}
     return true;
   }
 }
@@ -233,11 +234,22 @@ function makeCtx(){if(ctx)return;const AC=window.AudioContext||window.webkitAudi
 async function addModule(){const src=$('dsp').textContent;
   try{await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([src],{type:'application/javascript'})))}
   catch(e){await ctx.audioWorklet.addModule('data:application/javascript;base64,'+btoa(unescape(encodeURIComponent(src))))}}
+let lastHb=0,rebuilding=false;
+async function makeNode(){
+  if(node){try{node.disconnect()}catch(e){}}
+  node=new AudioWorkletNode(ctx,'rain',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});
+  node.port.onmessage=e=>{if(e.data.hb)lastHb=performance.now()};
+  node.onprocessorerror=()=>rescue();
+  lastHb=performance.now();
+  if(G.pre)node.connect(G.pre);
+  node.port.postMessage({mat:matIdx(),tune:S.tune,f0:420*Math.pow(110/420,S.tube)});
+}
+async function rescue(){if(rebuilding||!ctx)return;rebuilding=true;try{if(ctx.state!=='running')await ctx.resume();await makeNode();say('▸ engine herstart',0,1200)}catch(e){}rebuilding=false}
 function boot(){
   if(ready)return ready;makeCtx();
   ready=(async()=>{
     await addModule();
-    node=new AudioWorkletNode(ctx,'rain',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});
+    await makeNode();
     const g=n=>{const x=ctx.createGain();x.gain.value=n;return x};
     G.pre=g(1);G.post=g(.85);G.fbG=g(0);G.master=g(0);
     const sh=ctx.createWaveShaper(),cv=new Float32Array(2048);for(let i=0;i<2048;i++){const x=i/1023.5-1;cv[i]=Math.tanh(x*1.2)/Math.tanh(1.2)}sh.curve=cv;sh.oversample='2x';
@@ -246,7 +258,7 @@ function boot(){
     const len=(ctx.sampleRate*3.8)|0,ir=ctx.createBuffer(2,len,ctx.sampleRate);
     for(let c=0;c<2;c++){const d=ir.getChannelData(c);let lp=0;for(let i=0;i<len;i++){lp+=((Math.random()*2-1)-lp)*(.85-.65*i/len);d[i]=lp*Math.pow(1-i/len,2.2)*(i<ctx.sampleRate*.015?i/(ctx.sampleRate*.015):1)}}G.rev.buffer=ir;
     const comp=ctx.createDynamicsCompressor();comp.threshold.value=-10;comp.ratio.value=10;comp.attack.value=.002;comp.release.value=.15;
-    node.connect(G.pre).connect(sh).connect(G.post);sh.connect(G.fbD).connect(G.fbF).connect(G.fbG).connect(G.pre);
+    node.connect(G.pre);G.pre.connect(sh).connect(G.post);sh.connect(G.fbD).connect(G.fbF).connect(G.fbG).connect(G.pre);
     G.post.connect(G.dry).connect(comp);G.post.connect(G.rS).connect(G.rev).connect(G.rO).connect(comp);
     comp.connect(G.master).connect(ctx.destination);
     for(const k in S)apply(k);
@@ -466,12 +478,13 @@ function frame(now){
   const sub=4;for(let i=0;i<sub;i++)step(dt/sub,gx,gy);
   shakeE*=Math.pow(.02,dt);if(shakeE<.01)shakeE=0;
   // send this frame's hits, spread across the frame
-  if(node&&events.length){events.sort((a,b)=>b[0]-a[0]);const lim=events.slice(0,48),sr=ctx.sampleRate,out=[];
+  if(node&&events.length){events.sort((a,b)=>b[0]-a[0]);const lim=events.slice(0,24),sr=ctx.sampleRate,out=[];
     for(const e of lim)out.push(Math.random()*dt*sr+64,e[0],e[1],e[2]);node.port.postMessage({ev:out})}
   events=[];
   hitAcc+=hitCount;hitCount=0;if(now-hitT>500){hitsSec=hitAcc*2;hitAcc=0;hitT=now;$('hits').firstChild.textContent=hitsSec>999?'999+':String(hitsSec)}
   rainLevel+=(Math.min(1,hitsSec/600)-rainLevel)*.08;$('rain').style.height=(rainLevel*100).toFixed(1)+'%';
   if(matIdx()===NM)document.documentElement.style.setProperty('--mat',matColor(now));
+  if(running&&node&&ctx){if(ctx.state!=='running')ctx.resume();else if(now-lastHb>1500)rescue()}
   draw(now,gx,gy);
   if(now>msgHold){if(!running)say('tik START · draai de stok om');else if(rainLevel>.05)say('▸ '+MATS[matIdx()].n+' · '+hitsSec+' tikken/s',rainLevel>.4);
     else say(motionOn?'draai je telefoon om':'sleep opzij om de stok te draaien')}
