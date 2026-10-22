@@ -167,13 +167,13 @@ class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.i
 class Blow extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.03;this.touch=0;this.sens=.5;this.useMic=1;
-    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
+    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.oEnv=0;this.leak=.03;this.lvlDb=-99;this.thrDb=0;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
     this.mh=0;this.ml=0;this.ml2=0;this.lb=new Float32Array(128);this.lw=new Float32Array(8);this.li=0;this.es=1e-6;this.ee=1e-6;this.noisy=0;this.mlast=0;this.micN=0;
     this.p=0;this.p2=0;this.pm=0;this.over=0;this.xm=.4;this.xc=0;this.thunder=0;this.th=0;this.crk=0;this.gust=0;this.gt=0;this.sweep=[0,0,0];this.sw=[R(),R(),R()];
     this.f1=new SVF();this.f2=new SVF();this.f3=new SVF();this.f4=new SVF();this.f5=new SVF();this.cc=0;
     this.lev=0;this.dc=[0,0];this.post=0;
     this.port.onmessage=e=>{const d=e.data;if(d.eng!==undefined){this.eng=d.eng;this.over=0}if(d.f)this.tf=d.f;if(d.glide!==undefined)this.glide=d.glide;
-      if(d.touch!==undefined)this.touch=d.touch;if(d.cal!==undefined)this.cal=d.cal;if(d.calMode!==undefined){this.calMode=d.calMode;this.calAcc=[]}if(d.sens!==undefined)this.sens=d.sens;if(d.useMic!==undefined)this.useMic=d.useMic};
+      if(d.touch!==undefined)this.touch=d.touch;if(d.cal!==undefined){this.cal=d.cal;if(d.cal&&d.cal.leak)this.leak=Math.max(this.leak,d.cal.leak)}if(d.calMode!==undefined){this.calMode=d.calMode;this.calAcc=[]}if(d.sens!==undefined)this.sens=d.sens;if(d.useMic!==undefined)this.useMic=d.useMic};
   }
   process(ins,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr,inp=ins[0]&&ins[0][0];
@@ -191,27 +191,32 @@ class Blow extends AudioWorkletProcessor{
         lb[this.li]=u;this.li=(this.li+1)&127;
         this.es+=(u*u-this.es)*.0007;this.ee+=(er*er-this.ee)*.0007;
         const rt=Math.min(1,this.ee/(this.es+1e-12));this.noisy+=(Math.min(1,Math.max(0,(rt-.2)/.4))-this.noisy)*.0009}
-      // 1) wind lives low: compare the low band (<250 Hz) with the voice/music band (600-3000 Hz)
+      // spectral colour: low band (<250 Hz) vs voice band (600-3000 Hz); only judged against YOUR calibrated blow
       this.lm+=(this.mh-this.lm)*.0755;const mx=this.mh-this.lm;this.bm3+=(mx-this.bm3)*.324;
       this.eL+=(Math.abs(this.ml2)-this.eL)*.002;this.eM+=(Math.abs(this.bm3)-this.eM)*.002;
       const ratioDb=20*Math.log10((this.eL+1e-8)/(this.eM+1e-8));
-      this.spec+=(Math.min(1,Math.max(0,(ratioDb-3)/9))-this.spec)*.002;
-      // 2) level of the low band in dB
-      const lvl=Math.abs(this.ml2)*1.6;
-      this.env+=(lvl-this.env)*(lvl>this.env?.003:.0008);
+      // level: the whole band (blowing into an iPhone is broadband hiss + rumble)
+      const lvl=Math.abs(this.mh)*1.4;
+      this.env+=(lvl-this.env)*(lvl>this.env?.004:.0007);
       const db=20*Math.log10(this.env+1e-7);
-      if(this.env<this.floor)this.floor+=(this.env-this.floor)*.0005;else if(!this.on)this.floor*=1.0000012;
+      if(this.env<this.floor)this.floor+=(this.env-this.floor)*.0005;else if(!this.on)this.floor*=1.000001;
       const fdb=20*Math.log10(Math.max(this.floor,1e-5));
-      // calibration: collect levels for the main thread (quiet first, then a hard blow)
-      if(this.calMode&&(this.cc&63)===0)this.calAcc.push(db);
-      let thr,full;
-      if(this.cal){const span=Math.max(15,this.cal.blow-this.cal.quiet);thr=this.cal.quiet+span*(.12+(1-this.sens)*.38);full=this.cal.blow-1.5}
-      else{if(db>this.maxDb)this.maxDb+=(db-this.maxDb)*.004;else this.maxDb-=.000025;this.maxDb=Math.max(this.maxDb,fdb+30);
-        thr=fdb+14+(1-this.sens)*12;full=Math.max(thr+12,this.maxDb-1)}
+      // our own speaker leaks into the mic: learn how much, and ignore mic sound that is just our echo
+      const oe=this.oEnv;
+      if(oe>.003&&!this.on&&this.touch<.01){const r=Math.min(.5,this.env/oe);this.leak+=(r-this.leak)*(r<this.leak?.002:.0000001);if(this.cal&&this.cal.leak)this.leak=Math.max(this.leak,this.cal.leak*.7)}
+      const echo=this.leak*oe*2;
+      if(this.calMode&&(this.cc&63)===0)this.calAcc.push([db,ratioDb,this.env/(oe+1e-9)]);
+      let thr,full,spec=1;
+      if(this.cal){const span=Math.max(12,this.cal.blow-this.cal.quiet);thr=Math.max(this.cal.quiet+6,this.cal.blow-(6+this.sens*22));full=this.cal.blow-3;
+        spec=Math.min(1,Math.max(0,(ratioDb-(this.cal.ratio-12))/6))}
+      else{if(db>this.maxDb)this.maxDb+=(db-this.maxDb)*.004;else this.maxDb-=.00002;this.maxDb=Math.max(this.maxDb,fdb+22);
+        thr=fdb+8+(1-this.sens)*14;full=Math.max(thr+10,this.maxDb-2)}
+      this.spec+=(spec-this.spec)*.003;
       let raw=Math.min(1,Math.max(0,(db-thr)/Math.max(6,full-thr)));
-      // 3) all three must agree: loud enough, wind-coloured, and noise rather than a tone
-      raw*=Math.min(1,this.spec*1.4)*(.35+.65*this.noisy);
-      if(!this.on&&raw>.07)this.on=true;else if(this.on&&raw<.02)this.on=false;
+      if(this.env<echo)raw=0;
+      raw*=(.4+.6*this.spec)*(.55+.45*this.noisy);
+      if(!this.on&&raw>.05)this.on=true;else if(this.on&&raw<.015)this.on=false;
+      this.lvlDb=db;this.thrDb=thr;
       const mb=this.useMic&&this.on?raw:0;
       const tgt=Math.max(mb,this.touch);
       this.breath+=(tgt-this.breath)*(tgt>this.breath?.0016:.0006);
@@ -272,8 +277,9 @@ class Blow extends AudioWorkletProcessor{
       const pk=Math.abs(s);this.lev+=(pk-this.lev)*(pk>this.lev?.01:.00005);
       if(this.lev>.5)s*=.5/this.lev;
       s=s===s?s:0;L[k]=s;Rr[k]=s;
+      {const ao=Math.abs(s);this.oEnv+=(ao-this.oEnv)*(ao>this.oEnv?.01:.00004)}
     }
-    if(++this.post>=6){this.post=0;const m={b:this.breath,spec:this.spec,ns:this.noisy};if(this.calMode&&this.calAcc.length){m.cal=this.calAcc;this.calAcc=[]}this.port.postMessage(m)}
+    if(++this.post>=6){this.post=0;const m={b:this.breath,spec:this.spec,ns:this.noisy,lv:this.lvlDb,th:this.thrDb};if(this.calMode&&this.calAcc.length){m.cal=this.calAcc;this.calAcc=[]}this.port.postMessage(m)}
     return true;
   }
 }
@@ -296,7 +302,7 @@ function engColor(now){return ENG[eng].c||`hsl(${(now/12)%360},95%,62%)`}
 // ---------- audio ----------
 let ctx=null,node=null,G={},ready=null,running=false,micStream=null,micSrc=null,lastHb=0;
 const st={b:0,spec:0,ns:0};
-let calib=null;try{calib=JSON.parse(localStorage.getItem('blowCal')||'null')}catch(e){}
+let calib=null;try{calib=JSON.parse(localStorage.getItem('blowCal2')||'null')}catch(e){}
 let calRun=null;
 function makeCtx(){if(ctx)return;const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({latencyHint:'interactive'})}
 async function addModule(){const src=$('dsp').textContent;
@@ -305,7 +311,7 @@ async function addModule(){const src=$('dsp').textContent;
 async function makeNode(){
   if(node){try{node.disconnect()}catch(e){}}
   node=new AudioWorkletNode(ctx,'blow',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],channelCount:1,channelCountMode:'explicit'});
-  node.port.onmessage=e=>{const d=e.data;st.b=d.b;st.spec=d.spec;st.ns=d.ns;lastHb=performance.now();if(d.cal&&calRun)calRun.vals.push(...d.cal)};
+  node.port.onmessage=e=>{const d=e.data;st.b=d.b;st.spec=d.spec;st.ns=d.ns;st.lv=d.lv;st.th=d.th;lastHb=performance.now();if(d.cal&&calRun)calRun.vals.push(...d.cal)};
   node.onprocessorerror=()=>rescue();lastHb=performance.now();
   node.connect(G.in);if(micSrc)micSrc.connect(node);
   node.port.postMessage({eng,sens:S.sens,useMic:micOn?1:0,glide:glideT(),cal:calib});
@@ -342,7 +348,7 @@ let micOn=false,tiltOn=false,tiltZero=null,beta=null,micTried=false;
 function askMic(){
   micTried=true;
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.resolve(null);
-  return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}}).catch(()=>null);
+  return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).catch(()=>null);
 }
 function askTilt(){
   try{const DO=window.DeviceOrientationEvent;if(DO&&typeof DO.requestPermission==='function')return DO.requestPermission().then(p=>p==='granted').catch(()=>false);return Promise.resolve(!!DO)}catch(e){return Promise.resolve(false)}
@@ -375,14 +381,17 @@ $('cal').addEventListener('click',async()=>{
   if(calRun)return;$('cal').classList.add('on');
   const pct=(a,q)=>{const b=a.slice().sort((x,y)=>x-y);return b[Math.min(b.length-1,Math.max(0,Math.floor(q*(b.length-1))))]};
   const phase=(mode,ms,label)=>new Promise(res=>{calRun={vals:[]};node.port.postMessage({calMode:mode});let t0=performance.now();
-    const tick=()=>{const left=Math.ceil((ms-(performance.now()-t0))/1000);say(label+' '+left,1);if(performance.now()-t0<ms)setTimeout(tick,120);else{node.port.postMessage({calMode:0});const v=calRun.vals;calRun=null;res(v)}};tick()});
+    const tick=()=>{const left=Math.ceil((ms-(performance.now()-t0))/1000);const n=Math.max(0,Math.min(10,Math.round(((st.lv||-90)+70)/7)));say(label+' '+left+'  '+'▮'.repeat(n)+'▯'.repeat(10-n),1);if(performance.now()-t0<ms)setTimeout(tick,120);else{node.port.postMessage({calMode:0});const v=calRun.vals;calRun=null;res(v)}};tick()});
   const q=await phase(1,1200,'CAL · wees even stil…');
+  node.port.postMessage({touch:.85});const sp=await phase(3,1000,'CAL · luidspreker-test…');node.port.postMessage({touch:0});
+  await new Promise(r=>setTimeout(r,900));
   const bl=await phase(2,2200,'CAL · BLAAS HARD in het mondstuk…');
   $('cal').classList.remove('on');
   if(q.length<5||bl.length<5){say('kalibreren mislukt · probeer opnieuw',0,2500);return}
-  const quiet=pct(q,.6),blow=pct(bl,.85);
-  if(blow-quiet<10){say('te weinig verschil · blaas harder, recht in de onderkant',0,3500);return}
-  calib={quiet,blow};try{localStorage.setItem('blowCal',JSON.stringify(calib))}catch(e){}
+  const qd=q.map(v=>v[0]),bd=bl.map(v=>v[0]);const quiet=pct(qd,.7),blow=pct(bd,.7);
+  const loud=bl.filter(v=>v[0]>quiet+(blow-quiet)*.5).map(v=>v[1]);const ratio=loud.length?pct(loud,.5):0;const lk=sp.slice(Math.floor(sp.length*.3)).map(v=>v[2]);const leak=lk.length?Math.min(.5,pct(lk,.6)):0;
+  if(blow-quiet<8){say('te weinig verschil · blaas harder, recht in de onderkant',0,3500);return}
+  calib={quiet,blow,ratio,leak};try{localStorage.setItem('blowCal2',JSON.stringify(calib))}catch(e){}
   node.port.postMessage({cal:calib});say('CAL klaar · stil '+quiet.toFixed(0)+' dB · blazen '+blow.toFixed(0)+' dB',1,3000);
 });
 $('tilt').addEventListener('click',()=>{
