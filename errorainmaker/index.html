@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Federo&family=Share+Tech+Mono&display=swap">
 <style>
-/* Layout: one screen — red poster band; stage with the rainstick (tilt gauge left, rain meter right); status; six knobs; buttons START · SHAKE · MOTION */
+/* Layout: one screen — red poster band; stage with the rainstick (tilt gauge left, rain meter right); status; six knobs (STUTTER replaces drive); buttons START · SHAKE · MOTION */
 :root{
   --void:#070608;--panel:#0d0b0e;--panel-2:#17121a;
   --gold:#cfa75e;--gold-hi:#f1d79c;--gold-dim:#6b5631;
@@ -80,6 +80,7 @@ body{position:fixed;inset:0;width:100%}
 .dial::before{content:"";position:absolute;inset:0;border-radius:50%;
   background:repeating-conic-gradient(from -135deg,var(--gold) 0 1.8deg,transparent 1.8deg 27deg);
   -webkit-mask:radial-gradient(circle,transparent 58%,#000 59%,#000 70%,transparent 71%);mask:radial-gradient(circle,transparent 58%,#000 59%,#000 70%,transparent 71%)}
+.k.step6 .dial::before{background:repeating-conic-gradient(from -137deg,var(--gold-hi) 0 4deg,transparent 4deg 54deg)!important}
 .k.step .dial::before{background:repeating-conic-gradient(from -137deg,var(--gold-hi) 0 4deg,transparent 4deg 33.75deg);
   -webkit-mask:radial-gradient(circle,transparent 60%,#000 61%,#000 72%,transparent 73%);mask:radial-gradient(circle,transparent 60%,#000 61%,#000 72%,transparent 73%)}
 .dial .arc{position:absolute;inset:0;border-radius:50%;
@@ -156,10 +157,11 @@ class Rain extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.q=[];this.qi=0;this.now=0;this.v=[];for(let i=0;i<40;i++)this.v.push({on:0,t:0});this.vi=0;this.hb=0;
     this.mat=0;this.tune=0;this.f0=200;this.body=.35;
+    this.SN=(sr*2)|0;this.sL=new Float32Array(this.SN);this.sR=new Float32Array(this.SN);this.sw=0;this.st=0;this.sg=null;this.act=0;
     this.cN=Math.ceil(sr/40)+4;this.cL=new Float32Array(this.cN);this.cR=new Float32Array(this.cN);this.cw=0;this.lpL=0;this.lpR=0;this.dc=[0,0,0,0];
     this.port.onmessage=e=>{const d=e.data;
       if(d.ev){if(this.qi>0){this.q=this.q.slice(this.qi);this.qi=0}for(let i=0;i<d.ev.length;i+=4)this.q.push({at:this.now+d.ev[i],a:d.ev[i+1],x:d.ev[i+2],p:d.ev[i+3]});this.q.sort((a,b)=>a.at-b.at);if(this.q.length>160)this.q=this.q.slice(this.q.length-160)}
-      if(d.mat!==undefined)this.mat=d.mat;if(d.tune!==undefined)this.tune=d.tune;if(d.f0!==undefined)this.f0=d.f0};
+      if(d.stut!==undefined)this.st=d.stut;if(d.mat!==undefined)this.mat=d.mat;if(d.tune!==undefined)this.tune=d.tune;if(d.f0!==undefined)this.f0=d.f0};
   }
   quant(f){const m=12*Math.log2(f/220);const o=Math.floor(m/12);const r=m-o*12;let best=0,bd=99;for(const s of SCALE.concat([12])){const d=Math.abs(s-r);if(d<bd){bd=d;best=s}}return 220*Math.pow(2,(o*12+best)/12)}
   start(a,x,pitch){
@@ -207,7 +209,23 @@ class Rain extends AudioWorkletProcessor{
       this.cL[this.cw]=l+this.lpL*.72;this.cR[this.cw]=r+this.lpR*.72;this.cw=(this.cw+1)%this.cN;
       let ol=l+this.lpL*this.body,or=r+this.lpR*this.body;
       const d=this.dc;const yl=ol-d[0]+.996*d[1];d[0]=ol;d[1]=yl;const yr=or-d[2]+.996*d[3];d[2]=or;d[3]=yr;
-      ol=Math.tanh(yl*1.2)*.9;or=Math.tanh(yr*1.2)*.9;
+      ol=yl;or=yr;
+      // STUTTER: 1 REPEAT · 2 SCATTER · 3 REVERSE · 4 CRUSH · 5 WARP
+      this.act=this.act*.9995+Math.abs(ol)*.0005;
+      const SN=this.SN;this.sL[this.sw]=ol;this.sR[this.sw]=or;this.sw=this.sw+1<SN?this.sw+1:0;
+      if(this.st>0){
+        if(!this.sg&&this.act>.004&&R()<3.2/sr){const lens=[.03,.045,.06,.09,.125,.18,.25];const len=(lens[(R()*lens.length)|0]*sr)|0;
+          this.sg={len,start:(this.sw-len+SN)%SN,i:0,rep:0,reps:2+((R()*7)|0),rate:1,hold:0,hc:0}}
+        const g=this.sg;
+        if(g){const m=this.st,fd=Math.min(g.len/4,sr*.003);let k=g.i,env=Math.min(1,k/fd,(g.len-k)/fd);let p;
+          if(m===3)p=g.start+(g.len-1-k);else if(m===5)p=g.start+k*g.rate;else p=g.start+k;
+          p=((p%SN)+SN)%SN;const i0=p|0,i1=(i0+1)%SN,fr=p-i0;
+          let a=this.sL[i0]+(this.sL[i1]-this.sL[i0])*fr,b=this.sR[i0]+(this.sR[i1]-this.sR[i0])*fr;
+          if(m===4){if(++g.hc>=6){g.hc=0;g.hl=Math.round(a*6)/6;g.hr=Math.round(b*6)/6}a=g.hl||0;b=g.hr||0;if((k/(g.len/4)|0)%2)env*=.15}
+          ol=a*env;or=b*env;
+          if(++g.i>=g.len){g.i=0;g.rep++;if(m===2)g.start=(this.sw-((R()*1.5*sr)|0)-g.len+SN*2)%SN;if(m===5)g.rate*=.84;if(g.rep>=g.reps)this.sg=null}}
+      }else this.sg=null;
+      ol=Math.tanh(ol*1.2)*.9;or=Math.tanh(or*1.2)*.9;
       L[k]=ol===ol?ol:0;Rr[k]=or===or?or:0;
     }
     if(++this.hb>=180){this.hb=0;this.port.postMessage({hb:1})}
@@ -222,7 +240,9 @@ registerProcessor('rain',Rain);
 const TAU=Math.PI*2,$=id=>document.getElementById(id);
 const MATS=[{n:'SEEDS',c:'#d9a45b',r:3},{n:'RICE',c:'#efe3c8',r:2.1},{n:'PEBBLES',c:'#9fb0bb',r:4.4},{n:'WOOD',c:'#b9773f',r:3.8},{n:'GLASS',c:'#7fd3ff',r:3.5},{n:'METAL',c:'#d8d8e4',r:3.2},{n:'PANFLUTE',c:'#9bd96f',r:3.4},{n:'FM NOISE',c:'#ff5aa0',r:3},{n:'GLITCH',c:null,r:3}];
 const NM=MATS.length-1;
-const S={mat:0,beads:.45,tube:.45,tune:0,space:.4,drive:.1};
+const S={mat:0,beads:.45,tube:.45,tune:0,space:.4,stut:0};
+const STUT=['OFF','REPEAT','SCATTER','REVERSE','CRUSH','WARP'];
+const stutIdx=()=>Math.round(S.stut*5);
 const msgEl=$('msg');let msgHold=0;
 function say(t,hot,ms){msgEl.textContent=t;msgEl.classList.toggle('hot',!!hot);msgHold=performance.now()+(ms||0)}
 const matIdx=()=>Math.round(S.mat*NM);
@@ -242,7 +262,7 @@ async function makeNode(){
   node.onprocessorerror=()=>rescue();
   lastHb=performance.now();
   if(G.pre)node.connect(G.pre);
-  node.port.postMessage({mat:matIdx(),tune:S.tune,f0:420*Math.pow(110/420,S.tube)});
+  node.port.postMessage({mat:matIdx(),tune:S.tune,f0:420*Math.pow(110/420,S.tube),stut:stutIdx()});
 }
 async function rescue(){if(rebuilding||!ctx)return;rebuilding=true;try{if(ctx.state!=='running')await ctx.resume();await makeNode();say('▸ engine herstart',0,1200)}catch(e){}rebuilding=false}
 function boot(){
@@ -270,11 +290,11 @@ function apply(id){
   if(id==='mat'){document.documentElement.style.setProperty('--mat',MATS[matIdx()].c||'#ff7fb0');if(node)node.port.postMessage({mat:matIdx()});rebuildBeads();return}
   if(id==='beads'){rebuildBeads();return}
   if(id==='tune'){if(node)node.port.postMessage({tune:v});return}
+  if(id==='stut'){if(node)node.port.postMessage({stut:stutIdx()});return}
   if(id==='tube'){if(node)node.port.postMessage({f0:420*Math.pow(110/420,v)});return}
   if(!G.pre)return;const t=ctx.currentTime;
   if(id==='space'){G.rO.gain.setTargetAtTime(v*1.3,t,.05);G.dry.gain.setTargetAtTime(1-v*.3,t,.05)}
-  if(id==='drive'){G.pre.gain.setTargetAtTime(1+v*v*22,t,.05);G.post.gain.setTargetAtTime(.9/(1+v*2.2),t,.05);
-    G.fbG.gain.setTargetAtTime(v>.5?Math.min(1.12,Math.pow((v-.5)/.5,1.2)*1.12):0,t,.08)}
+
 }
 const startB=$('start');
 async function start(){
@@ -397,27 +417,28 @@ const dup=()=>{drag=null};sc.addEventListener('pointerup',dup);sc.addEventListen
 $('shake').addEventListener('click',()=>{shakeE=1;say('SHAKE',1,600)});
 
 // ---------- knobs ----------
-const KN=[{id:'mat',l:'MATERIAL',j:'素材',blk:1,step:9},{id:'beads',l:'BEADS',j:'粒'},{id:'tube',l:'TUBE',j:'筒',blk:1},{id:'tune',l:'TUNE',j:'音階',blk:1},{id:'space',l:'SPACE',j:'空間'},{id:'drive',l:'DRIVE',j:'ドライブ',red:1}];
+const KN=[{id:'mat',l:'MATERIAL',j:'素材',blk:1,step:9},{id:'beads',l:'BEADS',j:'粒'},{id:'tube',l:'TUBE',j:'筒',blk:1},{id:'tune',l:'TUNE',j:'音階',blk:1},{id:'space',l:'SPACE',j:'空間'},{id:'stut',l:'STUTTER',j:'吃音',red:1,step:6}];
 const UI={};
 KN.forEach(k=>{
-  const el=document.createElement('div');el.className='k'+(k.blk?' blk':'')+(k.red?' red':'')+(k.step?' step':'');
+  const el=document.createElement('div');el.className='k'+(k.blk?' blk':'')+(k.red?' red':'')+(k.step?' step step'+k.step:'');
   el.innerHTML=`<div class="dial" tabindex="0" role="slider" id="k-${k.id}" aria-label="${k.l}" aria-valuemin="0" aria-valuemax="100"><div class="arc"></div><div class="cap"></div></div><div class="lbl">${k.l}</div><div class="kj${k.step?' v':''}">${k.j}</div>`;
   $('knobs').appendChild(el);
   const dial=el.querySelector('.dial'),cap=el.querySelector('.cap'),arc=el.querySelector('.arc'),kj=el.querySelector('.kj');
   UI[k.id]={draw(){const v=S[k.id];cap.style.transform=`rotate(${-135+v*270}deg)`;arc.style.background=`conic-gradient(from -135deg,var(--mat) 0 ${v*270}deg,transparent ${v*270}deg)`;
-    dial.setAttribute('aria-valuenow',Math.round(v*100));if(k.step)kj.textContent=MATS[matIdx()].n}};
+    dial.setAttribute('aria-valuenow',Math.round(v*100));if(k.step)kj.textContent=k.id==='mat'?MATS[matIdx()].n:STUT[stutIdx()]}};
   UI[k.id].draw();let sy,sx,sv;
   dial.addEventListener('pointerdown',e=>{dial.setPointerCapture(e.pointerId);sy=e.clientY;sx=e.clientX;sv=S[k.id];e.preventDefault()});
-  dial.addEventListener('pointermove',e=>{if(sy===undefined)return;const[dx,dy]=loc(e.clientX-sx,e.clientY-sy);set(k.id,sv+(-dy+dx*.5)/(k.step?240:160))});
+  dial.addEventListener('pointermove',e=>{if(sy===undefined)return;const[dx,dy]=loc(e.clientX-sx,e.clientY-sy);set(k.id,sv+(-dy+dx*.5)/(k.step===9?240:k.step?190:160))});
   const end=()=>{sy=undefined};dial.addEventListener('pointerup',end);dial.addEventListener('pointercancel',end);
-  dial.addEventListener('keydown',e=>{const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[e.key];if(d){set(k.id,S[k.id]+d*(k.step?1/NM:.02));e.preventDefault()}});
+  dial.addEventListener('keydown',e=>{const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[e.key];if(d){set(k.id,S[k.id]+d*(k.step?1/(k.step-1):.02));e.preventDefault()}});
 });
 function set(id,v){v=Math.min(1,Math.max(0,v));
   if(id==='mat'){const b=matIdx();S.mat=Math.round(v*NM)/NM;UI.mat.draw();if(matIdx()!==b){apply('mat');say(MATS[matIdx()].n,1,1200)}return}
+  if(id==='stut'){const b=stutIdx();S.stut=Math.round(v*5)/5;UI.stut.draw();if(stutIdx()!==b){apply('stut');say('STUTTER · '+STUT[stutIdx()],1,1200)}return}
   const prevN=beads.length;S[id]=v;UI[id].draw();
   if(id==='beads'){if(Math.round(14+v*190)!==prevN)apply('beads')}else apply(id);
   const lab={beads:'BEADS  '+Math.round(14+v*190),tube:'TUBE  '+(v<.33?'kort · snel':v<.66?'middel':'lang · traag'),tune:'TUNE  '+(v<.02?'natuurlijk':Math.round(v*99)+' · regen wordt melodie'),
-    space:'SPACE  '+Math.round(v*99),drive:'DRIVE  '+Math.round(v*99)+(v>.5?' · feedback':'')}[id];
+    space:'SPACE  '+Math.round(v*99)}[id];
   say(lab,0,900);
 }
 

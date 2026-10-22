@@ -8,6 +8,7 @@ Digitale regenstok in ERROR instruments-stijl. Kantel of draai je iPhone om, dan
 - **MATERIAL:** SEEDS, RICE, PEBBLES, WOOD, GLASS, METAL, PANFLUTE, FM NOISE, GLITCH
 - **BEADS:** het aantal balletjes; **TUBE:** kort en snel tot lang en traag, plus de klank van de holle buis
 - **TUNE:** van natuurlijk geruis tot regen als pentatonische melodie
-- **SPACE:** reverb; **DRIVE:** overdrive, boven de helft feedback
+- **SPACE:** reverb
+- **STUTTER:** OFF, REPEAT, SCATTER, REVERSE, CRUSH, WARP. Het geluid hapert op willekeurige momenten in korte herhalingen.
 
 De bewegingssensor werkt alleen via de eigen website (https), niet in de Claude-preview.
