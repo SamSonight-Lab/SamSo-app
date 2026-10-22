@@ -8,7 +8,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#070608">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}html,body{overscroll-behavior:none;touch-action:none}
+body{position:fixed;inset:0;width:100%}
+</style>
 </head>
 <body>
 <title>The Paullerina</title>
@@ -580,6 +582,14 @@ if(!P3)say('3D niet beschikbaar op dit toestel',0,3000);
 requestAnimationFrame(frame);
 })();
 </script>
+<script>
+// iOS: never let a drag on the instrument scroll or bounce the page
+(()=>{const block=e=>{if(e.touches&&e.touches.length>1)return;e.preventDefault()};
+document.addEventListener('touchmove',block,{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+})();
+</script>
+
 
 </body>
 </html>
