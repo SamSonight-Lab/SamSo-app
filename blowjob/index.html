@@ -342,7 +342,8 @@ const TAU=Math.PI*2,$=id=>document.getElementById(id);
 const ENG=[{n:'SAX',c:'#f2b04e',h:[28,48],off:0},{n:'FLUTE',c:'#6fd3ff',h:[185,215],off:12},{n:'HOBO',c:'#7fe0a0',h:[120,160],off:7},{n:'HURRICANE',c:'#b49cff',h:[240,290],off:5},{n:'CHAOS STORM',c:null,h:[0,360],off:-5}];
 const SCALES=[['FREE',null],['MAJOR',[0,2,4,5,7,9,11]],['MINOR',[0,2,3,5,7,8,10]],['PENTA',[0,2,4,7,9]],['M.PENTA',[0,3,5,7,10]],['BLUES',[0,3,5,6,7,10]],['DORIAN',[0,2,3,5,7,9,10]],['HIRAJOSHI',[0,2,3,7,8]]];
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
-const S={scale:3/7,key:2/11,oct:.5,glide:.25,space:.45,sens:.5};
+const S={scale:3/7,key:2/11,oct:.5,glide:.25,space:.45,sens:.5,vol:.75};try{const v=localStorage.getItem('blowVol');if(v!==null)S.vol=+v}catch(e){}
+const volG=()=>.25*Math.pow(12,S.vol);
 let eng=0;
 const msgEl=$('msg');let msgHold=0;
 function say(t,hot,ms){msgEl.textContent=t;msgEl.classList.toggle('hot',!!hot);msgHold=performance.now()+(ms||0)}
@@ -381,7 +382,8 @@ function boot(){
     const comp=ctx.createDynamicsCompressor();comp.threshold.value=-12;comp.ratio.value=20;comp.knee.value=2;comp.attack.value=.001;comp.release.value=.12;
     G.in.connect(G.dry).connect(comp);G.in.connect(G.rS).connect(G.rev).connect(G.rO).connect(comp);
     G.in.connect(G.dS).connect(G.del);G.del.connect(dlp).connect(G.dFb).connect(G.del);dlp.connect(comp);
-    comp.connect(G.master).connect(ctx.destination);
+    const lim=ctx.createDynamicsCompressor();lim.threshold.value=-2;lim.ratio.value=20;lim.knee.value=0;lim.attack.value=.002;lim.release.value=.15;
+    comp.connect(G.master).connect(lim).connect(ctx.destination);
     await makeNode();for(const k in S)apply(k);
   })();
   ready.catch(e=>say('audio start mislukt: '+e.message,0,6000));return ready;
@@ -389,6 +391,7 @@ function boot(){
 const glideT=()=>.004+Math.pow(S.glide,2)*.5;
 function apply(id){
   const v=S[id];
+  if(id==='vol'){try{localStorage.setItem('blowVol',v)}catch(e){}if(G.master&&running)G.master.gain.setTargetAtTime(volG(),ctx.currentTime,.03);return}
   if(id==='sens'){if(node)node.port.postMessage({sens:v});return}
   if(id==='glide'){if(node)node.port.postMessage({glide:glideT()});return}
   if(id==='space'&&G.rO){const t=ctx.currentTime;G.rO.gain.setTargetAtTime(v*.8,t,.05);G.dS.gain.setTargetAtTime(v>.5?(v-.5)*.9:0,t,.05);G.dry.gain.setTargetAtTime(1-v*.3,t,.05)}
@@ -425,7 +428,7 @@ function useTilt(ok){
 function startAll(){
   if(running)return;
   const pm=micOn?null:askMic(),pt=tiltOn?null:askTilt();     // asked inside the tap (iOS)
-  makeCtx();boot().then(async()=>{await ctx.resume();running=true;G.master.gain.setTargetAtTime(.85,ctx.currentTime,.05);
+  makeCtx();boot().then(async()=>{await ctx.resume();running=true;G.master.gain.setTargetAtTime(volG(),ctx.currentTime,.05);
     if(!calib)setTimeout(()=>say('eerste keer? tik CAL om je blaaskracht in te stellen',1,5000),3200)});
   if(pm)pm.then(useMic);if(pt)pt.then(useTilt);
 }
@@ -491,6 +494,7 @@ const KN=[
   {id:'scale',l:'SCALE',j:'音階',blk:1,step:8,col:'colL',names:()=>SCALES.map(s=>s[0])},
   {id:'key',l:'KEY',j:'調',blk:1,step:12,col:'colL',names:()=>KEYS},
   {id:'oct',l:'OCTAVE',j:'オクターブ',blk:1,step:5,col:'colL',names:()=>['−2','−1','0','+1','+2']},
+  {id:'vol',l:'VOLUME',j:'音量',red:1,col:'colL'},
   {id:'glide',l:'GLIDE',j:'滑り',col:'colR'},
   {id:'space',l:'SPACE',j:'空間',col:'colR'},
   {id:'sens',l:'SENS',j:'感度',red:1,col:'colR'}];
