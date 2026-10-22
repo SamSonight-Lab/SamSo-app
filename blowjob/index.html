@@ -60,7 +60,8 @@ body{position:fixed;inset:0;width:100%}
 .pill{font-family:var(--f-label);font-size:11px;letter-spacing:.1em;width:58px;height:40px;border-radius:20px;color:#fff;background:var(--red-deep);border:1px solid var(--red);cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
 .pill small{font-family:var(--f-jp);font-size:7px;color:#ffc4bb}
 .pill.on{background:var(--red);border-color:#ff6a5f;box-shadow:0 0 16px rgba(208,26,31,.6)}
-.notebox{width:58px;border:1px solid var(--gold);border-radius:3px;padding:5px 0 4px;text-align:center;background:radial-gradient(120% 140% at 50% 0%,#1b1410,#0a0809)}
+.notebox .rng{font:600 8px/1 ui-monospace,monospace;letter-spacing:.12em;color:var(--gold);opacity:.75;margin-top:4px;border-top:1px solid rgba(201,160,90,.35);padding-top:4px}
+.notebox{cursor:pointer;width:58px;border:1px solid var(--gold);border-radius:3px;padding:5px 0 4px;text-align:center;background:radial-gradient(120% 140% at 50% 0%,#1b1410,#0a0809)}
 .leds{flex:none;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 2px}
 .leds span{display:flex;align-items:center;gap:6px}
 .leds .blow{font-size:9px;letter-spacing:.24em;color:var(--gold);font-family:var(--f-label)}
@@ -151,7 +152,7 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
       </div>
       <div class="stage"><canvas id="bell" aria-label="Kelk, buis en mondstuk. Blaas in de onderkant van je iPhone, of houd je vinger op het scherm: hoger is harder, links-rechts is toonhoogte."></canvas></div>
       <div class="col" id="colR">
-        <div class="notebox"><div class="note" id="note">—</div><div class="cents" id="cents"></div></div>
+        <div class="notebox" id="nbox"><div class="note" id="note">—</div><div class="cents" id="cents"></div><div class="rng" id="rng">3 OCT</div></div>
       </div>
     </div>
     <div class="leds"><span><i class="led" id="ledMic"></i><button class="mini" id="mic" type="button">MIC</button></span><button class="mini" id="cal" type="button">CAL</button><span class="blow">▲ 吹く ▲</span><span><button class="mini" id="tilt" type="button">TILT</button><i class="led" id="ledTilt"></i></span></div>
@@ -296,6 +297,7 @@ const S={scale:3/7,key:2/11,oct:.5,glide:.25,space:.45,sens:.5};
 let eng=0;
 const msgEl=$('msg');let msgHold=0;
 function say(t,hot,ms){msgEl.textContent=t;msgEl.classList.toggle('hot',!!hot);msgHold=performance.now()+(ms||0)}
+let RANGE=3;try{RANGE=+localStorage.getItem('blowRange')||3}catch(e){}
 const scIdx=()=>Math.round(S.scale*7),keyIdx=()=>Math.round(S.key*11),octV=()=>Math.round(S.oct*4)-2;
 function engColor(now){return ENG[eng].c||`hsl(${(now/12)%360},95%,62%)`}
 
@@ -394,6 +396,9 @@ $('cal').addEventListener('click',async()=>{
   calib={quiet,blow,ratio,leak};try{localStorage.setItem('blowCal2',JSON.stringify(calib))}catch(e){}
   node.port.postMessage({cal:calib});say('CAL klaar · stil '+quiet.toFixed(0)+' dB · blazen '+blow.toFixed(0)+' dB',1,3000);
 });
+// tap the note box: pitch range 2 / 3 / 4 octaves
+$('rng').textContent=RANGE+' OCT';
+$('nbox').addEventListener('click',()=>{RANGE=RANGE>=4?2:RANGE+1;$('rng').textContent=RANGE+' OCT';try{localStorage.setItem('blowRange',RANGE)}catch(e){}say('BEREIK · '+RANGE+' octaven',1,1500)});
 $('tilt').addEventListener('click',()=>{
   if(tiltOn){tiltZero=beta;say('TILT · midden opnieuw gezet',1,1500);return}
   askTilt().then(useTilt)});
@@ -451,9 +456,9 @@ function set(k,v){v=Math.min(1,Math.max(0,v));const id=k.id;
 // ---------- pitch: tilt (or finger) → note ----------
 let touch=null,pitchPos=.4,curMidi=60,qNote=null;
 function midiFor(pos){
-  const base=50+octV()*12+ENG[eng].off;let m=base+pos*24;
+  const base=50+octV()*12+ENG[eng].off;let m=base+12-RANGE*6+pos*RANGE*12;
   const sc=SCALES[scIdx()][1];
-  if(sc){const k=keyIdx();let best=null,bd=99;for(let o=-1;o<=3;o++)for(const d of sc){const c=12*Math.floor(base/12)+o*12+k+d;const dd=Math.abs(c-m);if(dd<bd){bd=dd;best=c}}
+  if(sc){const k=keyIdx();let best=null,bd=99;for(let o=-3;o<=5;o++)for(const d of sc){const c=12*Math.floor(base/12)+o*12+k+d;const dd=Math.abs(c-m);if(dd<bd){bd=dd;best=c}}
     // a little hysteresis so a shaky hand does not flutter between notes
     if(qNote!==null&&Math.abs(m-qNote)<.75&&sc.some(d=>((qNote-k-d)%12+12)%12===0))best=qNote;qNote=best;m=best}
   else qNote=null;
@@ -545,9 +550,9 @@ function draw(now,dt,b,midi){
 let last=performance.now(),sentF=0,sentT=-1;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
-  // pitch position 0..1 over two octaves
+  // pitch position 0..1 over RANGE octaves (±50° tilt)
   if(touch&&!tiltOn)pitchPos=touch[0];
-  else if(tiltOn&&beta!=null&&tiltZero!=null){let d=beta-tiltZero;if(d>180)d-=360;if(d<-180)d+=360;pitchPos=Math.min(1,Math.max(0,.5+d/80))}
+  else if(tiltOn&&beta!=null&&tiltZero!=null){let d=beta-tiltZero;if(d>180)d-=360;if(d<-180)d+=360;pitchPos=Math.min(1,Math.max(0,.5+d/100))}
   if(tiltOn&&now-lastOrient>2000){tiltOn=false;$('ledTilt').classList.remove('on');$('tilt').classList.remove('on')}
   const midi=midiFor(pitchPos);curMidi=midi;
   const tb=touch?Math.min(1,Math.max(0,1.08-touch[1]*1.15)):0;
