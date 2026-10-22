@@ -168,7 +168,7 @@ class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.i
 class Blow extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.03;this.touch=0;this.sens=.5;this.useMic=1;
-    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.oEnv=0;this.leak=.03;this.lvlDb=-99;this.thrDb=0;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
+    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.oEnv=0;this.leak=.03;this.lvlDb=-99;this.dbs=-90;this.hold=0;this.thrDb=0;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
     this.mh=0;this.ml=0;this.ml2=0;this.lb=new Float32Array(128);this.lw=new Float32Array(8);this.li=0;this.es=1e-6;this.ee=1e-6;this.noisy=0;this.mlast=0;this.micN=0;
     this.p=0;this.p2=0;this.pm=0;this.over=0;this.xm=.4;this.xc=0;this.thunder=0;this.th=0;this.crk=0;this.gust=0;this.gt=0;this.sweep=[0,0,0];this.sw=[R(),R(),R()];
     this.f1=new SVF();this.f2=new SVF();this.f3=new SVF();this.f4=new SVF();this.f5=new SVF();this.cc=0;
@@ -198,8 +198,8 @@ class Blow extends AudioWorkletProcessor{
       const ratioDb=20*Math.log10((this.eL+1e-8)/(this.eM+1e-8));
       // level: the whole band (blowing into an iPhone is broadband hiss + rumble)
       const lvl=Math.abs(this.mh)*1.4;
-      this.env+=(lvl-this.env)*(lvl>this.env?.004:.0007);
-      const db=20*Math.log10(this.env+1e-7);
+      this.env+=(lvl-this.env)*(lvl>this.env?.002:.00025);
+      const db0=20*Math.log10(this.env+1e-7);this.dbs+=(db0-this.dbs)*(db0>this.dbs?.0015:.0004);const db=this.dbs;
       if(this.env<this.floor)this.floor+=(this.env-this.floor)*.0005;else if(!this.on)this.floor*=1.000001;
       const fdb=20*Math.log10(Math.max(this.floor,1e-5));
       // our own speaker leaks into the mic: learn how much, and ignore mic sound that is just our echo
@@ -213,14 +213,16 @@ class Blow extends AudioWorkletProcessor{
       else{if(db>this.maxDb)this.maxDb+=(db-this.maxDb)*.004;else this.maxDb-=.00002;this.maxDb=Math.max(this.maxDb,fdb+22);
         thr=fdb+8+(1-this.sens)*14;full=Math.max(thr+10,this.maxDb-2)}
       this.spec+=(spec-this.spec)*.003;
-      let raw=Math.min(1,Math.max(0,(db-thr)/Math.max(6,full-thr)));
-      if(this.env<echo)raw=0;
+      // soft knee around the threshold: soft blowing fades in smoothly instead of flicking on/off
+      const rng=Math.max(6,full-thr),x=(db-thr)/rng,kk=6/rng;
+      let raw=x<=-kk?0:x<kk?(x+kk)*(x+kk)/(4*kk):x;raw=Math.min(1,raw);
+      if(echo>1e-4)raw*=Math.min(1,Math.max(0,this.env/echo-1));
       raw*=(.4+.6*this.spec)*(.55+.45*this.noisy);
-      if(!this.on&&raw>.05)this.on=true;else if(this.on&&raw<.015)this.on=false;
+      if(raw>.02){this.on=true;this.hold=sr*.3}else if(this.on&&--this.hold<=0)this.on=false;
       this.lvlDb=db;this.thrDb=thr;
-      const mb=this.useMic&&this.on?raw:0;
+      const mb=this.useMic?raw:0;
       const tgt=Math.max(mb,this.touch);
-      this.breath+=(tgt-this.breath)*(tgt>this.breath?.0016:.0006);
+      this.breath+=(tgt-this.breath)*(tgt>this.breath?.0012:(this.on?.00012:.0004));
       const A=this.breath;
       // breath noise: your own breath when the mic is on, white noise otherwise
       const micTex=this.useMic&&inp?Math.max(-1,Math.min(1,this.mh*12)):0;
