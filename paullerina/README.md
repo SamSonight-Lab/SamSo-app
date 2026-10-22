@@ -4,16 +4,13 @@ Speeldoos-sampleplayer in ERROR instruments-stijl. De ballerina in de vitrine is
 
 ## Bediening
 
-- **WIND:** draai de sleutel rechtsom (of tik erop voor een kwartslag). De veer houdt tot 12 slagen. De sample speelt en de Paullerina danst. Als de veer afloopt, vertraagt alles tot het stilstaat, net als een echt speeldoosje.
-- **Modi:** de kleur van het tutu verandert per modus.
-  - BOX (roze): het tempo zakt, de toonhoogte blijft (granulair)
-  - TAPE (goud): varispeed met een beetje wow, de toonhoogte zakt mee
-  - REVERSE (blauw): speelt achteruit
-  - SHATTER (paars): granulaire splinters, die wilder worden naarmate de veer afloopt
-- **◂ ▸:** wissel van sample. Bij het opstarten staat SWANLAKE BOX klaar.
-- **STOP:** rem. De veer blijft gespannen; tik nog eens om verder te spelen.
-- **REC:** vasthouden om met de microfoon op te nemen. De opname wordt een nieuwe sample.
-- **LOAD:** laad een eigen geluidsbestand.
+- **WIND:** draai de sleutel rechtsom (of tik erop). De veer houdt maximaal 54 seconden; de laatste 15 seconden remt hij af tot stilstand.
+- **MODE** (8 standen, het tutu verandert van kleur): BOX, TAPE, REVERSE, GRANULAR, STUTTER, RHYTHMIC, HARMONIC, CHAOTIC
+- **SIZE:** de grootte van de stukjes; per modus betekent dat korrel, stap, herhaling of wow.
+- **ECHO**, **REVERB**, **DRIVE** (boven de helft gaat het over in feedback)
+- **◂ ▸:** wissel van sample; **LOAD:** laad een eigen bestand; **STOP:** rem
+
+De Paullerina is een 3D-figuur (three.js r128, toon-shading met omtreklijnen).
 
 ## Samples
 
@@ -22,7 +19,6 @@ Speeldoos-sampleplayer in ERROR instruments-stijl. De ballerina in de vitrine is
 ## Gepland
 
 - Een modus waarin hij blijft doorlopen
-- Reverb, echo en feedback/overdrive
 - Native iOS-app
 
 ## Techniek
