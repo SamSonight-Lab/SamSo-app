@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Federo&family=Share+Tech+Mono&display=swap">
 <style>
-/* Layout: one screen — red poster band; stage with the rainstick (tilt gauge left, rain meter right); status; six knobs; buttons START · FLIP · SHAKE · MOTION */
+/* Layout: one screen — red poster band; stage with the rainstick (tilt gauge left, rain meter right); status; six knobs; buttons START · SHAKE · MOTION */
 :root{
   --void:#070608;--panel:#0d0b0e;--panel-2:#17121a;
   --gold:#cfa75e;--gold-hi:#f1d79c;--gold-dim:#6b5631;
@@ -80,7 +80,7 @@ body{position:fixed;inset:0;width:100%}
 .dial::before{content:"";position:absolute;inset:0;border-radius:50%;
   background:repeating-conic-gradient(from -135deg,var(--gold) 0 1.8deg,transparent 1.8deg 27deg);
   -webkit-mask:radial-gradient(circle,transparent 58%,#000 59%,#000 70%,transparent 71%);mask:radial-gradient(circle,transparent 58%,#000 59%,#000 70%,transparent 71%)}
-.k.step .dial::before{background:repeating-conic-gradient(from -137deg,var(--gold-hi) 0 4deg,transparent 4deg 54deg);
+.k.step .dial::before{background:repeating-conic-gradient(from -137deg,var(--gold-hi) 0 4deg,transparent 4deg 33.75deg);
   -webkit-mask:radial-gradient(circle,transparent 60%,#000 61%,#000 72%,transparent 73%);mask:radial-gradient(circle,transparent 60%,#000 61%,#000 72%,transparent 73%)}
 .dial .arc{position:absolute;inset:0;border-radius:50%;
   -webkit-mask:radial-gradient(circle,transparent 72%,#000 73%,#000 80%,transparent 81%);mask:radial-gradient(circle,transparent 72%,#000 73%,#000 80%,transparent 81%)}
@@ -92,7 +92,7 @@ body{position:fixed;inset:0;width:100%}
 .k.red .dial .cap{background:radial-gradient(circle at 38% 30%,#ff9a8f,var(--red) 40%,#5e0a0c 85%)}
 .dial:focus-visible{box-shadow:0 0 0 2px var(--rose)}
 
-.btns{flex:none;display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:5px}
+.btns{flex:none;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:5px}
 .btns button{font-family:var(--f-label);font-size:12px;letter-spacing:.1em;color:var(--ink);background:#120f14;border:1px solid var(--gold-dim);border-radius:3px;
   height:44px;padding:0 2px;cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:1px;justify-content:center}
 .btns button small{font-family:var(--f-jp);font-size:7.5px;color:var(--gold);letter-spacing:.04em}
@@ -130,7 +130,6 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
     <div class="knobs" id="knobs"></div>
     <div class="btns">
       <button id="start" type="button">START<small>スタート</small></button>
-      <button id="flip" type="button">FLIP<small>反転</small></button>
       <button id="shake" type="button">SHAKE<small>振る</small></button>
       <button id="motion" type="button">MOTION<small>センサー</small></button>
     </div>
@@ -139,14 +138,17 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
 
 <script type="text/worklet" id="dsp">
 const TAU=Math.PI*2,R=Math.random;
-// material: [f1 lo, f1 hi, ratio2, decay1(s), decay2(s), noise amount, noise decay(s), gain]
+// material: [f1 lo, f1 hi, ratio2, decay1, decay2, noise, noise decay, gain, type(0 modal,1 glitch,2 flute,3 fm), soft attack ms, lowpass Hz]
 const MAT=[
-  [550,1300,3.1,.010,.004,.75,.004,.42],   // SEEDS
-  [2600,5200,1.9,.004,.002,.9,.002,.51],   // RICE
-  [800,1700,2.4,.016,.006,.45,.003,.7],   // PEBBLES
-  [2400,4800,2.76,.14,.05,.15,.001,.44],   // GLASS
-  [3200,6400,2.3,.32,.12,.08,.001,.46],    // METAL
-  [300,3000,1.5,.03,.01,.2,.002,.95]];      // GLITCH
+  [550,1300,3.1,.010,.004,.75,.004,.42,0,0,9000],     // SEEDS
+  [2600,5200,1.9,.004,.002,.9,.002,.51,0,0,12000],    // RICE
+  [800,1700,2.4,.016,.006,.45,.003,.7,0,0,8000],      // PEBBLES
+  [320,950,3.92,.07,.012,.16,.002,.6,0,.5,4500],      // WOOD
+  [1300,2700,2.32,.11,.022,.03,.001,4.6,0,1.4,5200],   // GLASS
+  [900,2100,2.76,.5,.05,.015,.001,4.4,0,1.8,4200],     // METAL
+  [440,1400,2,.32,0,0,0,.12,2,0,6500],                // PANFLUTE
+  [140,2600,1,.16,0,0,0,.62,3,0,11000],                // FM NOISE
+  [300,3000,1.5,.03,.01,.2,.002,.95,1,0,16000]];      // GLITCH
 const SCALE=[0,3,5,7,10];
 class Rain extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
@@ -162,13 +164,17 @@ class Rain extends AudioWorkletProcessor{
     const sr=this.sr,M=MAT[this.mat];let v=null;for(const w of this.v)if(!w.on){v=w;break}
     if(!v){this.vi=(this.vi+1)%this.v.length;v=this.v[this.vi]}
     let f=M[0]*Math.pow(M[1]/M[0],pitch);
-    const tn=this.tune;let d1=M[3],d2=M[4];
+    const ty=M[8],tn=ty===2?Math.max(this.tune,.85):this.tune;let d1=M[3],d2=M[4];
     if(tn>0){f=f*(1-tn)+this.quant(f)*tn;d1*=1+tn*5;d2*=1+tn*3}
+    const tg=ty===0?1/(1+this.tune*.8):1;
     const f2=f*M[2]*(1+(R()-.5)*.04);
     const mk=(fr,dec)=>{fr=Math.min(fr,sr*.45);const r=Math.exp(-1/(dec*sr));return{c:2*r*Math.cos(TAU*fr/sr),r2:r*r,y1:0,y2:0}};
-    v.on=1;v.t=0;v.a=a*M[7];v.pl=Math.cos(x*Math.PI/2)*1.3;v.pr=Math.sin(x*Math.PI/2)*1.3;
+    v.on=1;v.t=0;v.a=a*M[7]*tg;v.pl=Math.cos(x*Math.PI/2)*1.3;v.pr=Math.sin(x*Math.PI/2)*1.3;
     v.m1=mk(f,d1);v.m2=mk(f2,d2);v.k1=Math.sin(TAU*Math.min(f,sr*.45)/sr);v.k2=Math.sin(TAU*Math.min(f2,sr*.45)/sr);v.nz=M[5];v.nd=Math.exp(-1/(M[6]*sr));v.ne=1;v.len=Math.max(d1,d2)*sr*7+64;
-    v.g=this.mat===5;if(v.g){v.gf=f;v.gp=0;v.gdec=Math.exp(-1/(.025*sr));v.ge=1;v.bits=3+((R()*4)|0)}
+    v.ty=ty;v.exl=Math.max(1,Math.round(M[9]*sr/1000));v.lpk=1-Math.exp(-TAU*M[10]/sr);v.lp=0;
+    if(ty===1){v.gf=f;v.gp=0;v.gdec=Math.exp(-1/(.025*sr));v.ge=1;v.bits=3+((R()*4)|0)}
+    if(ty===2){v.f=f;v.p=R();v.att=.012+R()*.02;v.dec=d1*(.7+R()*.6);v.bp=mk(f,.03);v.len=sr*(v.att+v.dec*6)}
+    if(ty===3){v.f=f;v.pc=0;v.pm=0;v.mr=[1.41,2.7,3.3,.5,7.1,1.005][(R()*6)|0];v.ix=4+R()*10;v.sw=(R()-.4)*3;v.dec=d1*(.5+R()*1.2);v.len=sr*v.dec*7}
   }
   process(_,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr;
@@ -177,14 +183,21 @@ class Rain extends AudioWorkletProcessor{
       for(let j=this.q.length-1;j>=0;j--){const e=this.q[j];if(--e.t<=0){this.start(e.a,e.x,e.p);this.q.splice(j,1)}}
       let l=0,r=0;
       for(const v of this.v){if(!v.on)continue;
-        const ex=v.t===0?v.a:0;
+        const ex=v.t<v.exl?(v.exl===1?v.a:v.a*Math.sin(Math.PI*(v.t+.5)/v.exl)*Math.PI/(2*v.exl)):0;
         const nz=(R()*2-1)*v.ne*v.nz*v.a;v.ne*=v.nd;
         let s;
-        if(v.g){v.gp+=v.gf*(1-v.t/(sr*.05)*.6)/sr;v.gp-=Math.floor(v.gp);v.ge*=v.gdec;const q=Math.pow(2,v.bits);s=Math.round((v.gp<.5?1:-1)*v.ge*q)/q*v.a*.3+nz*.4}
+        const tt=v.t/sr;
+        if(v.ty===2){const env=(1-Math.exp(-tt/v.att))*Math.exp(-tt/v.dec);v.p+=v.f*(1+.004*Math.sin(TAU*5.5*tt))/sr;v.p-=Math.floor(v.p);
+          const br=(R()*2-1),m=v.bp,yb=m.c*m.y1-m.r2*m.y2+br*.02;m.y2=m.y1;m.y1=yb;
+          s=(Math.sin(TAU*v.p)*.5+Math.sin(TAU*2*v.p)*.08+yb*.9+br*.05)*env*v.a}
+        else if(v.ty===3){const e=Math.exp(-tt/v.dec),fc=v.f*(1+v.sw*Math.exp(-tt/.025));v.pc+=fc/sr;v.pm+=fc*v.mr/sr;v.pc-=Math.floor(v.pc);v.pm-=Math.floor(v.pm);
+          const I=v.ix*Math.exp(-tt/.05)+.4;s=Math.sin(TAU*v.pc+I*Math.sin(TAU*v.pm))*e*v.a*.4}
+        else if(v.ty===1){v.gp+=v.gf*(1-v.t/(sr*.05)*.6)/sr;v.gp-=Math.floor(v.gp);v.ge*=v.gdec;const q=Math.pow(2,v.bits);s=Math.round((v.gp<.5?1:-1)*v.ge*q)/q*v.a*.3+nz*.4}
         else{const m1=v.m1,m2=v.m2,x=ex+nz*.5;
           const y=m1.c*m1.y1-m1.r2*m1.y2+x;m1.y2=m1.y1;m1.y1=y;
           const z=m2.c*m2.y1-m2.r2*m2.y2+x;m2.y2=m2.y1;m2.y1=z;
           s=(y*v.k1*.5+z*v.k2*.28)+nz*.4}
+        v.lp+=(s-v.lp)*v.lpk;s=v.lp;
         l+=s*v.pl;r+=s*v.pr;if(++v.t>v.len)v.on=0}
       // hollow tube body: comb resonance
       const rd=(this.cw-dl+this.cN)%this.cN,i0=Math.floor(rd),fr=rd-i0,i1=(i0+1)%this.cN;
@@ -206,11 +219,12 @@ registerProcessor('rain',Rain);
 <script>
 (()=>{
 const TAU=Math.PI*2,$=id=>document.getElementById(id);
-const MATS=[{n:'SEEDS',c:'#d9a45b',r:3},{n:'RICE',c:'#efe3c8',r:2.1},{n:'PEBBLES',c:'#9fb0bb',r:4.4},{n:'GLASS',c:'#7fd3ff',r:3.5},{n:'METAL',c:'#d8d8e4',r:3.2},{n:'GLITCH',c:null,r:3}];
+const MATS=[{n:'SEEDS',c:'#d9a45b',r:3},{n:'RICE',c:'#efe3c8',r:2.1},{n:'PEBBLES',c:'#9fb0bb',r:4.4},{n:'WOOD',c:'#b9773f',r:3.8},{n:'GLASS',c:'#7fd3ff',r:3.5},{n:'METAL',c:'#d8d8e4',r:3.2},{n:'PANFLUTE',c:'#9bd96f',r:3.4},{n:'FM NOISE',c:'#ff5aa0',r:3},{n:'GLITCH',c:null,r:3}];
+const NM=MATS.length-1;
 const S={mat:0,beads:.45,tube:.45,tune:0,space:.4,drive:.1};
 const msgEl=$('msg');let msgHold=0;
 function say(t,hot,ms){msgEl.textContent=t;msgEl.classList.toggle('hot',!!hot);msgHold=performance.now()+(ms||0)}
-const matIdx=()=>Math.round(S.mat*5);
+const matIdx=()=>Math.round(S.mat*NM);
 function matColor(now){const m=MATS[matIdx()];return m.c||`hsl(${(now/15)%360},95%,64%)`}
 
 // ---------- audio ----------
@@ -292,8 +306,8 @@ function listenMotion(ok,quiet){
     if(!listening){window.addEventListener('devicemotion',onMotion);window.addEventListener('deviceorientation',onOrient);listening=true}
     setTimeout(()=>{if(performance.now()-lastAcc<1500){motionOn=true;ledM.classList.add('on');motionB.classList.add('on');say('MOTION aan · draai je telefoon om',1,2500)}
       else if(!quiet)say('geen bewegingssensor hier · sleep opzij om de stok te draaien',0,4000);
-      else say('sleep opzij om de stok te draaien · of FLIP',0,3500)},900);
-  }catch(e){say('sensor niet beschikbaar hier · sleep opzij of tik FLIP',0,4000)}
+      else say('sleep opzij om de stok te draaien',0,3500)},900);
+  }catch(e){say('sensor niet beschikbaar hier · sleep opzij om de stok te draaien',0,4000)}
 }
 motionB.addEventListener('click',()=>{if(motionOn){motionOn=false;ledM.classList.remove('on');motionB.classList.remove('on');say('MOTION uit · sleep om te draaien',0,1800)}else askMotion().then(ok=>listenMotion(ok,false))});
 
@@ -368,12 +382,10 @@ let drag=null;
 sc.addEventListener('pointerdown',e=>{sc.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,a:angT};flipAnim=null;e.preventDefault()});
 sc.addEventListener('pointerdown',()=>{},{passive:true});sc.addEventListener('pointermove',e=>{if(!drag)return;const[dx]=loc(e.clientX-drag.x,e.clientY-drag.y);angT=drag.a+dx*.012});
 const dup=()=>{drag=null};sc.addEventListener('pointerup',dup);sc.addEventListener('pointercancel',dup);
-$('flip').addEventListener('click',()=>{if(motionOn){say('draai je telefoon zelf om · of zet MOTION uit',0,2000);return}
-  const target=Math.round(angT/Math.PI)*Math.PI+Math.PI;flipAnim={from:angT,to:target,t0:performance.now(),d:1100}});
 $('shake').addEventListener('click',()=>{shakeE=1;say('SHAKE',1,600)});
 
 // ---------- knobs ----------
-const KN=[{id:'mat',l:'MATERIAL',j:'素材',blk:1,step:6},{id:'beads',l:'BEADS',j:'粒'},{id:'tube',l:'TUBE',j:'筒',blk:1},{id:'tune',l:'TUNE',j:'音階',blk:1},{id:'space',l:'SPACE',j:'空間'},{id:'drive',l:'DRIVE',j:'ドライブ',red:1}];
+const KN=[{id:'mat',l:'MATERIAL',j:'素材',blk:1,step:9},{id:'beads',l:'BEADS',j:'粒'},{id:'tube',l:'TUBE',j:'筒',blk:1},{id:'tune',l:'TUNE',j:'音階',blk:1},{id:'space',l:'SPACE',j:'空間'},{id:'drive',l:'DRIVE',j:'ドライブ',red:1}];
 const UI={};
 KN.forEach(k=>{
   const el=document.createElement('div');el.className='k'+(k.blk?' blk':'')+(k.red?' red':'')+(k.step?' step':'');
@@ -384,12 +396,12 @@ KN.forEach(k=>{
     dial.setAttribute('aria-valuenow',Math.round(v*100));if(k.step)kj.textContent=MATS[matIdx()].n}};
   UI[k.id].draw();let sy,sx,sv;
   dial.addEventListener('pointerdown',e=>{dial.setPointerCapture(e.pointerId);sy=e.clientY;sx=e.clientX;sv=S[k.id];e.preventDefault()});
-  dial.addEventListener('pointermove',e=>{if(sy===undefined)return;const[dx,dy]=loc(e.clientX-sx,e.clientY-sy);set(k.id,sv+(-dy+dx*.5)/(k.step?170:160))});
+  dial.addEventListener('pointermove',e=>{if(sy===undefined)return;const[dx,dy]=loc(e.clientX-sx,e.clientY-sy);set(k.id,sv+(-dy+dx*.5)/(k.step?240:160))});
   const end=()=>{sy=undefined};dial.addEventListener('pointerup',end);dial.addEventListener('pointercancel',end);
-  dial.addEventListener('keydown',e=>{const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[e.key];if(d){set(k.id,S[k.id]+d*(k.step?.2:.02));e.preventDefault()}});
+  dial.addEventListener('keydown',e=>{const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[e.key];if(d){set(k.id,S[k.id]+d*(k.step?1/NM:.02));e.preventDefault()}});
 });
 function set(id,v){v=Math.min(1,Math.max(0,v));
-  if(id==='mat'){const b=matIdx();S.mat=Math.round(v*5)/5;UI.mat.draw();if(matIdx()!==b){apply('mat');say(MATS[matIdx()].n,1,1200)}return}
+  if(id==='mat'){const b=matIdx();S.mat=Math.round(v*NM)/NM;UI.mat.draw();if(matIdx()!==b){apply('mat');say(MATS[matIdx()].n,1,1200)}return}
   const prevN=beads.length;S[id]=v;UI[id].draw();
   if(id==='beads'){if(Math.round(14+v*190)!==prevN)apply('beads')}else apply(id);
   const lab={beads:'BEADS  '+Math.round(14+v*190),tube:'TUBE  '+(v<.33?'kort · snel':v<.66?'middel':'lang · traag'),tune:'TUNE  '+(v<.02?'natuurlijk':Math.round(v*99)+' · regen wordt melodie'),
@@ -459,10 +471,10 @@ function frame(now){
   events=[];
   hitAcc+=hitCount;hitCount=0;if(now-hitT>500){hitsSec=hitAcc*2;hitAcc=0;hitT=now;$('hits').firstChild.textContent=hitsSec>999?'999+':String(hitsSec)}
   rainLevel+=(Math.min(1,hitsSec/600)-rainLevel)*.08;$('rain').style.height=(rainLevel*100).toFixed(1)+'%';
-  if(matIdx()===5)document.documentElement.style.setProperty('--mat',matColor(now));
+  if(matIdx()===NM)document.documentElement.style.setProperty('--mat',matColor(now));
   draw(now,gx,gy);
   if(now>msgHold){if(!running)say('tik START · draai de stok om');else if(rainLevel>.05)say('▸ '+MATS[matIdx()].n+' · '+hitsSec+' tikken/s',rainLevel>.4);
-    else say(motionOn?'draai je telefoon om':'sleep opzij of tik FLIP')}
+    else say(motionOn?'draai je telefoon om':'sleep opzij om de stok te draaien')}
   requestAnimationFrame(frame);
 }
 UI.mat.draw();apply('mat');
