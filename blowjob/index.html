@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Federo&family=Share+Tech+Mono&display=swap">
 <style>
-/* Layout: one screen — red poster band; round engraved bell with a mandala (breath meter left, note readout right); status; engine row; six knobs; buttons START · MIC · TILT */
+/* Layout: one screen — red poster band; engine row; status; knob columns left/right around the instrument (bell on top, golden tube, mouthpiece at the bottom right above the iPhone mic) */
 :root{
   --void:#070608;--panel:#0d0b0e;--panel-2:#17121a;
   --gold:#cfa75e;--gold-hi:#f1d79c;--gold-dim:#6b5631;
@@ -55,6 +55,17 @@ body{position:fixed;inset:0;width:100%}
 .screw::after{content:"";position:absolute;left:2px;right:2px;top:3.5px;height:2px;background:#222;transform:rotate(35deg)}
 .s1{left:4px;top:4px}.s2{right:4px;top:4px}.s3{left:4px;bottom:4px}.s4{right:4px;bottom:4px}
 
+.main{flex:1;min-height:0;display:grid;grid-template-columns:62px minmax(0,1fr) 62px;gap:4px}
+.col{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;gap:6px;min-width:0}
+.pill{font-family:var(--f-label);font-size:11px;letter-spacing:.1em;width:58px;height:40px;border-radius:20px;color:#fff;background:var(--red-deep);border:1px solid var(--red);cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
+.pill small{font-family:var(--f-jp);font-size:7px;color:#ffc4bb}
+.pill.on{background:var(--red);border-color:#ff6a5f;box-shadow:0 0 16px rgba(208,26,31,.6)}
+.notebox{width:58px;border:1px solid var(--gold);border-radius:3px;padding:5px 0 4px;text-align:center;background:radial-gradient(120% 140% at 50% 0%,#1b1410,#0a0809)}
+.leds{flex:none;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 2px}
+.leds span{display:flex;align-items:center;gap:6px}
+.leds .blow{font-size:9px;letter-spacing:.24em;color:var(--gold);font-family:var(--f-label)}
+.mini{font-family:var(--f-label);font-size:10px;letter-spacing:.12em;color:var(--ink);background:#120f14;border:1px solid var(--gold-dim);border-radius:3px;height:28px;padding:0 10px;cursor:pointer;touch-action:manipulation}
+.mini.on{background:var(--gold);color:#140d05;border-color:var(--gold-hi)}
 .stagewrap{flex:1;min-height:180px;display:grid;grid-template-columns:40px minmax(0,1fr) 40px;gap:4px}
 .side{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0}
 .side .t{font-size:8.5px;letter-spacing:.16em;color:var(--gold);text-align:center;line-height:1.3}
@@ -88,6 +99,7 @@ body{position:fixed;inset:0;width:100%}
 .k .lbl{font-size:9.5px;letter-spacing:.06em;color:var(--ink);white-space:nowrap}
 .k .kj{font-family:var(--f-jp);font-size:7.5px;color:var(--gold);white-space:nowrap;margin-top:-1px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .k .kj.v{font-family:var(--f-mono);font-size:8.5px;color:var(--eng);letter-spacing:.04em}
+.col .k .lbl{font-size:9px}
 .dial{position:relative;width:46px;height:46px;max-width:100%;border-radius:50%;cursor:ns-resize;outline:none}
 .dial::before{content:"";position:absolute;inset:0;border-radius:50%;
   background:repeating-conic-gradient(from -135deg,var(--gold) 0 1.8deg,transparent 1.8deg 27deg);
@@ -114,7 +126,7 @@ body{position:fixed;inset:0;width:100%}
 #start.on{background:var(--red);color:#fff;border-color:#ff6a5f;box-shadow:0 0 16px rgba(208,26,31,.6)}
 #start.on small{color:#ffd6d0}
 button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
-@media (max-height:660px){.dial{width:40px;height:40px}.k .kj:not(.v){display:none}.btns button{height:38px}.eng{height:30px}.eng small{display:none}}
+@media (max-height:700px){.dial{width:40px;height:40px}.k .kj:not(.v){display:none}.eng{height:30px}.eng small{display:none}.pill{height:34px}}
 </style>
 
 <div class="rack">
@@ -124,23 +136,6 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
   </header>
   <main class="panel">
     <i class="screw s1"></i><i class="screw s2"></i><i class="screw s3"></i><i class="screw s4"></i>
-    <div class="stagewrap">
-      <div class="side">
-        <div class="t">BREATH<b>息</b></div>
-        <div class="vmeter"><i id="bm"></i></div>
-        <div class="led" id="ledMic"></div>
-        <div class="t">MIC<b>マイク</b></div>
-      </div>
-      <div class="stage"><canvas id="bell" aria-label="De kelk. Blaas in de microfoon, of houd je vinger erop: hoger is harder, links-rechts is toonhoogte."></canvas></div>
-      <div class="side">
-        <div class="t">NOTE<b>音</b></div>
-        <div class="note" id="note">—</div>
-        <div class="cents" id="cents"></div>
-        <div class="led" id="ledTilt"></div>
-        <div class="t">TILT<b>傾き</b></div>
-      </div>
-    </div>
-    <div class="status"><span class="ar">▸▸▸</span><span id="msg">tik START · blaas in de microfoon</span><span class="ar">◂◂◂</span></div>
     <div class="engines" id="engines">
       <button class="eng on" type="button" data-e="0" style="--c:#f2b04e">SAX<small>サックス</small></button>
       <button class="eng" type="button" data-e="1" style="--c:#6fd3ff">FLUTE<small>フルート</small></button>
@@ -148,12 +143,17 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
       <button class="eng" type="button" data-e="3" style="--c:#b49cff">HURRICANE<small>ハリケーン</small></button>
       <button class="eng rb" type="button" data-e="4">CHAOS<small>嵐 STORM</small></button>
     </div>
-    <div class="knobs" id="knobs"></div>
-    <div class="btns">
-      <button id="start" type="button">START<small>スタート</small></button>
-      <button id="mic" type="button">MIC<small>マイク</small></button>
-      <button id="tilt" type="button">TILT<small>傾き</small></button>
+    <div class="status"><span class="ar">▸▸▸</span><span id="msg">tik START · blaas in het mondstuk</span><span class="ar">◂◂◂</span></div>
+    <div class="main">
+      <div class="col" id="colL">
+        <button class="pill" id="start" type="button">START<small>スタート</small></button>
+      </div>
+      <div class="stage"><canvas id="bell" aria-label="Kelk, buis en mondstuk. Blaas in de onderkant van je iPhone, of houd je vinger op het scherm: hoger is harder, links-rechts is toonhoogte."></canvas></div>
+      <div class="col" id="colR">
+        <div class="notebox"><div class="note" id="note">—</div><div class="cents" id="cents"></div></div>
+      </div>
     </div>
+    <div class="leds"><span><i class="led" id="ledMic"></i><button class="mini" id="mic" type="button">MIC</button></span><span class="blow">▲ BLOW · 吹く ▲</span><span><button class="mini" id="tilt" type="button">TILT</button><i class="led" id="ledTilt"></i></span></div>
   </main>
 </div>
 
@@ -166,7 +166,7 @@ class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.i
 class Blow extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.03;this.touch=0;this.sens=.5;this.useMic=1;
-    this.env=0;this.floor=.004;this.breath=0;this.A=0;this.lfo=0;
+    this.env=0;this.floor=.004;this.maxDb=-20;this.breath=0;this.A=0;this.lfo=0;
     this.mh=0;this.ml=0;this.ml2=0;this.lb=new Float32Array(128);this.lw=new Float32Array(8);this.li=0;this.es=1e-6;this.ee=1e-6;this.noisy=0;this.mlast=0;this.micN=0;
     this.p=0;this.p2=0;this.pm=0;this.over=0;this.xm=.4;this.xc=0;this.thunder=0;this.th=0;this.crk=0;this.gust=0;this.gt=0;this.sweep=[0,0,0];this.sw=[R(),R(),R()];
     this.f1=new SVF();this.f2=new SVF();this.f3=new SVF();this.f4=new SVF();this.f5=new SVF();this.cc=0;
@@ -177,7 +177,6 @@ class Blow extends AudioWorkletProcessor{
   process(ins,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr,inp=ins[0]&&ins[0][0];
     const gk=1-Math.exp(-1/(Math.max(.004,this.glide)*sr));
-    const gain=4+this.sens*30;
     for(let k=0;k<n;k++){
       // ---- breath from the microphone: low band energy (wind) with a self-learning noise floor ----
       let mic=inp?inp[k]:0;
@@ -186,17 +185,23 @@ class Blow extends AudioWorkletProcessor{
       // is it breath (turbulent noise) or a tone (the speaker, a voice)? a delayed linear predictor
       // can forecast a tone 1 ms ahead, never turbulence: the share it can't predict is the 'noisiness'
       {const u=this.ml2,lb=this.lb,w=this.lw;let pred=0,nrm=1e-9;const xs=this.xs||(this.xs=new Float32Array(8));
-        for(let j=0;j<8;j++){const xv=lb[(this.li-48-j*4+256)&127];xs[j]=xv;pred+=w[j]*xv;nrm+=xv*xv}
+        for(let j=0;j<8;j++){const xv=lb[(this.li-96-j*4+256)&127];xs[j]=xv;pred+=w[j]*xv;nrm+=xv*xv}
         const er=u-pred,mu=.04*er/nrm;for(let j=0;j<8;j++)w[j]+=mu*xs[j];
         lb[this.li]=u;this.li=(this.li+1)&127;
-        this.es+=(u*u-this.es)*.002;this.ee+=(er*er-this.ee)*.002;
-        const rt=Math.min(1,this.ee/(this.es+1e-12));this.noisy+=(Math.min(1,Math.max(0,(rt-.25)/.45))-this.noisy)*.002}
+        this.es+=(u*u-this.es)*.0007;this.ee+=(er*er-this.ee)*.0007;
+        const rt=Math.min(1,this.ee/(this.es+1e-12));this.noisy+=(Math.min(1,Math.max(0,(rt-.2)/.4))-this.noisy)*.0009}
       const lvl=Math.abs(this.ml2)*1.6*this.noisy;
-      this.env+=(lvl-this.env)*(lvl>this.env?.004:.0006);
-      this.floor+=(this.env<this.floor?(this.env-this.floor)*.0005:(this.env-this.floor)*.0000015);
-      const mb=this.useMic?Math.min(1,Math.max(0,(this.env-Math.max(.003,this.floor*2))*gain)):0;
-      const tgt=Math.max(Math.pow(mb,.75),this.touch);
-      this.breath+=(tgt-this.breath)*(tgt>this.breath?.006:.0015);
+      this.env+=(lvl-this.env)*(lvl>this.env?.003:.0008);
+      // loudness in dB between your room's noise floor and the hardest you've blown lately
+      const db=20*Math.log10(this.env+1e-7),fdb=20*Math.log10(Math.max(this.floor,1e-5));
+      if(db>this.maxDb)this.maxDb+=(db-this.maxDb)*.004;else this.maxDb-=.000025;   // forgets ~1.2 dB/s
+      this.maxDb=Math.max(this.maxDb,fdb+24);
+      const thr=fdb+3+(1-this.sens)*9,rng=Math.max(12,this.maxDb-thr);
+      const mb=this.useMic?Math.min(1,Math.max(0,(db-thr)/rng)):0;
+      // the noise floor follows the room down quickly, and creeps up (~0.5 dB/s) only while you're not blowing
+      if(this.env<this.floor)this.floor+=(this.env-this.floor)*.0005;else if(mb<.04)this.floor*=1.0000012;
+      const tgt=Math.max(mb,this.touch);
+      this.breath+=(tgt-this.breath)*(tgt>this.breath?.0016:.0006);
       const A=this.breath;
       // breath noise: your own breath when the mic is on, white noise otherwise
       const micTex=this.useMic&&inp?Math.max(-1,Math.min(1,this.mh*12)):0;
@@ -249,6 +254,7 @@ class Blow extends AudioWorkletProcessor{
         s=Math.tanh(s*1.5)*.7;
       }
       // leveller + DC block
+      s*=.35+.65*Math.min(1,A*1.2);
       const d=this.dc;const y=s-d[0]+.995*d[1];d[0]=s;d[1]=y;s=y;
       const pk=Math.abs(s);this.lev+=(pk-this.lev)*(pk>this.lev?.01:.00005);
       if(this.lev>.5)s*=.5/this.lev;
@@ -373,18 +379,18 @@ updRot();
 
 // ---------- knobs ----------
 const KN=[
-  {id:'scale',l:'SCALE',j:'音階',blk:1,step:8,names:()=>SCALES.map(s=>s[0])},
-  {id:'key',l:'KEY',j:'調',blk:1,step:12,names:()=>KEYS},
-  {id:'oct',l:'OCTAVE',j:'オクターブ',blk:1,step:5,names:()=>['−2','−1','0','+1','+2']},
-  {id:'glide',l:'GLIDE',j:'滑り'},
-  {id:'space',l:'SPACE',j:'空間'},
-  {id:'sens',l:'SENS',j:'感度',red:1}];
+  {id:'scale',l:'SCALE',j:'音階',blk:1,step:8,col:'colL',names:()=>SCALES.map(s=>s[0])},
+  {id:'key',l:'KEY',j:'調',blk:1,step:12,col:'colL',names:()=>KEYS},
+  {id:'oct',l:'OCTAVE',j:'オクターブ',blk:1,step:5,col:'colL',names:()=>['−2','−1','0','+1','+2']},
+  {id:'glide',l:'GLIDE',j:'滑り',col:'colR'},
+  {id:'space',l:'SPACE',j:'空間',col:'colR'},
+  {id:'sens',l:'SENS',j:'感度',red:1,col:'colR'}];
 const UI={};
 KN.forEach(k=>{
   const el=document.createElement('div');el.className='k'+(k.blk?' blk':'')+(k.red?' red':'')+(k.step?' step':'');
   if(k.step)el.style.setProperty('--det',(270/(k.step-1)).toFixed(2)+'deg');
   el.innerHTML=`<div class="dial" tabindex="0" role="slider" id="k-${k.id}" aria-label="${k.l}" aria-valuemin="0" aria-valuemax="100"><div class="arc"></div><div class="cap"></div></div><div class="lbl">${k.l}</div><div class="kj${k.step?' v':''}">${k.j}</div>`;
-  $('knobs').appendChild(el);
+  $(k.col).appendChild(el);
   const dial=el.querySelector('.dial'),cap=el.querySelector('.cap'),arc=el.querySelector('.arc'),kj=el.querySelector('.kj');
   UI[k.id]={draw(){const v=S[k.id];cap.style.transform=`rotate(${-135+v*270}deg)`;arc.style.background=`conic-gradient(from -135deg,var(--eng) 0 ${v*270}deg,transparent ${v*270}deg)`;
     dial.setAttribute('aria-valuenow',Math.round(v*100));if(k.step)kj.textContent=k.names()[Math.round(v*(k.step-1))]}};
@@ -423,39 +429,75 @@ const tup=()=>{touch=null};bell.addEventListener('pointerup',tup);bell.addEventL
 // ---------- the bell: multicolour mandala ----------
 function size(){dpr=Math.min(2,devicePixelRatio||1);W=bell.width=Math.max(1,bell.clientWidth*dpr);H=bell.height=Math.max(1,bell.clientHeight*dpr)}
 size();new ResizeObserver(size).observe(bell);
-const parts=[],rings=[];let rot=0,lastB=0,hueBase=0;
+const parts=[],rings=[],flow=[];let rot=0,lastB=0,hueBase=0;
 function spawn(b,hue){if(parts.length>420)return;const n=Math.min(5,1+b*b*6|0);for(let i=0;i<n;i++)parts.push({a:Math.random()*TAU/6,r:.02+Math.random()*.05,v:.12+Math.random()*.5*(.4+b),w:(Math.random()-.5)*1.5,h:hue+(Math.random()-.5)*50,s:.006+Math.random()*.02*(.5+b),l:1})}
+function geo(){const cx=W/2,R0=Math.min(W*.47,H*.3),by=R0*1.02+4*dpr,tubeTop=by+R0*.8,mTop=H*.84,mBot=H;return{cx,R0,by,tubeTop,mTop,mBot}}
+function tubeHalf(y,g){const t=Math.min(1,Math.max(0,(y-g.tubeTop)/(g.mTop-g.tubeTop)));return g.R0*(.32-.18*t)}
 function draw(now,dt,b,midi){
-  const c=bx,cx=W/2,cy=H/2,R0=Math.min(W,H)/2*.96,col=engColor(now);
+  const c=bx,g=geo(),cx=g.cx,cy=g.by,R0=g.R0,col=engColor(now);
   c.globalCompositeOperation='source-over';c.fillStyle=`rgba(7,5,10,${.28+(1-b)*.22})`;c.fillRect(0,0,W,H);
-  // hue follows pitch, swirl follows breath
   const E=ENG[eng];const pn=((midi%24)+24)%24/24;hueBase=E.c?E.h[0]+(E.h[1]-E.h[0])*pn:(now/8)%360;
   rot+=dt*(.1+b*1.6);
+  // ---- tube: gold walls, your breath glowing inside ----
+  c.save();
+  const steps=24;c.beginPath();
+  for(let i=0;i<=steps;i++){const y=g.tubeTop+(g.mTop-g.tubeTop)*i/steps;const x=cx-tubeHalf(y,g);i?c.lineTo(x,y):c.moveTo(x,y)}
+  for(let i=steps;i>=0;i--){const y=g.tubeTop+(g.mTop-g.tubeTop)*i/steps;c.lineTo(cx+tubeHalf(y,g),y)}c.closePath();
+  const tg=c.createLinearGradient(cx-R0*.32,0,cx+R0*.32,0);tg.addColorStop(0,'#3a2a12');tg.addColorStop(.2,'#cfa75e');tg.addColorStop(.35,'#5e4520');tg.addColorStop(.65,'#1e150a');tg.addColorStop(.85,'#b88a3c');tg.addColorStop(1,'#3a2a12');
+  c.fillStyle=tg;c.fill();
+  // inner bore
+  c.beginPath();for(let i=0;i<=steps;i++){const y=g.tubeTop+(g.mTop-g.tubeTop)*i/steps;const x=cx-tubeHalf(y,g)*.62;i?c.lineTo(x,y):c.moveTo(x,y)}
+  for(let i=steps;i>=0;i--){const y=g.tubeTop+(g.mTop-g.tubeTop)*i/steps;c.lineTo(cx+tubeHalf(y,g)*.62,y)}c.closePath();
+  const ig=c.createLinearGradient(0,g.mTop,0,g.tubeTop);ig.addColorStop(0,`hsla(${hueBase},95%,60%,${.15+b*.6})`);ig.addColorStop(1,`hsla(${hueBase+40},95%,60%,${.05+b*.35})`);
+  c.fillStyle='#08060a';c.fill();c.fillStyle=ig;c.fill();c.save();c.clip();
+  // breath particles streaming up from the mouthpiece
+  if(b>.02){const n=Math.min(6,1+b*8|0);for(let i=0;i<n;i++)flow.push({y:g.mBot-6*dpr,o:(Math.random()-.5),v:(.35+b*1.4)*(.7+Math.random()*.6),h:hueBase+(Math.random()-.5)*40,s:(1.5+Math.random()*3*(.5+b))*dpr,ph:Math.random()*TAU})}
+  c.globalCompositeOperation='lighter';
+  for(let i=flow.length-1;i>=0;i--){const f=flow[i];f.y-=f.v*H*dt*(.5+b);f.ph+=dt*8;
+    if(f.y<g.tubeTop){flow.splice(i,1);if(Math.random()<.4)parts.push({a:Math.random()*TAU/6,r:.03,v:.2+b*.5,w:(Math.random()-.5),h:f.h,s:.01+Math.random()*.015,l:1});continue}
+    const hw=tubeHalf(Math.min(f.y,g.mTop),g)*.55,x=cx+f.o*hw*1.6+Math.sin(f.ph)*hw*.25*b;
+    c.fillStyle=`hsla(${f.h},100%,62%,.5)`;c.beginPath();c.arc(x,f.y,f.s,0,TAU);c.fill()}
+  c.restore();
+  // bands on the tube
+  c.strokeStyle='rgba(20,13,5,.7)';c.lineWidth=2*dpr;for(let i=1;i<5;i++){const y=g.tubeTop+(g.mTop-g.tubeTop)*i/5,hw=tubeHalf(y,g);c.beginPath();c.moveTo(cx-hw,y);c.lineTo(cx+hw,y);c.stroke()}
+  c.restore();
+  // ---- mouthpiece (reed) at the bottom, right above the microphone ----
+  const mw=R0*.36,mh=g.mBot-g.mTop;
+  c.save();c.translate(cx,g.mTop);
+  const mg=c.createLinearGradient(-mw,0,mw,0);mg.addColorStop(0,'#1b1418');mg.addColorStop(.3,'#4a3a40');mg.addColorStop(.5,'#2a2026');mg.addColorStop(1,'#0c090b');
+  c.beginPath();c.moveTo(-mw*.55,0);c.lineTo(mw*.55,0);c.quadraticCurveTo(mw*1.05,mh*.45,mw*.8,mh*.95);c.lineTo(-mw*.8,mh*.95);c.quadraticCurveTo(-mw*1.05,mh*.45,-mw*.55,0);c.closePath();
+  c.fillStyle=mg;c.fill();c.strokeStyle='#cfa75e';c.lineWidth=1.2*dpr;c.stroke();
+  c.fillStyle='#cfa75e';c.fillRect(-mw*.6,-2*dpr,mw*1.2,5*dpr);                     // ligature
+  c.fillStyle=`hsla(${hueBase},95%,60%,${.25+b*.7})`;c.beginPath();c.ellipse(0,mh*.95,mw*.55,3*dpr+b*5*dpr,0,0,TAU);c.fill();   // the slot where you blow
+  c.restore();
+  // ---- bell: multicolour mandala ----
   if(b>.02)spawn(b,hueBase);
   if(b-lastB>.12&&b>.3)rings.push({r:.05,l:1,h:hueBase});lastB=b*.2+lastB*.8;
   c.save();c.beginPath();c.arc(cx,cy,R0*.86,0,TAU);c.clip();
+  c.fillStyle='rgba(7,5,10,.35)';c.fill();
   c.globalCompositeOperation='lighter';
   for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.r+=p.v*dt*(.6+b);p.a+=p.w*dt*.4;p.l-=dt*.45;if(p.l<=0||p.r>.95){parts.splice(i,1);continue}
     const rr=p.r*R0*.86,sz=p.s*R0*(.6+p.r*1.6),al=Math.min(1,p.l)*.16;c.fillStyle=`hsla(${p.h},100%,58%,${al})`;
     for(let k=0;k<6;k++){for(const m of [1,-1]){const a=rot+k*TAU/6+m*p.a;c.beginPath();c.arc(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr,sz,0,TAU);c.fill()}}}
-  for(let i=rings.length-1;i>=0;i--){const g=rings[i];g.r+=dt*.9;g.l-=dt*.8;if(g.l<=0){rings.splice(i,1);continue}
-    c.strokeStyle=`hsla(${g.h},95%,65%,${g.l*.6})`;c.lineWidth=3*dpr*g.l;c.beginPath();c.arc(cx,cy,g.r*R0*.86,0,TAU);c.stroke()}
-  // breathing core
+  for(let i=rings.length-1;i>=0;i--){const q=rings[i];q.r+=dt*.9;q.l-=dt*.8;if(q.l<=0){rings.splice(i,1);continue}
+    c.strokeStyle=`hsla(${q.h},95%,65%,${q.l*.6})`;c.lineWidth=3*dpr*q.l;c.beginPath();c.arc(cx,cy,q.r*R0*.86,0,TAU);c.stroke()}
   const cr=R0*(.05+b*.12),cg=c.createRadialGradient(cx,cy,0,cx,cy,cr*2.2);cg.addColorStop(0,'rgba(255,250,240,.7)');cg.addColorStop(.25,`hsla(${hueBase},95%,60%,${.3+b*.3})`);cg.addColorStop(1,'rgba(0,0,0,0)');
   c.fillStyle=cg;c.beginPath();c.arc(cx,cy,cr*2.2,0,TAU);c.fill();
   c.restore();
   c.globalCompositeOperation='source-over';
-  // engraved rim with the scale's notes
+  // bell rim with the twelve notes
   c.strokeStyle='#cfa75e';c.lineWidth=1.4*dpr;c.beginPath();c.arc(cx,cy,R0*.98,0,TAU);c.stroke();
   c.strokeStyle='#6b5631';c.lineWidth=dpr;c.beginPath();c.arc(cx,cy,R0*.94,0,TAU);c.stroke();c.beginPath();c.arc(cx,cy,R0*.86,0,TAU);c.stroke();
   const sc=SCALES[scIdx()][1],k=keyIdx(),pc=((Math.round(midi)%12)+12)%12;
-  c.font=`${Math.max(8,R0*.055)|0}px "Share Tech Mono",monospace`;c.textAlign='center';c.textBaseline='middle';
+  c.font=`${Math.max(8,R0*.06)|0}px "Share Tech Mono",monospace`;c.textAlign='center';c.textBaseline='middle';
   for(let i=0;i<12;i++){const a=-Math.PI/2+i/12*TAU,inSc=!sc||sc.includes(((i-k)%12+12)%12),on=i===pc&&b>.05;
     const x=cx+Math.cos(a)*R0*.9,y=cy+Math.sin(a)*R0*.9;
     c.fillStyle=on?col:inSc?'#cfa75e':'#3a2e1c';if(on){c.shadowColor=col;c.shadowBlur=10*dpr}c.fillText(KEYS[i].replace('♯','#'),x,y);c.shadowBlur=0}
   for(let i=0;i<72;i++){const a=i/72*TAU;c.strokeStyle=i%6?'rgba(207,167,94,.35)':'rgba(207,167,94,.8)';c.lineWidth=dpr*(i%6?.6:1);c.beginPath();c.moveTo(cx+Math.cos(a)*R0*.98,cy+Math.sin(a)*R0*.98);c.lineTo(cx+Math.cos(a)*R0*(i%6?.965:.95),cy+Math.sin(a)*R0*(i%6?.965:.95));c.stroke()}
-  // hexagram
   c.strokeStyle='rgba(207,167,94,.18)';c.lineWidth=dpr;for(let t=0;t<2;t++){c.beginPath();for(let j=0;j<3;j++){const a=-Math.PI/2+j*TAU/3+t*Math.PI/3+rot*.05;const x=cx+Math.cos(a)*R0*.8,y=cy+Math.sin(a)*R0*.8;j?c.lineTo(x,y):c.moveTo(x,y)}c.closePath();c.stroke()}
+  // breath gauge: an arc on the bell's lower rim
+  c.strokeStyle='rgba(107,86,49,.6)';c.lineWidth=4*dpr;c.beginPath();c.arc(cx,cy,R0*1.0,Math.PI*.62,Math.PI*.38,true);c.stroke();
+  c.strokeStyle=col;c.shadowColor=col;c.shadowBlur=8*dpr;c.beginPath();c.arc(cx,cy,R0*1.0,Math.PI*.62,Math.PI*.62-(Math.PI*1.24)*b,true);c.stroke();c.shadowBlur=0;
   if(touch){c.strokeStyle=col;c.lineWidth=1.5*dpr;c.beginPath();c.arc(touch[0]*W,touch[1]*H,14*dpr,0,TAU);c.stroke()}
 }
 
@@ -472,7 +514,6 @@ function frame(now){
   if(node){const f=440*Math.pow(2,(midi-69)/12);if(Math.abs(f-sentF)>.05){node.port.postMessage({f});sentF=f}if(tb!==sentT){node.port.postMessage({touch:tb});sentT=tb}
     if(running&&ctx.state!=='running')ctx.resume();else if(running&&now-lastHb>1500)rescue()}
   const b=running?st.b:0;
-  $('bm').style.height=(b*100).toFixed(1)+'%';
   const nm=Math.round(midi),cents=Math.round((midi-nm)*100);
   $('note').textContent=b>.03||touch?KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1):'—';
   $('cents').textContent=SCALES[scIdx()][1]?SCALES[scIdx()][0]:(cents>=0?'+':'')+cents+'¢';
