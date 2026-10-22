@@ -157,7 +157,7 @@ class Rain extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.q=[];this.qi=0;this.now=0;this.v=[];for(let i=0;i<40;i++)this.v.push({on:0,t:0});this.vi=0;this.hb=0;
     this.mat=0;this.tune=0;this.f0=200;this.body=.35;
-    this.SN=(sr*2)|0;this.sL=new Float32Array(this.SN);this.sR=new Float32Array(this.SN);this.sw=0;this.st=0;this.sg=null;this.act=0;
+    this.SN=(sr*2)|0;this.sL=new Float32Array(this.SN);this.sR=new Float32Array(this.SN);this.sw=0;this.st=0;this.sg=null;this.act=0;this.lev=0;this.gAtk=1-Math.exp(-1/(.002*sr));this.gRel=1-Math.exp(-1/(.25*sr));
     this.cN=Math.ceil(sr/40)+4;this.cL=new Float32Array(this.cN);this.cR=new Float32Array(this.cN);this.cw=0;this.lpL=0;this.lpR=0;this.dc=[0,0,0,0];
     this.port.onmessage=e=>{const d=e.data;
       if(d.ev){if(this.qi>0){this.q=this.q.slice(this.qi);this.qi=0}for(let i=0;i<d.ev.length;i+=4)this.q.push({at:this.now+d.ev[i],a:d.ev[i+1],x:d.ev[i+2],p:d.ev[i+3]});this.q.sort((a,b)=>a.at-b.at);if(this.q.length>160)this.q=this.q.slice(this.q.length-160)}
@@ -225,7 +225,9 @@ class Rain extends AudioWorkletProcessor{
           ol=a*env;or=b*env;
           if(++g.i>=g.len){g.i=0;g.rep++;if(m===2)g.start=(this.sw-((R()*1.5*sr)|0)-g.len+SN*2)%SN;if(m===5)g.rate*=.84;if(g.rep>=g.reps)this.sg=null}}
       }else this.sg=null;
-      ol=Math.tanh(ol*1.2)*.9;or=Math.tanh(or*1.2)*.9;
+      const pk=Math.max(Math.abs(ol),Math.abs(or));this.lev+=(pk-this.lev)*(pk>this.lev?this.gAtk:this.gRel);
+      const lg=this.lev>.32?.32/this.lev:1;ol*=lg*.85;or*=lg*.85;
+      ol=Math.tanh(ol*1.1)*.8;or=Math.tanh(or*1.1)*.8;
       L[k]=ol===ol?ol:0;Rr[k]=or===or?or:0;
     }
     if(++this.hb>=180){this.hb=0;this.port.postMessage({hb:1})}
@@ -277,7 +279,7 @@ function boot(){
     G.dry=g(1);G.rS=g(.6);G.rO=g(0);G.rev=ctx.createConvolver();
     const len=(ctx.sampleRate*3.8)|0,ir=ctx.createBuffer(2,len,ctx.sampleRate);
     for(let c=0;c<2;c++){const d=ir.getChannelData(c);let lp=0;for(let i=0;i<len;i++){lp+=((Math.random()*2-1)-lp)*(.85-.65*i/len);d[i]=lp*Math.pow(1-i/len,2.2)*(i<ctx.sampleRate*.015?i/(ctx.sampleRate*.015):1)}}G.rev.buffer=ir;
-    const comp=ctx.createDynamicsCompressor();comp.threshold.value=-10;comp.ratio.value=10;comp.attack.value=.002;comp.release.value=.15;
+    const comp=ctx.createDynamicsCompressor();comp.threshold.value=-12;comp.ratio.value=20;comp.knee.value=2;comp.attack.value=.001;comp.release.value=.12;
     node.connect(G.pre);G.pre.connect(sh).connect(G.post);sh.connect(G.fbD).connect(G.fbF).connect(G.fbG).connect(G.pre);
     G.post.connect(G.dry).connect(comp);G.post.connect(G.rS).connect(G.rev).connect(G.rO).connect(comp);
     comp.connect(G.master).connect(ctx.destination);
@@ -293,12 +295,12 @@ function apply(id){
   if(id==='stut'){if(node)node.port.postMessage({stut:stutIdx()});return}
   if(id==='tube'){if(node)node.port.postMessage({f0:420*Math.pow(110/420,v)});return}
   if(!G.pre)return;const t=ctx.currentTime;
-  if(id==='space'){G.rO.gain.setTargetAtTime(v*1.3,t,.05);G.dry.gain.setTargetAtTime(1-v*.3,t,.05)}
+  if(id==='space'){G.rO.gain.setTargetAtTime(v*.7,t,.05);G.dry.gain.setTargetAtTime(1-v*.35,t,.05)}
 
 }
 const startB=$('start');
 async function start(){
-  try{makeCtx();await boot();await ctx.resume();running=true;G.master.gain.setTargetAtTime(.9,ctx.currentTime,.05);startB.classList.add('on');startB.firstChild.textContent='STOP'}
+  try{makeCtx();await boot();await ctx.resume();running=true;G.master.gain.setTargetAtTime(.8,ctx.currentTime,.05);startB.classList.add('on');startB.firstChild.textContent='STOP'}
   catch(e){say('audio start mislukt',0,3000)}
 }
 function stop(){running=false;if(G.master)G.master.gain.setTargetAtTime(0,ctx.currentTime,.04);startB.classList.remove('on');startB.firstChild.textContent='START'}
@@ -500,7 +502,7 @@ function frame(now){
   shakeE*=Math.pow(.02,dt);if(shakeE<.01)shakeE=0;
   // send this frame's hits, spread across the frame
   if(node&&events.length){events.sort((a,b)=>b[0]-a[0]);const lim=events.slice(0,24),sr=ctx.sampleRate,out=[];
-    for(const e of lim)out.push(Math.random()*dt*sr+64,e[0],e[1],e[2]);node.port.postMessage({ev:out})}
+    const dens=1/Math.sqrt(Math.max(1,lim.length/6));for(const e of lim)out.push(Math.random()*dt*sr+64,e[0]*dens,e[1],e[2]);node.port.postMessage({ev:out})}
   events=[];
   hitAcc+=hitCount;hitCount=0;if(now-hitT>500){hitsSec=hitAcc*2;hitAcc=0;hitT=now;$('hits').firstChild.textContent=hitsSec>999?'999+':String(hitsSec)}
   rainLevel+=(Math.min(1,hitsSec/600)-rainLevel)*.08;$('rain').style.height=(rainLevel*100).toFixed(1)+'%';
