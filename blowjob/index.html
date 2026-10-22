@@ -271,17 +271,17 @@ class Blow extends AudioWorkletProcessor{
         s=(lp*.7+this.f2.bp*.9+this.f3.bp*.6)*A+this.f4.bp*.25*A;
         s=Math.tanh(s*1.6)*.7;
       }else if(e===1){ // FLUTE: round pan-flute pipe; the breath sings ON the pitch, only a touch of loose wind
-        const ot=Math.min(1,Math.max(0,(A-.55)/.45)),ots=ot*ot*(3-2*ot);this.ov+=(ots-this.ov)*.0004;const o=this.ov;
+        const ot=Math.min(1,Math.max(0,(A-.72)/.28)),ots=ot*ot*(3-2*ot)*.6;this.ov+=(ots-this.ov)*.0003;const o=this.ov;
         this.fl+=( (R()*2-1)-this.fl)*.002;                                   // slow breath flutter
         const ff=f*vib*(1+this.fl*.0015);this.p+=ff/sr;if(this.p>=1)this.p-=1;const ph=TAU*this.p;
         // stopped pipe: strong fundamental, a soft 3rd harmonic, almost no even ones; overblowing slides weight up gently
-        const tone=Math.sin(ph)*(.9-.45*o)+Math.sin(2*ph)*(.02+.42*o)+Math.sin(3*ph)*(.1+.08*o)+Math.sin(5*ph)*.025;
+        const tone=Math.sin(ph)*(.95-.35*o)+Math.sin(2*ph)*(.008+.3*o)+Math.sin(3*ph)*(.045+.04*o)+Math.sin(5*ph)*.006;
         // chiff: a soft breathy 'tu' when a note starts
         if(A>.04&&this.pA<=.04)this.chf=1;this.pA=A;this.chf*=.9992;
         const nzs=(R()*2-1);this.f4.run(nzs);this.f2.run(nzs);this.f3.run(nzs);
         const airTone=this.f4.bp/22*7+this.f2.bp/14*2.2;                      // narrow noise right on the pitch = the hollow 'whoo'
         const amp=Math.pow(A,1.15)*(1+this.fl*.08);
-        s=tone*amp*.85+airTone*amp*(.35+.25*o)+this.f3.bp*.35*this.chf*Math.min(1,A*3)+nz*.008*A;
+        s=tone*amp*.85+airTone*amp*(.13+.1*o)+this.f3.bp*.14*this.chf*Math.min(1,A*3)+nz*.004*A;
         s=this.f1.run(s);
       }else if(e===2){ // HOBO (oboe): narrow nasal pulse through hard formants
         const dt=f*vib/sr;this.p+=dt;if(this.p>=1)this.p-=1;
