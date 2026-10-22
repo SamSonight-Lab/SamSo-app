@@ -66,6 +66,7 @@ body{position:fixed;inset:0;width:100%}
 .leds .blow{font-size:9px;letter-spacing:.24em;color:var(--gold);font-family:var(--f-label)}
 .mini{font-family:var(--f-label);font-size:10px;letter-spacing:.12em;color:var(--ink);background:#120f14;border:1px solid var(--gold-dim);border-radius:3px;height:28px;padding:0 10px;cursor:pointer;touch-action:manipulation}
 .mini.on{background:var(--gold);color:#140d05;border-color:var(--gold-hi)}
+#cal.on{background:var(--red);color:#fff;border-color:#ff6a5f}
 .stagewrap{flex:1;min-height:180px;display:grid;grid-template-columns:40px minmax(0,1fr) 40px;gap:4px}
 .side{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0}
 .side .t{font-size:8.5px;letter-spacing:.16em;color:var(--gold);text-align:center;line-height:1.3}
@@ -153,7 +154,7 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
         <div class="notebox"><div class="note" id="note">—</div><div class="cents" id="cents"></div></div>
       </div>
     </div>
-    <div class="leds"><span><i class="led" id="ledMic"></i><button class="mini" id="mic" type="button">MIC</button></span><span class="blow">▲ BLOW · 吹く ▲</span><span><button class="mini" id="tilt" type="button">TILT</button><i class="led" id="ledTilt"></i></span></div>
+    <div class="leds"><span><i class="led" id="ledMic"></i><button class="mini" id="mic" type="button">MIC</button></span><button class="mini" id="cal" type="button">CAL</button><span class="blow">▲ 吹く ▲</span><span><button class="mini" id="tilt" type="button">TILT</button><i class="led" id="ledTilt"></i></span></div>
   </main>
 </div>
 
@@ -166,13 +167,13 @@ class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.i
 class Blow extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.03;this.touch=0;this.sens=.5;this.useMic=1;
-    this.env=0;this.floor=.004;this.maxDb=-20;this.breath=0;this.A=0;this.lfo=0;
+    this.env=0;this.floor=.004;this.maxDb=-20;this.lm=0;this.bm3=0;this.eL=1e-6;this.eM=1e-6;this.cal=null;this.on=false;this.calMode=0;this.calAcc=[];this.spec=0;this.breath=0;this.A=0;this.lfo=0;
     this.mh=0;this.ml=0;this.ml2=0;this.lb=new Float32Array(128);this.lw=new Float32Array(8);this.li=0;this.es=1e-6;this.ee=1e-6;this.noisy=0;this.mlast=0;this.micN=0;
     this.p=0;this.p2=0;this.pm=0;this.over=0;this.xm=.4;this.xc=0;this.thunder=0;this.th=0;this.crk=0;this.gust=0;this.gt=0;this.sweep=[0,0,0];this.sw=[R(),R(),R()];
     this.f1=new SVF();this.f2=new SVF();this.f3=new SVF();this.f4=new SVF();this.f5=new SVF();this.cc=0;
     this.lev=0;this.dc=[0,0];this.post=0;
     this.port.onmessage=e=>{const d=e.data;if(d.eng!==undefined){this.eng=d.eng;this.over=0}if(d.f)this.tf=d.f;if(d.glide!==undefined)this.glide=d.glide;
-      if(d.touch!==undefined)this.touch=d.touch;if(d.sens!==undefined)this.sens=d.sens;if(d.useMic!==undefined)this.useMic=d.useMic};
+      if(d.touch!==undefined)this.touch=d.touch;if(d.cal!==undefined)this.cal=d.cal;if(d.calMode!==undefined){this.calMode=d.calMode;this.calAcc=[]}if(d.sens!==undefined)this.sens=d.sens;if(d.useMic!==undefined)this.useMic=d.useMic};
   }
   process(ins,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr,inp=ins[0]&&ins[0][0];
@@ -190,16 +191,28 @@ class Blow extends AudioWorkletProcessor{
         lb[this.li]=u;this.li=(this.li+1)&127;
         this.es+=(u*u-this.es)*.0007;this.ee+=(er*er-this.ee)*.0007;
         const rt=Math.min(1,this.ee/(this.es+1e-12));this.noisy+=(Math.min(1,Math.max(0,(rt-.2)/.4))-this.noisy)*.0009}
-      const lvl=Math.abs(this.ml2)*1.6*this.noisy;
+      // 1) wind lives low: compare the low band (<250 Hz) with the voice/music band (600-3000 Hz)
+      this.lm+=(this.mh-this.lm)*.0755;const mx=this.mh-this.lm;this.bm3+=(mx-this.bm3)*.324;
+      this.eL+=(Math.abs(this.ml2)-this.eL)*.002;this.eM+=(Math.abs(this.bm3)-this.eM)*.002;
+      const ratioDb=20*Math.log10((this.eL+1e-8)/(this.eM+1e-8));
+      this.spec+=(Math.min(1,Math.max(0,(ratioDb-3)/9))-this.spec)*.002;
+      // 2) level of the low band in dB
+      const lvl=Math.abs(this.ml2)*1.6;
       this.env+=(lvl-this.env)*(lvl>this.env?.003:.0008);
-      // loudness in dB between your room's noise floor and the hardest you've blown lately
-      const db=20*Math.log10(this.env+1e-7),fdb=20*Math.log10(Math.max(this.floor,1e-5));
-      if(db>this.maxDb)this.maxDb+=(db-this.maxDb)*.004;else this.maxDb-=.000025;   // forgets ~1.2 dB/s
-      this.maxDb=Math.max(this.maxDb,fdb+24);
-      const thr=fdb+3+(1-this.sens)*9,rng=Math.max(12,this.maxDb-thr);
-      const mb=this.useMic?Math.min(1,Math.max(0,(db-thr)/rng)):0;
-      // the noise floor follows the room down quickly, and creeps up (~0.5 dB/s) only while you're not blowing
-      if(this.env<this.floor)this.floor+=(this.env-this.floor)*.0005;else if(mb<.04)this.floor*=1.0000012;
+      const db=20*Math.log10(this.env+1e-7);
+      if(this.env<this.floor)this.floor+=(this.env-this.floor)*.0005;else if(!this.on)this.floor*=1.0000012;
+      const fdb=20*Math.log10(Math.max(this.floor,1e-5));
+      // calibration: collect levels for the main thread (quiet first, then a hard blow)
+      if(this.calMode&&(this.cc&63)===0)this.calAcc.push(db);
+      let thr,full;
+      if(this.cal){const span=Math.max(15,this.cal.blow-this.cal.quiet);thr=this.cal.quiet+span*(.12+(1-this.sens)*.38);full=this.cal.blow-1.5}
+      else{if(db>this.maxDb)this.maxDb+=(db-this.maxDb)*.004;else this.maxDb-=.000025;this.maxDb=Math.max(this.maxDb,fdb+30);
+        thr=fdb+14+(1-this.sens)*12;full=Math.max(thr+12,this.maxDb-1)}
+      let raw=Math.min(1,Math.max(0,(db-thr)/Math.max(6,full-thr)));
+      // 3) all three must agree: loud enough, wind-coloured, and noise rather than a tone
+      raw*=Math.min(1,this.spec*1.4)*(.35+.65*this.noisy);
+      if(!this.on&&raw>.07)this.on=true;else if(this.on&&raw<.02)this.on=false;
+      const mb=this.useMic&&this.on?raw:0;
       const tgt=Math.max(mb,this.touch);
       this.breath+=(tgt-this.breath)*(tgt>this.breath?.0016:.0006);
       const A=this.breath;
@@ -260,7 +273,7 @@ class Blow extends AudioWorkletProcessor{
       if(this.lev>.5)s*=.5/this.lev;
       s=s===s?s:0;L[k]=s;Rr[k]=s;
     }
-    if(++this.post>=6){this.post=0;this.port.postMessage({b:this.breath,mic:this.env,fl:this.floor})}
+    if(++this.post>=6){this.post=0;const m={b:this.breath,spec:this.spec,ns:this.noisy};if(this.calMode&&this.calAcc.length){m.cal=this.calAcc;this.calAcc=[]}this.port.postMessage(m)}
     return true;
   }
 }
@@ -282,7 +295,9 @@ function engColor(now){return ENG[eng].c||`hsl(${(now/12)%360},95%,62%)`}
 
 // ---------- audio ----------
 let ctx=null,node=null,G={},ready=null,running=false,micStream=null,micSrc=null,lastHb=0;
-const st={b:0,mic:0,fl:0};
+const st={b:0,spec:0,ns:0};
+let calib=null;try{calib=JSON.parse(localStorage.getItem('blowCal')||'null')}catch(e){}
+let calRun=null;
 function makeCtx(){if(ctx)return;const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({latencyHint:'interactive'})}
 async function addModule(){const src=$('dsp').textContent;
   try{await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([src],{type:'application/javascript'})))}
@@ -290,10 +305,10 @@ async function addModule(){const src=$('dsp').textContent;
 async function makeNode(){
   if(node){try{node.disconnect()}catch(e){}}
   node=new AudioWorkletNode(ctx,'blow',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],channelCount:1,channelCountMode:'explicit'});
-  node.port.onmessage=e=>{const d=e.data;st.b=d.b;st.mic=d.mic;st.fl=d.fl;lastHb=performance.now()};
+  node.port.onmessage=e=>{const d=e.data;st.b=d.b;st.spec=d.spec;st.ns=d.ns;lastHb=performance.now();if(d.cal&&calRun)calRun.vals.push(...d.cal)};
   node.onprocessorerror=()=>rescue();lastHb=performance.now();
   node.connect(G.in);if(micSrc)micSrc.connect(node);
-  node.port.postMessage({eng,sens:S.sens,useMic:micOn?1:0,glide:glideT()});
+  node.port.postMessage({eng,sens:S.sens,useMic:micOn?1:0,glide:glideT(),cal:calib});
 }
 let rebuilding=false;
 async function rescue(){if(rebuilding||!ctx)return;rebuilding=true;try{if(ctx.state!=='running')await ctx.resume();await makeNode();say('▸ engine herstart',0,1200)}catch(e){}rebuilding=false}
@@ -354,6 +369,22 @@ startB.addEventListener('click',()=>{
 $('mic').addEventListener('click',()=>{
   if(micOn){micOn=false;if(node)node.port.postMessage({useMic:0});$('ledMic').classList.remove('on');$('mic').classList.remove('on');say('MIC uit · blaas met je vinger op de kelk',0,2000);return}
   askMic().then(useMic)});
+// CAL: one second of quiet, then two seconds of blowing hard; stored on this phone
+$('cal').addEventListener('click',async()=>{
+  if(!micOn){say('zet eerst de microfoon aan (START of MIC)',0,2500);return}
+  if(calRun)return;$('cal').classList.add('on');
+  const pct=(a,q)=>{const b=a.slice().sort((x,y)=>x-y);return b[Math.min(b.length-1,Math.max(0,Math.floor(q*(b.length-1))))]};
+  const phase=(mode,ms,label)=>new Promise(res=>{calRun={vals:[]};node.port.postMessage({calMode:mode});let t0=performance.now();
+    const tick=()=>{const left=Math.ceil((ms-(performance.now()-t0))/1000);say(label+' '+left,1);if(performance.now()-t0<ms)setTimeout(tick,120);else{node.port.postMessage({calMode:0});const v=calRun.vals;calRun=null;res(v)}};tick()});
+  const q=await phase(1,1200,'CAL · wees even stil…');
+  const bl=await phase(2,2200,'CAL · BLAAS HARD in het mondstuk…');
+  $('cal').classList.remove('on');
+  if(q.length<5||bl.length<5){say('kalibreren mislukt · probeer opnieuw',0,2500);return}
+  const quiet=pct(q,.6),blow=pct(bl,.85);
+  if(blow-quiet<10){say('te weinig verschil · blaas harder, recht in de onderkant',0,3500);return}
+  calib={quiet,blow};try{localStorage.setItem('blowCal',JSON.stringify(calib))}catch(e){}
+  node.port.postMessage({cal:calib});say('CAL klaar · stil '+quiet.toFixed(0)+' dB · blazen '+blow.toFixed(0)+' dB',1,3000);
+});
 $('tilt').addEventListener('click',()=>{
   if(tiltOn){tiltZero=beta;say('TILT · midden opnieuw gezet',1,1500);return}
   askTilt().then(useTilt)});
@@ -536,6 +567,3 @@ document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 let lastTap=0;document.addEventListener('touchend',e=>{const n=Date.now(),t=e.target;if(!(t.closest&&t.closest('button,input,a,label'))&&n-lastTap<380)e.preventDefault();lastTap=n},{passive:false});
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});})();
 </script>
-
-</body>
-</html>
