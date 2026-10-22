@@ -587,6 +587,9 @@ requestAnimationFrame(frame);
 (()=>{const block=e=>{if(e.touches&&e.touches.length>1)return;e.preventDefault()};
 document.addEventListener('touchmove',block,{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+// no double-tap zoom anywhere except real buttons/inputs (they need their click)
+let lastTap=0;document.addEventListener('touchend',e=>{const n=Date.now(),t=e.target;if(!(t.closest&&t.closest('button,input,a,label'))&&n-lastTap<380)e.preventDefault();lastTap=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 })();
 </script>
 
