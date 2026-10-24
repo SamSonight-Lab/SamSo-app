@@ -144,16 +144,17 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
 .leds .hl{font-size:9px;letter-spacing:.2em;color:var(--gold)}
 #vid.on{background:var(--gold);border-color:var(--gold-hi);color:#140d05}#vid.on small{color:#3b2a10}
 .engines{grid-template-columns:repeat(4,minmax(0,1fr))}
-.eng small{font-size:9px}
+.eng small{font-size:8.5px}
+.eng{height:30px}
 #intro{overflow:auto}
 #intro ol{font-size:12px}
 .ipick{margin:10px 0 6px;text-align:center;font:600 12px/1 var(--f-label);letter-spacing:.24em;color:var(--gold-hi)}
-.masks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mk{background:#0c0a0d;border:1px solid var(--gold-dim);border-radius:4px;padding:4px 0 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink);font-family:var(--f-label);font-size:12px;letter-spacing:.14em;touch-action:manipulation}
-.mk canvas{width:75px;height:85px}
+.masks{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.mk{background:#0c0a0d;border:1px solid var(--gold-dim);border-radius:4px;padding:4px 0 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink);font-family:var(--f-label);font-size:9.5px;letter-spacing:.08em;touch-action:manipulation}
+.mk canvas{width:60px;height:68px}
 .mk small{display:block;font-family:var(--f-jp);font-size:10px;color:var(--c);letter-spacing:.1em}
 .mk:active{border-color:var(--c);box-shadow:0 0 12px var(--c)}
-@media (max-height:700px){.mk canvas{width:56px;height:64px}#intro ol{font-size:11px}}
+@media (max-height:700px){.mk canvas{width:48px;height:54px}#intro ol{font-size:11px}}
 </style>
 
 <div id="intro" role="dialog" aria-label="Kies je masker">
@@ -162,6 +163,7 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
     <ol>
       <li><b>Mond</b> nauwelijks open = zacht, verder open = harder. De <b>vorm</b> van je mond kleurt de klank.</li>
       <li><b>Knikken</b> omhoog/omlaag = toonhoogte. <b>Hoofd buigen</b> links/rechts = DJ-filter.</li>
+      <li>Elk masker heeft een eigen stem: <b>TENGU</b> verfijnd, <b>ONI</b> demon, <b>MANGA</b> chip, <b>KITSUNE</b> geest, <b>ROBOT</b> vocoder, <b>MONK</b> keelzang, <b>HEAVEN</b> koor, <b>CHAOS</b> chaos.</li>
       <li><b>Lachen</b> = majeur koortje, mondhoeken omlaag = mineur. <b>Wenkbrauwen</b> = vibrato, <b>wangen bol</b> = grom.</li>
       <li><b>Neus optrekken</b> = fuzz, <b>mond opzij</b> = metaal, <b>ogen wijd</b> = shimmer, <b>lippen persen</b> = crush.</li>
       <li><b>Ogen dicht</b> = noot vasthouden, <b>knipoog</b> = octaaf omhoog/omlaag, snel <b>nee schudden</b> = stutter.</li>
@@ -184,6 +186,10 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
       <button class="eng" type="button" style="--c:#ff3355">ONI<small>鬼</small></button>
       <button class="eng" type="button" style="--c:#6fd3ff">MANGA<small>漫画</small></button>
       <button class="eng" type="button" style="--c:#c9a2ff">KITSUNE<small>狐</small></button>
+      <button class="eng" type="button" style="--c:#5cf0c8">ROBOT<small>ロボ</small></button>
+      <button class="eng" type="button" style="--c:#ffb347">MONK<small>僧</small></button>
+      <button class="eng" type="button" style="--c:#fff1b0">HEAVEN<small>天使</small></button>
+      <button class="eng" type="button" style="--c:#ff40ff">CHAOS<small>混沌</small></button>
     </div>
     <div class="status"><span class="ar">▸▸▸</span><span id="msg">masker laden…</span><span class="ar">◂◂◂</span></div>
     <div class="main">
@@ -205,13 +211,16 @@ function blep(t,dt){if(t<dt){const x=t/dt;return x+x-x*x-1}if(t>1-dt){const x=(t
 class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.ic2=0;this.bp=0;this.lp=0}
   set(fc,q,sr){fc=Math.min(Math.max(fc,20),sr*.45);const g=Math.tan(Math.PI*fc/sr);this.k=1/q;this.a1=1/(1+g*(g+this.k));this.a2=g*this.a1;this.a3=g*this.a2}
   run(x){const v3=x-this.ic2,v1=this.a1*this.ic1+this.a2*v3,v2=this.ic2+this.a2*this.ic1+this.a3*v3;this.ic1=2*v1-this.ic1;this.ic2=2*v2-this.ic2;this.lp=v2;this.bp=v1;return v2}}
-// palettes: 0 TENGU nasal horn-voice · 1 ONI low demon growl · 2 MANGA chip-vocaloid · 3 KITSUNE airy spirit choir
-const EK=[{fs:1.06,vib:.007,br:.06,qm:1.35,g3:.95,growl:0},{fs:.8,vib:.002,br:.02,qm:1,g3:.4,growl:.3},{fs:1.3,vib:0,br:0,qm:1.1,g3:.5,growl:0},{fs:1.12,vib:.005,br:.3,qm:1.25,g3:.55,growl:0}];
+// palettes: 0 TENGU sophisticated crooner · 1 ONI demon growl · 2 MANGA chip-vocaloid · 3 KITSUNE airy spirit
+//           4 ROBOT vocoder · 5 MONK throat-singing · 6 HEAVEN choir · 7 CHAOS
+const EK=[{fs:1,vib:.0035,br:.03,qm:1.1,g3:.3,growl:0,bri:.5},{fs:.8,vib:.002,br:.02,qm:1,g3:.4,growl:.3,bri:1},{fs:1.3,vib:0,br:0,qm:1.1,g3:.5,growl:0,bri:1},{fs:1.12,vib:.005,br:.3,qm:1.25,g3:.55,growl:0,bri:1},
+  {fs:1,vib:0,br:0,qm:1,g3:.5,growl:0,bri:1},{fs:.8,vib:.0015,br:.015,qm:1,g3:.35,growl:0,bri:.8},{fs:1.18,vib:.005,br:.07,qm:1.1,g3:.45,growl:0,bri:.75},{fs:1,vib:.01,br:.05,qm:1.2,g3:.6,growl:.12,bri:1}];
+const VBF=[];for(let i=0;i<16;i++)VBF.push(150*Math.pow(6500/150,i/15));
 class Sing extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.05;this.harm=.6;this.hold=0;this.dj=0;this.djs=0;
     this.T={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,sneer:0,side:0,wide:0,press:0};this.P=Object.assign({},this.T);
-    this.ph=new Float64Array(9);for(let i=0;i<9;i++)this.ph[i]=R();
+    this.ph=new Float64Array(24);for(let i=0;i<24;i++)this.ph[i]=R();this.VB=VBF.map(()=>new SVF());this.vg=new Float32Array(16);this.cm=1;this.cmS=1;this.ct=0;this.cidx=2;this.crt=1;this.pm=0;this.nb=0;this.dr=0;
     this.F=[new SVF(),new SVF(),new SVF(),new SVF()];this.OV=new SVF();this.y1=this.y2=this.y3=this.y4=0;this.cb=new Float32Array(2048);this.cw=0;this.rp=0;this.shp=0;this.crh=0;this.crc=0;
     this.lfo=0;this.am=0;this.sp=0;this.cc=0;this.dc=[0,0];this.lev=0;this.amp=0;this.post=0;this.pw=0;
     this.h1=4;this.h2=7;this.ht1=4;this.hm=0;this.tl=0;this.bit=0;this.bitc=0;this.jit=0;this.vibOn=0;
@@ -236,13 +245,18 @@ class Sing extends AudioWorkletProcessor{
     let F1=280+540*open-80*round,F2=1550+880*smile-820*round-300*open,F3=2600+380*smile-260*round,F4=3600;
     F2=Math.min(2750,Math.max(F1+250,F2));
     const fs=E.fs,qm=E.qm;
+    if(e===4){const FF=[F1,F2,F3],A=[1,.75,.5];for(let i=0;i<16;i++){const fb=VBF[i];let g=.04;for(let j=0;j<3;j++){const d=Math.log2(fb/FF[j])/.22;g+=A[j]*Math.exp(-d*d)}this.vg[i]=g;this.VB[i].set(fb,7,sr)}}
     this.F[0].set(F1*fs,F1*fs/90*qm,sr);this.F[1].set(F2*fs,F2*fs/110*qm,sr);this.F[2].set(F3*fs,F3*fs/150*qm,sr);this.F[3].set(F4*fs,F4*fs/220*qm,sr);
     if(e===1)this.OV.set(700+(1-round)*900+smile*600,24,sr);
+    if(e===5)this.OV.set(600+(1-round)*1000+smile*700,34,sr);
+    // CHAOS: random pitch leaps, FM depth and ratios, self-triggered stutters — denser the wider you open
+    if(e===7){this.ct-=32;if(this.ct<=0){this.ct=sr*(.05+R()*.25)/(.4+open);const M=[.5,.667,.75,1,1,1.25,1.333,1.5,2,3];this.cm=M[(R()*M.length)|0];
+      this.cidx=R()*9*(.3+open);const CR=[.5,1,1.414,2,2.76,3.5,5.1];this.crt=CR[(R()*CR.length)|0];if(R()<.12*open)this.stutter();if(R()<.2)this.nb=1}}
     c.vd=E.vib+P.brow*.024;c.vr=5.2+P.brow*1.8;
-    c.tg=1-Math.exp(-TAU*(1500+P.brow*5200+open*2200)/sr);
+    c.tg=1-Math.exp(-TAU*(1500+P.brow*5200+open*2200)*E.bri/sr);
     c.g=Math.min(1,E.growl+Math.max(P.cheek,P.browDown*.75)*(1-E.growl));
     c.fz=P.sneer;c.ring=Math.abs(P.side);c.rr=P.side<0?.5+P.side*-.25:2.3+P.side*2.1;c.sh=P.wide;c.cr=P.press;
-    const em=Math.max(smile,P.frown);c.hmT=this.harm*Math.min(1,Math.max(0,(em-.18)/.45));
+    const em=Math.max(smile,P.frown);c.hmT=this.harm*Math.min(1,Math.max(0,(em-.18)/.45));if(e===6)c.hmT=Math.max(c.hmT,this.harm*.55);
     if(smile>P.frown+.06)this.ht1=4;else if(P.frown>smile+.06)this.ht1=3;
     // bend left = squelchy acid low-pass, bend right = metallic jet flanger, centre = clean
     this.djs+=(this.dj-this.djs)*.25;const d=this.djs,ad=Math.abs(d);
@@ -251,7 +265,7 @@ class Sing extends AudioWorkletProcessor{
   }
   process(ins,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr,e=this.eng,E=EK[e],c=this.c;
-    const gk=1-Math.exp(-1/(Math.max(.004,e===2?.006:this.glide)*sr));
+    const gk=1-Math.exp(-1/(Math.max(.004,e===2||e===4?.005:this.glide)*sr));
     for(let k=0;k<n;k++){
       if((this.cc++&31)===0)this.control();
       this.f+=(this.tf-this.f)*gk;
@@ -260,23 +274,32 @@ class Sing extends AudioWorkletProcessor{
       this.vibOn+=((this.amp>.04?1:0)-this.vibOn)*.00004;
       this.lfo+=c.vr/sr;if(this.lfo>1)this.lfo-=1;
       this.jit+=((R()*2-1)-this.jit)*.001;
-      const f=this.f*(1+c.vd*this.vibOn*Math.sin(TAU*this.lfo)+this.jit*.0012*(e===2?0:1));
+      if(e===7){this.cmS+=(this.cm-this.cmS)*.02}else this.cmS=1;
+      const f=this.f*this.cmS*(1+c.vd*this.vibOn*Math.sin(TAU*this.lfo)+this.jit*.0012*(e===2||e===4?0:1));
       const fr=[f,f*Math.pow(2,this.h1/12),f*Math.pow(2,this.h2/12)],gv=[1,this.hm*.55,this.hm*.42];
       let src=0;
       for(let v=0;v<3;v++){if(v&&gv[v]<.002)continue;const fv=fr[v];let x=0;
-        if(e===3){for(let u=0;u<3;u++){const i=v*3+u,dt=fv*(1+(u-1)*.011)/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;x+=2*p-1-blep(p,dt)}x*=.4}
-        else{const i=v*3,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;
+        if(e===3||e===6){const nu=e===6?5:3,dd=e===6?.008:.011;for(let u=0;u<nu;u++){const i=v*8+u,dt=fv*(1+(u-(nu-1)/2)*dd)/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;x+=2*p-1-blep(p,dt)}
+          x*=e===6?.3:.4;if(e===6){const i=v*8+6;let p=this.ph[i]+2*fv/sr;if(p>=1)p-=1;this.ph[i]=p;x+=Math.sin(TAU*p)*.25}}
+        else{const i=v*8,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;
           if(e===2){this.pw+=.4/sr;if(this.pw>1)this.pw-=1;let q=p+.62+.13*Math.sin(TAU*this.pw);q-=Math.floor(q);x=(2*p-1-blep(p,dt))-(2*q-1-blep(q,dt))}
-          else if(e===0){x=(2*p-1-blep(p,dt))+Math.sin(TAU*p)*.35}
+          else if(e===0){x=(2*p-1-blep(p,dt))*.7+Math.sin(TAU*p)*.6}
+          else if(e===4){let q=p+.5;if(q>=1)q-=1;x=(2*p-1-blep(p,dt))*.7+((2*p-1-blep(p,dt))-(2*q-1-blep(q,dt)))*.4}
+          else if(e===7){if(v===0){this.pm+=fv*this.crt/sr;if(this.pm>1)this.pm-=1}x=Math.sin(TAU*p+this.cidx*Math.sin(TAU*this.pm))*.8+(2*p-1-blep(p,dt))*.3}
           else x=2*p-1-blep(p,dt)}
         src+=x*gv[v]}
+      if(e===5){this.dr+=f*.5/sr;if(this.dr>1)this.dr-=1;src+=Math.sin(TAU*this.dr)*.35}
+      if(e===7&&this.nb>.001){src+=(R()*2-1)*this.nb;this.nb*=.9985}
       if(c.g>.01){this.sp+=f*.5/sr;if(this.sp>=1)this.sp-=1;src+=(this.sp<.5?1:-1)*c.g*.35}
       this.tl+=(src-this.tl)*c.tg;
-      const xin=this.tl+(R()*2-1)*E.br;
-      const F=this.F;F[0].run(xin);F[1].run(xin);F[2].run(xin);F[3].run(xin);
-      let s=(F[0].bp*F[0].k+F[1].bp*F[1].k*.75+F[2].bp*F[2].k*E.g3+F[3].bp*F[3].k*.16)*2.4+this.tl*.03;
+      const xin=this.tl+(R()*2-1)*E.br;let s;
+      if(e===4){// vocoder: 16 bands on a buzzy carrier, each band opened by the vowel your mouth makes
+        const cx=src+(R()*2-1)*.06;s=0;for(let i=0;i<16;i++){const B=this.VB[i];B.run(cx);s+=B.bp*B.k*this.vg[i]}s*=3.4}
+      else{const F=this.F;F[0].run(xin);F[1].run(xin);F[2].run(xin);F[3].run(xin);
+        s=(F[0].bp*F[0].k+F[1].bp*F[1].k*.75+F[2].bp*F[2].k*E.g3+F[3].bp*F[3].k*.16)*2.4+this.tl*.03}
       if(e===1){this.OV.run(this.tl);s+=this.OV.bp*this.OV.k*1.5}
-      if(e===3)s*=1.25;
+      if(e===5){this.OV.run(this.tl);s+=this.OV.bp*this.OV.k*2.4}
+      if(e===3)s*=1.25;if(e===6)s*=1.15;if(e===0)s*=1.45;
       if(c.g>.01){this.am+=33/sr;if(this.am>1)this.am-=1;s=Math.tanh(s*(1+c.g*5))/(1+c.g*1.2)*(1-c.g*.4*(.5+.5*Math.sin(TAU*this.am)))}
       if(e===2){if(++this.bitc>=4){this.bitc=0;this.bit=Math.round(s*20)/20}s=this.bit}
       // shimmer (eyes wide): bright partials above the voice
@@ -314,13 +337,14 @@ registerProcessor('sing',Sing);
 <script>
 (()=>{
 const TAU=Math.PI*2,$=id=>document.getElementById(id);
-const ENG=[{n:'TENGU',j:'天狗',c:'#ff6a4d',off:5},{n:'ONI',j:'鬼',c:'#ff3355',off:-12},{n:'MANGA',j:'漫画',c:'#6fd3ff',off:12},{n:'KITSUNE',j:'狐',c:'#c9a2ff',off:0}];
+const ENG=[{n:'TENGU',j:'天狗',c:'#ff6a4d',off:0,rv:1},{n:'ONI',j:'鬼',c:'#ff3355',off:-12,rv:1},{n:'MANGA',j:'漫画',c:'#6fd3ff',off:12,rv:1},{n:'KITSUNE',j:'狐',c:'#c9a2ff',off:0,rv:1.1},
+  {n:'ROBOT',j:'ロボ',c:'#5cf0c8',off:0,rv:.8},{n:'MONK',j:'僧',c:'#ffb347',off:-12,rv:1.3},{n:'HEAVEN',j:'天使',c:'#fff1b0',off:12,rv:1.6},{n:'CHAOS',j:'混沌',c:'#ff40ff',off:0,rv:1}];
 const SCALES=[['FREE',null],['MAJOR',[0,2,4,5,7,9,11]],['MINOR',[0,2,3,5,7,8,10]],['PENTA',[0,2,4,7,9]],['M.PENTA',[0,3,5,7,10]],['BLUES',[0,3,5,6,7,10]],['DORIAN',[0,2,3,5,7,9,10]],['HIRAJOSHI',[0,2,3,7,8]]];
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const S=Object.assign({scale:3/7,key:4/11,range:1/3,glide:.3,space:.5,harm:.6,vol:.75},LS.get('ssKnobs',{}));delete S.oct;
 const volG=()=>.25*Math.pow(12,S.vol);
-let eng=Math.min(3,LS.get('ssMask',0)),showVid=LS.get('ssVid',false);
+let eng=Math.min(7,LS.get('ssMask',0)),showVid=LS.get('ssVid',false);
 const msgEl=$('msg');let msgHold=0;
 function say(t,hot,ms){msgEl.textContent=t;msgEl.classList.toggle('hot',!!hot);msgHold=performance.now()+(ms||0)}
 const scIdx=()=>Math.round(S.scale*7),keyIdx=()=>Math.round(S.key*11),rangeV=()=>1+Math.round(S.range*3);
@@ -364,7 +388,7 @@ function apply(id){
   if(id==='vol'){if(G.master&&running)G.master.gain.setTargetAtTime(volG(),ctx.currentTime,.03);return}
   if(id==='glide'){if(node)node.port.postMessage({glide:glideT()});return}
   if(id==='harm'){if(node)node.port.postMessage({harm:v});return}
-  if(id==='space'&&G.rO){const t=ctx.currentTime;G.rO.gain.setTargetAtTime(v*.85,t,.05);G.dS.gain.setTargetAtTime(v>.5?(v-.5)*.9:0,t,.05);G.dry.gain.setTargetAtTime(1-v*.3,t,.05)}
+  if(id==='space'&&G.rO){const t=ctx.currentTime,rv=ENG[eng].rv;G.rO.gain.setTargetAtTime(Math.min(1.3,v*.85*rv),t,.05);G.dS.gain.setTargetAtTime(v>.5?(v-.5)*.9:0,t,.05);G.dry.gain.setTargetAtTime(1-v*.3,t,.05)}
 }
 
 // ---------- face tracking (MediaPipe, runs on the phone) ----------
@@ -467,7 +491,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running&&
 
 // ---------- masks = palettes ----------
 const eBtns=[...document.querySelectorAll('.eng')];
-function setEng(i){eng=i;LS.set('ssMask',i);eBtns.forEach((b,j)=>b.classList.toggle('on',j===i));document.documentElement.style.setProperty('--eng',ENG[i].c);if(node)node.port.postMessage({eng:i});say(ENG[i].j+' '+ENG[i].n,1,1200)}
+function setEng(i){eng=i;LS.set('ssMask',i);apply('space');eBtns.forEach((b,j)=>b.classList.toggle('on',j===i));document.documentElement.style.setProperty('--eng',ENG[i].c);if(node)node.port.postMessage({eng:i});say(ENG[i].j+' '+ENG[i].n,1,1200)}
 eBtns.forEach((b,i)=>b.addEventListener('click',()=>setEng(i)));
 
 // ---------- keep the UI fixed when Safari rotates ----------
@@ -600,7 +624,7 @@ function maskArt(c,type,f,u,col,glow,amp){
     if(op<.08&&sm>.3){c.beginPath();c.moveTo(-.07*u,.27*u);c.quadraticCurveTo(-.035*u,.31*u,0,.27*u);c.quadraticCurveTo(.035*u,.31*u,.07*u,.27*u);S1(1.2)}else mouth(.27,.06,false,false);
     const bl=Math.min(1,ck+sm*.6);if(bl>.1)for(const s of [-1,1])for(let j=0;j<4;j++){const x=s*(.19+j*.035);P([[x-.015,.12],[x+.015,.08]]);S1(.8,true)}
     if(fr>.35){c.beginPath();c.moveTo(.33*u,-.16*u);c.quadraticCurveTo(.37*u,-.08*u,.33*u,-.06*u);c.quadraticCurveTo(.29*u,-.08*u,.33*u,-.16*u);S1(.9,true)}
-  }else{ // ---------- KITSUNE: fox ears, slanted eyes, spirit flame, whiskers
+  }else if(type===3){ // ---------- KITSUNE: fox ears, slanted eyes, spirit flame, whiskers
     P([[-.1,-.36],[-.28,-.62],[-.33,-.22],[-.43,.0],[-.2,.24],[0,.44+jaw],[.2,.24],[.43,0],[.33,-.22],[.28,-.62],[.1,-.36]],true);S1(1.4);
     P([[-.15,-.38],[-.26,-.54],[-.28,-.3]]);S1(.7);P([[.15,-.38],[.26,-.54],[.28,-.3]]);S1(.7);
     const fl=.05+amp*.07;c.beginPath();c.moveTo(0,(-.2)*u);c.bezierCurveTo(-.06*u,-.26*u,-.02*u,(-.3-fl)*u,0,(-.36-fl)*u);c.bezierCurveTo(.02*u,(-.3-fl)*u,.06*u,-.26*u,0,-.2*u);S1(1.1,amp>.05);
@@ -614,6 +638,58 @@ function maskArt(c,type,f,u,col,glow,amp){
     const ow=.07*(1+.4*sm-.3*rd);c.beginPath();c.moveTo(-ow*u,(.34-sm*.03)*u);c.quadraticCurveTo(-ow*.4*u,(.37+op*.1)*u,0,.33*u);c.quadraticCurveTo(ow*.4*u,(.37+op*.1)*u,ow*u,(.34-sm*.03)*u);S1(1.1);
     if(op>.06){E(0,.355+op*.04,ow*.5,op*.05);if(amp>.02){c.save();c.globalAlpha=Math.min(1,amp)*.6;c.fillStyle=col;c.fill();c.restore()}S1(.8)}
     for(const s of [-1,1])for(let j=0;j<3;j++){const a=(j-1)*.18+(sm-fr)*.15-ck*.1*s*0;P([[s*.08,.27+j*.02],[s*(.36+ck*.05),.2+j*.06+a*s*0-(j-1)*.04+(sm-fr)*-.04]]);S1(.6,ck>.3||sm>.4)}
+  }
+  if(type===4){ // ---------- ROBOT: boxy head, antenna, LED eyes, speaker-grille mouth
+    P([[-.34,-.36],[.34,-.36],[.38,-.3],[.38,.34+jaw],[.32,.42+jaw],[-.32,.42+jaw],[-.38,.34+jaw],[-.38,-.3]],true);S1(1.5);
+    P([[0,-.36],[0,-.52]]);S1(1);E(0,-.55,.03,.03);if(amp>.03){c.save();c.globalAlpha=Math.min(1,amp*1.5);c.fillStyle=col;c.fill();c.restore()}S1(1,amp>.03);
+    for(const s of [-1,1]){P([[s*.38,-.12],[s*.45,-.12],[s*.45,.12],[s*.38,.12]]);S1(1,ck>.3);E(s*.415,0,.015,.015);S1(.7)}
+    for(const s of [-1,1])for(const y of [-.3,.36])E(s*.32,y,.012,.012),S1(.6);
+    for(const s of [-1,1]){const eo=s<0?eoL:eoR,ex=s*.16,ey=-.1,w=.09*(1+bu*.15),h=.07;
+      P([[ex-w,ey-h],[ex+w,ey-h],[ex+w,ey+h],[ex-w,ey+h]],true);S1(1.1);
+      const lh=h*.75*eo;P([[ex-w*.75,ey-lh],[ex+w*.75,ey-lh],[ex+w*.75,ey+lh],[ex-w*.75,ey+lh]],true);c.save();c.globalAlpha=.85;c.fillStyle=hold?col:GOLD;if(eo>.15)c.fill();c.restore();
+      const by=ey-h-.04-bu*.05,tl=s*(bd*.05-bu*.02);P([[ex-w,by+tl],[ex+w,by-tl]]);S1(1.8,bu>.3||bd>.3)}
+    P([[-.03,.02],[0,.08],[.03,.02]]);S1(.8);
+    const gw=.17*(1+.35*sm-.35*rd),gh=.025+op*.1;c.save();c.translate(sx*u,0);
+    P([[-gw,.24-gh],[gw,.24-gh],[gw,.24+gh],[-gw,.24+gh]],true);if(amp>.02){c.save();c.globalAlpha=Math.min(1,amp)*.5;c.fillStyle=col;c.fill();c.restore()}S1(1.2);
+    for(let i=1;i<8;i++){const x=-gw+i*gw/4;P([[x,.24-gh],[x,.24+gh]]);S1(.6)}c.restore();
+  }else if(type===5){ // ---------- MONK: shaved head, long earlobes, serene eyes, urna, prayer beads
+    c.beginPath();c.ellipse(0,-.04*u,.36*u,.44*u,0,0,TAU);S1(1.4);
+    for(const s of [-1,1]){c.beginPath();c.moveTo(s*.35*u,-.1*u);c.bezierCurveTo(s*.46*u,-.12*u,s*.46*u,.12*u,s*.38*u,.2*u);S1(1.1)}
+    P([[-.18,-.33],[.18,-.33]]);S1(.5);P([[-.12,-.37],[.12,-.37]]);S1(.4);
+    E(0,-.2-bu*.03,.014,.014);c.save();c.fillStyle=amp>.03?col:GOLD;c.fill();c.restore();
+    for(const s of [-1,1]){const by=-.15-bu*.06+bd*.02;Q([s*.05,by+bd*.02],[s*.26,by+.01],[s*.15,by-.05]);S1(1)}
+    for(const s of [-1,1]){const eo=s<0?eoL:eoR,ex=s*.15,ey=-.06;Q([ex-.08,ey],[ex+.08,ey],[ex,ey+.035]);S1(1.2);
+      if(eo>.45){Q([ex-.07,ey],[ex+.07,ey],[ex,ey-.035*(eo-.4)]);S1(.8);E(ex,ey+.005,.012,.008);c.save();c.fillStyle=hold?col:GOLD;c.fill();c.restore()}}
+    P([[0,-.02],[-.02,.1],[.025,.11]]);S1(.8);
+    mouth(.22,.07,false,false);
+    for(let i=0;i<11;i++){const a=Math.PI*(.15+.7*i/10);E(Math.cos(a)*.3,.33+Math.sin(a)*.14-.08,.016,.016);S1(.7,amp>.05&&i%2===0)}
+  }else if(type===6){ // ---------- HEAVEN: halo, wings, curls, soft singing mouth
+    const hg=amp>.03;c.beginPath();c.ellipse(0,(-.58)*u,.22*u,.05*u,0,0,TAU);S1(1.6,true);
+    for(const s of [-1,1])for(let j=0;j<4;j++){c.beginPath();c.moveTo(s*.34*u,(-.05+j*.04)*u);c.quadraticCurveTo(s*(.55+j*.02)*u,(-.35+j*.07)*u,s*(.62-j*.05)*u,(-.12+j*.12+amp*.05)*u);S1(.8,hg&&j===0)}
+    P([[0,-.42],[.26,-.36],[.33,-.12],[.3,.14],[.18,.36+jaw],[0,.45+jaw],[-.18,.36+jaw],[-.3,.14],[-.33,-.12],[-.26,-.36]],true);S1(1.3);
+    for(let i=0;i<7;i++){const x=-.27+i*.09;c.beginPath();c.arc(x*u,-.38*u,.045*u,Math.PI,0);S1(.8)}
+    for(const s of [-1,1]){const eo=s<0?eoL:eoR,ex=s*.14,ey=-.05;
+      if(eo>.3){E(ex,ey,.065,.05*eo*(1+bu*.2));S1(1.1);E(ex,ey,.025,.025*Math.min(1,eo*1.3));c.save();c.fillStyle=hold?col:GOLD;c.fill();c.restore()}else{Q([ex-.065,ey],[ex+.065,ey],[ex,ey+.03]);S1(1.1)}
+      for(let j=0;j<3;j++){P([[ex+s*(.02+j*.025),ey-.05*eo],[ex+s*(.035+j*.03),ey-.075*eo-.01]]);S1(.6)}
+      const by=-.14-bu*.06;Q([ex-.07,by+bd*.02*-s],[ex+.07,by-bd*.02*-s],[ex,by-.03]);S1(.8)}
+    P([[0,.0],[-.012,.1],[.012,.1]]);S1(.6);
+    mouth(.24,.05,false,false);
+    for(const s of [-1,1]){E(s*.2,.12,.04,.02);S1(.5,sm>.4||ck>.3)}
+  }else if(type===7){ // ---------- CHAOS: a glitching face that tears itself apart
+    const jit=.006+amp*.03+Math.min(1,f.shake||0)*.03,J=()=>(Math.random()-.5)*jit;
+    for(let band=0;band<4;band++){c.save();const off=(Math.random()<.35?(Math.random()-.5)*(.04+amp*.12):0);c.translate(off*u,0);
+      c.beginPath();c.rect(-.7*u,(-.6+band*.3)*u,1.4*u,.3*u);c.clip();
+      P([[0+J(),-.44+J()],[.3+J(),-.38],[.4,-.1+J()],[.33+J(),.2],[.2,.38+jaw+J()],[0,.46+jaw],[-.22+J(),.36+jaw],[-.36,.12+J()],[-.42+J(),-.15],[-.28,-.38+J()]],true);S1(1.4);
+      for(let i=0;i<8;i++){P([[-.35+i*.1+J(),-.38],[-.3+i*.1+J()*3,-.5-Math.random()*.08],[-.25+i*.1,-.38]]);S1(.6)}
+      const eyes=[[-.17,-.1],[.15,-.12],[0,-.27]];
+      eyes.forEach(([ex,ey],i)=>{const eo=i===0?eoL:i===1?eoR:Math.max(eoL,eoR),r=(i===2?.05:.07)*(1+bu*.3);E(ex+J(),ey+J(),r,r*eo);S1(1.1,i===2);
+        if(eo>.25){E(ex+J()*2,ey+J()*2,r*.35,r*.35);c.save();c.fillStyle=hold?col:GOLD;c.fill();c.restore()}});
+      P([[-.06,-.02],[.04,.06+J()],[-.04,.1]]);S1(.8);
+      const mw=.2*(1+.4*sm-.3*rd),mh=.02+op*.14,my=.25;c.save();c.translate(sx*u,0);
+      const zz=[];for(let i=0;i<=10;i++)zz.push([-mw+i*mw/5,my-mh*(i%2?1:.3)+J()]);for(let i=10;i>=0;i--)zz.push([-mw+i*mw/5,my+mh*(i%2?.3:1)+J()]);P(zz,true);
+      if(amp>.02){c.save();c.globalAlpha=Math.min(1,amp)*.5;c.fillStyle=col;c.fill();c.restore()}S1(1.1);c.restore();
+      c.restore()}
+    for(let i=0;i<3+amp*8;i++){const y=(Math.random()-.5)*1.1,x=(Math.random()-.5)*.9;P([[x,y],[x+(Math.random()-.5)*.25,y]]);S1(.6,true)}
   }
   // shared reactions: sneer wrinkles on the nose, sparks round wide eyes, zigzag at the mouth corner for metal
   if(f.sneer>.12){for(const s of [-1,1])for(let j=0;j<3;j++){P([[s*.035,-.04+j*.025],[s*.075,-.055+j*.025],[s*.105,-.035+j*.025]]);S1(.7,true)}}
@@ -678,7 +754,7 @@ function drawStage(now,dt,f,live,amp,midi,col,dj){
 const NEUTRAL={open:.15,round:0,smile:.25,frown:0,brow:.2,browDown:0,cheek:0,blinkL:0,blinkR:0,nod:0,yaw:0,roll:0};
 ENG.forEach((E,i)=>{const b=document.createElement('button');b.type='button';b.className='mk';b.style.setProperty('--c',E.c);
   b.innerHTML=`<canvas width="150" height="170"></canvas><span>${E.n}<small>${E.j}</small></span>`;$('masks').appendChild(b);
-  const pc=b.querySelector('canvas').getContext('2d');pc.translate(75,92);maskArt(pc,i,NEUTRAL,118,E.c,6,0);
+  const pc=b.querySelector('canvas').getContext('2d');pc.translate(75,98);maskArt(pc,i,NEUTRAL,112,E.c,6,0);
   b.addEventListener('click',ev=>{ev.stopPropagation();setEng(i);intro.classList.add('gone');startAll()})});
 
 // ---------- main loop ----------
