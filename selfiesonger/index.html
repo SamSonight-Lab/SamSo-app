@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Federo&family=Share+Tech+Mono&display=swap">
 <style>
-/* Layout: one screen — red poster band; engine row; status; knob columns around the face mask */
+/* Layout: one screen — red poster band; mask row; status; knob columns around the gold-line mask */
 :root{
   --void:#070608;--panel:#0d0b0e;--panel-2:#17121a;
   --gold:#cfa75e;--gold-hi:#f1d79c;--gold-dim:#6b5631;
@@ -143,19 +143,30 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
 #cam{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none}
 .leds .hl{font-size:9px;letter-spacing:.2em;color:var(--gold)}
 #vid.on{background:var(--gold);border-color:var(--gold-hi);color:#140d05}#vid.on small{color:#3b2a10}
+.engines{grid-template-columns:repeat(4,minmax(0,1fr))}
+.eng small{font-size:9px}
+#intro{overflow:auto}
+#intro ol{font-size:12px}
+.ipick{margin:10px 0 6px;text-align:center;font:600 12px/1 var(--f-label);letter-spacing:.24em;color:var(--gold-hi)}
+.masks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mk{background:#0c0a0d;border:1px solid var(--gold-dim);border-radius:4px;padding:4px 0 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink);font-family:var(--f-label);font-size:12px;letter-spacing:.14em;touch-action:manipulation}
+.mk canvas{width:75px;height:85px}
+.mk small{display:block;font-family:var(--f-jp);font-size:10px;color:var(--c);letter-spacing:.1em}
+.mk:active{border-color:var(--c);box-shadow:0 0 12px var(--c)}
+@media (max-height:700px){.mk canvas{width:56px;height:64px}#intro ol{font-size:11px}}
 </style>
 
-<div id="intro" role="dialog" aria-label="Uitleg">
+<div id="intro" role="dialog" aria-label="Kies je masker">
   <div class="ibox">
     <div class="ih">The <b>SelfieSonger</b></div><div class="ijp">顔 · 歌う · 遊ぶ</div>
     <ol>
-      <li>Houd je iPhone <b>recht voor je gezicht</b>, met goed licht erop.</li>
-      <li><b>Mond open</b> = geluid. Vorm je mond: <b>tuiten</b> "oe", <b>lachen</b> "ie", <b>wijd</b> "aa".</li>
-      <li><b>Hoofd kantelen</b> links/rechts = toonhoogte.</li>
-      <li><b>Lachen</b> = majeur koortje, <b>mondhoeken omlaag</b> = mineur. <b>Wenkbrauwen</b> omhoog = vibrato, <b>wangen bol</b> = grom, <b>ogen dicht</b> = noot vasthouden, <b>hoofd schudden</b> = stotteren.</li>
-      <li>De eerste 2 seconden <b>neutraal kijken</b>: dan leert hij je rustgezicht. Opnieuw met <b>CAL</b>.</li>
+      <li><b>Mond</b> nauwelijks open = zacht, verder open = harder. De <b>vorm</b> van je mond kleurt de klank.</li>
+      <li><b>Knikken</b> omhoog/omlaag = toonhoogte. <b>Hoofd buigen</b> links/rechts = DJ-filter.</li>
+      <li><b>Lachen</b> = majeur koortje, mondhoeken omlaag = mineur. <b>Wenkbrauwen</b> = vibrato, <b>wangen bol</b> = grom, <b>ogen dicht</b> = noot vasthouden, snel <b>nee schudden</b> = stutter.</li>
+      <li>Eerst 2 seconden <b>neutraal kijken</b>, mond dicht. Opnieuw met <b>CAL</b>.</li>
     </ol>
-    <div class="icta">TIK OM TE SPELEN</div>
+    <div class="ipick">KIES JE MASKER</div>
+    <div class="masks" id="masks"></div>
     <div class="inote" id="inote">Safari vraagt om de camera: kies Sta toe. Het beeld blijft op je telefoon.</div>
   </div>
 </div>
@@ -168,18 +179,17 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
   <main class="panel">
     <i class="screw s1"></i><i class="screw s2"></i><i class="screw s3"></i><i class="screw s4"></i>
     <div class="engines" id="engines">
-      <button class="eng on" type="button" data-e="0" style="--c:#f2b04e">CHOIR<small>合唱</small></button>
-      <button class="eng" type="button" data-e="1" style="--c:#6fd3ff">ROBOT<small>ロボット</small></button>
-      <button class="eng" type="button" data-e="2" style="--c:#ff5aa0">DIVA<small>歌姫</small></button>
-      <button class="eng" type="button" data-e="3" style="--c:#b49cff">GHOST<small>幽霊</small></button>
-      <button class="eng" type="button" data-e="4" style="--c:#7fe0a0">MONK<small>僧侶</small></button>
+      <button class="eng on" type="button" style="--c:#ff6a4d">TENGU<small>天狗</small></button>
+      <button class="eng" type="button" style="--c:#ff3355">ONI<small>鬼</small></button>
+      <button class="eng" type="button" style="--c:#6fd3ff">MANGA<small>漫画</small></button>
+      <button class="eng" type="button" style="--c:#c9a2ff">KITSUNE<small>狐</small></button>
     </div>
     <div class="status"><span class="ar">▸▸▸</span><span id="msg">masker laden…</span><span class="ar">◂◂◂</span></div>
     <div class="main">
       <div class="col" id="colL">
         <button class="pill" id="vid" type="button"><span>VIDEO</span><small id="vidS">OFF</small></button>
       </div>
-      <div class="stage"><canvas id="face" aria-label="Je gezicht als masker. Mond open is geluid, mondvorm is de klinker, hoofd kantelen is toonhoogte. Zonder camera: vinger op het masker, links-rechts is toonhoogte, hoger is meer mond open."></canvas></div>
+      <div class="stage"><canvas id="face" aria-label="Je gezicht als masker. Mond open is geluid, knikken is toonhoogte, hoofd buigen is filter. Zonder camera: vinger op het masker, omhoog-omlaag is toonhoogte, links-rechts is filter."></canvas></div>
       <div class="col" id="colR">
         <div class="notebox" id="nbox"><div class="note" id="note">—</div><div class="cents" id="vow">·</div><div class="rng" id="rng">2 OCT</div></div>
       </div>
@@ -194,84 +204,91 @@ function blep(t,dt){if(t<dt){const x=t/dt;return x+x-x*x-1}if(t>1-dt){const x=(t
 class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.ic2=0;this.bp=0;this.lp=0}
   set(fc,q,sr){fc=Math.min(Math.max(fc,20),sr*.45);const g=Math.tan(Math.PI*fc/sr);this.k=1/q;this.a1=1/(1+g*(g+this.k));this.a2=g*this.a1;this.a3=g*this.a2}
   run(x){const v3=x-this.ic2,v1=this.a1*this.ic1+this.a2*v3,v2=this.ic2+this.a2*this.ic1+this.a3*v3;this.ic1=2*v1-this.ic1;this.ic2=2*v2-this.ic2;this.lp=v2;this.bp=v1;return v2}}
-// engine colouring: formant scale, vibrato, breath noise
-const EK=[{fs:1,vib:.004,br:.05},{fs:1,vib:0,br:0},{fs:1.14,vib:.009,br:.025},{fs:1.05,vib:.006,br:1},{fs:.84,vib:.002,br:.02}];
+// palettes: 0 TENGU nasal horn-voice · 1 ONI low demon growl · 2 MANGA chip-vocaloid · 3 KITSUNE airy spirit choir
+const EK=[{fs:1.06,vib:.007,br:.06,qm:1.35,g3:.95,growl:0},{fs:.8,vib:.002,br:.02,qm:1,g3:.4,growl:.3},{fs:1.3,vib:0,br:0,qm:1.1,g3:.5,growl:0},{fs:1.12,vib:.005,br:.3,qm:1.25,g3:.55,growl:0}];
 class Sing extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
-    this.eng=0;this.tf=165;this.f=165;this.glide=.05;this.harm=.6;this.hold=0;
-    this.T={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,shake:0};this.P=Object.assign({},this.T);
+    this.eng=0;this.tf=220;this.f=220;this.glide=.05;this.harm=.6;this.hold=0;this.dj=0;this.djs=0;
+    this.T={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0};this.P=Object.assign({},this.T);
     this.ph=new Float64Array(9);for(let i=0;i<9;i++)this.ph[i]=R();
-    this.F=[new SVF(),new SVF(),new SVF(),new SVF()];this.OV=new SVF();
-    this.lfo=0;this.am=0;this.sp=0;this.gp=0;this.gate=1;this.cc=0;this.dc=[0,0];this.lev=0;this.amp=0;this.post=0;
-    this.h1=4;this.h2=7;this.ht1=4;this.ht2=7;this.hm=0;this.tl=0;this.bit=0;this.bitc=0;this.jit=0;this.vibOn=0;
-    this.c={ampT:0,vd:0,vr:5.3,tg:.3,g:0,shk:0,hmT:0,ovf:1000};
+    this.F=[new SVF(),new SVF(),new SVF(),new SVF()];this.OV=new SVF();this.DJ=new SVF();
+    this.lfo=0;this.am=0;this.sp=0;this.cc=0;this.dc=[0,0];this.lev=0;this.amp=0;this.post=0;this.pw=0;
+    this.h1=4;this.h2=7;this.ht1=4;this.hm=0;this.tl=0;this.bit=0;this.bitc=0;this.jit=0;this.vibOn=0;
+    // stutter delay: the last slice of sound repeats and slowly dies away
+    this.rb=new Float32Array(sr|0);this.rw=0;this.loop=new Float32Array(sr|0);this.ll=0;this.li=0;this.sg=0;this.sl=0;this.slc=1;
+    this.sdec=Math.exp(Math.log(.003)/(4*sr));
+    this.c={ampT:0,vd:0,vr:5.3,tg:.3,g:0,hmT:0};
     this.port.onmessage=e=>{const d=e.data;
-      if(d.eng!==undefined)this.eng=d.eng;if(d.f)this.tf=d.f;if(d.glide!==undefined)this.glide=d.glide;if(d.harm!==undefined)this.harm=d.harm;
+      if(d.eng!==undefined)this.eng=d.eng;if(d.f)this.tf=d.f;if(d.glide!==undefined)this.glide=d.glide;if(d.harm!==undefined)this.harm=d.harm;if(d.dj!==undefined)this.dj=d.dj;
+      if(d.stut)this.stutter();
       if(d.p){this.hold=d.p.hold?1:0;if(!this.hold)for(const k in this.T)if(d.p[k]!==undefined)this.T[k]=d.p[k]}};
   }
+  stutter(){const sr=this.sr,L=Math.round(sr*(.11+R()*.06));this.ll=L;const rb=this.rb,N=rb.length;
+    for(let i=0;i<L;i++)this.loop[i]=rb[(this.rw-L+i+N)%N];this.li=0;this.sg=1;this.slc=1}
   control(){
     const P=this.P,T=this.T,sr=this.sr,e=this.eng,E=EK[e],c=this.c;
-    for(const k in T)P[k]+=(T[k]-P[k])*.12;               // ~6 ms steps → smooth, no zipper
+    for(const k in T)P[k]+=(T[k]-P[k])*.15;
     const open=P.open,round=P.round,smile=P.smile;
-    c.ampT=Math.pow(Math.min(1,Math.max(0,(open-.04)/.34)),1.1);
-    // vowel = formants: open lifts F1, smile lifts F2 (ie), rounding lowers F2 (oe/o)
-    let F1=280+520*open-70*round,F2=1550+850*smile-800*round-300*open,F3=2600+350*smile-250*round,F4=3600;
-    F2=Math.min(2700,Math.max(F1+250,F2));
-    const fs=E.fs,qm=e===3?1.6:1;
+    // barely open = very soft, wide open = loud
+    c.ampT=Math.pow(Math.min(1,Math.max(0,(open-.02)/.78)),1.45);
+    let F1=280+540*open-80*round,F2=1550+880*smile-820*round-300*open,F3=2600+380*smile-260*round,F4=3600;
+    F2=Math.min(2750,Math.max(F1+250,F2));
+    const fs=E.fs,qm=E.qm;
     this.F[0].set(F1*fs,F1*fs/90*qm,sr);this.F[1].set(F2*fs,F2*fs/110*qm,sr);this.F[2].set(F3*fs,F3*fs/150*qm,sr);this.F[3].set(F4*fs,F4*fs/220*qm,sr);
-    if(e===4){c.ovf=750+(1-round)*900+smile*500;this.OV.set(c.ovf,26,sr)}
-    // brows: vibrato + brightness; cheeks / frown-brows: growl; shake: stutter
-    c.vd=E.vib+P.brow*.022;c.vr=5.2+P.brow*1.6;
-    c.tg=1-Math.exp(-TAU*(1600+P.brow*5200+open*1600)/sr);
-    c.g=Math.min(1,Math.max(P.cheek,P.browDown*.75));
-    c.shk=Math.min(1,P.shake);
-    // harmony: smile = major (3rd + 5th), mouth corners down = minor
-    const em=Math.max(smile,P.frown);c.hmT=this.harm*Math.min(1,Math.max(0,(em-.2)/.45));
+    if(e===1)this.OV.set(700+(1-round)*900+smile*600,24,sr);
+    c.vd=E.vib+P.brow*.024;c.vr=5.2+P.brow*1.8;
+    c.tg=1-Math.exp(-TAU*(1500+P.brow*5200+open*2200)/sr);
+    c.g=Math.min(1,E.growl+Math.max(P.cheek,P.browDown*.75)*(1-E.growl));
+    const em=Math.max(smile,P.frown);c.hmT=this.harm*Math.min(1,Math.max(0,(em-.18)/.45));
     if(smile>P.frown+.06)this.ht1=4;else if(P.frown>smile+.06)this.ht1=3;
+    // DJ filter: bend left = low-pass, right = high-pass, centre = open
+    this.djs+=(this.dj-this.djs)*.25;const d=this.djs,ad=Math.abs(d);
+    if(d<0)this.DJ.set(20000*Math.pow(140/20000,ad),.707+ad*2.4,sr);else this.DJ.set(20*Math.pow(3500/20,ad),.707+ad*2.4,sr);
   }
   process(ins,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr,e=this.eng,E=EK[e],c=this.c;
-    const gk=1-Math.exp(-1/(Math.max(.004,e===1?.004:this.glide)*sr));
+    const gk=1-Math.exp(-1/(Math.max(.004,e===2?.006:this.glide)*sr));
     for(let k=0;k<n;k++){
       if((this.cc++&31)===0)this.control();
       this.f+=(this.tf-this.f)*gk;
-      this.h1+=(this.ht1-this.h1)*.0015;
-      this.hm+=(c.hmT-this.hm)*.0006;
-      this.amp+=(c.ampT-this.amp)*(c.ampT>this.amp?.004:.0012);
-      // vibrato fades in while a note is held (like a singer)
-      this.vibOn+=((this.amp>.05?1:0)-this.vibOn)*.00004;
+      this.h1+=(this.ht1-this.h1)*.0015;this.hm+=(c.hmT-this.hm)*.0006;
+      this.amp+=(c.ampT-this.amp)*(c.ampT>this.amp?.003:.0012);
+      this.vibOn+=((this.amp>.04?1:0)-this.vibOn)*.00004;
       this.lfo+=c.vr/sr;if(this.lfo>1)this.lfo-=1;
       this.jit+=((R()*2-1)-this.jit)*.001;
-      const f=this.f*(1+c.vd*this.vibOn*Math.sin(TAU*this.lfo)+this.jit*.0012*(e===1?0:1));
-      // three voices: lead + two harmony voices
+      const f=this.f*(1+c.vd*this.vibOn*Math.sin(TAU*this.lfo)+this.jit*.0012*(e===2?0:1));
       const fr=[f,f*Math.pow(2,this.h1/12),f*Math.pow(2,this.h2/12)],gv=[1,this.hm*.55,this.hm*.42];
       let src=0;
       for(let v=0;v<3;v++){if(v&&gv[v]<.002)continue;const fv=fr[v];let x=0;
-        if(e===0){for(let u=0;u<3;u++){const i=v*3+u,dt=fv*(1+(u-1)*.006)/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;x+=2*p-1-blep(p,dt)}x*=.45}
-        else if(e===1){const i=v*3,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;let q=p+.7;if(q>=1)q-=1;x=(2*p-1-blep(p,dt))-(2*q-1-blep(q,dt))}
-        else if(e===2){const i=v*3,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;x=(2*p-1-blep(p,dt))+Math.sin(TAU*p)*.4}
-        else if(e===3){const i=v*3,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;x=(2*p-1-blep(p,dt))*.12+(R()*2-1)*.9}
-        else{const i=v*3,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;x=2*p-1-blep(p,dt)}
+        if(e===3){for(let u=0;u<3;u++){const i=v*3+u,dt=fv*(1+(u-1)*.011)/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;x+=2*p-1-blep(p,dt)}x*=.4}
+        else{const i=v*3,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;
+          if(e===2){this.pw+=.4/sr;if(this.pw>1)this.pw-=1;let q=p+.62+.13*Math.sin(TAU*this.pw);q-=Math.floor(q);x=(2*p-1-blep(p,dt))-(2*q-1-blep(q,dt))}
+          else if(e===0){x=(2*p-1-blep(p,dt))+Math.sin(TAU*p)*.35}
+          else x=2*p-1-blep(p,dt)}
         src+=x*gv[v]}
-      // growl: a sub-octave and a rough 33 Hz flutter
       if(c.g>.01){this.sp+=f*.5/sr;if(this.sp>=1)this.sp-=1;src+=(this.sp<.5?1:-1)*c.g*.35}
       this.tl+=(src-this.tl)*c.tg;
-      const xin=this.tl+(e===3?0:(R()*2-1)*E.br);
+      const xin=this.tl+(R()*2-1)*E.br;
       const F=this.F;F[0].run(xin);F[1].run(xin);F[2].run(xin);F[3].run(xin);
-      let s=(F[0].bp*F[0].k*1+F[1].bp*F[1].k*.75+F[2].bp*F[2].k*(e===2?.75:.38)+F[3].bp*F[3].k*.16)*2.4+this.tl*.03;
-      if(e===3)s*=1.9;
-      if(e===4){this.OV.run(this.tl);s+=this.OV.bp*this.OV.k*1.6}
-      if(c.g>.01){this.am+=33/sr;if(this.am>1)this.am-=1;s=Math.tanh(s*(1+c.g*5))/(1+c.g*1.2)*(1-c.g*.45*(.5+.5*Math.sin(TAU*this.am)))}
-      if(e===1){if(++this.bitc>=5){this.bitc=0;this.bit=Math.round(s*24)/24}s=this.bit}
-      // head shake = stutter gate
-      this.gp+=13/sr;if(this.gp>1)this.gp-=1;const gt=this.gp<.5?1:1-c.shk;this.gate+=(gt-this.gate)*.02;
-      s*=this.amp*this.gate;
+      let s=(F[0].bp*F[0].k+F[1].bp*F[1].k*.75+F[2].bp*F[2].k*E.g3+F[3].bp*F[3].k*.16)*2.4+this.tl*.03;
+      if(e===1){this.OV.run(this.tl);s+=this.OV.bp*this.OV.k*1.5}
+      if(e===3)s*=1.25;
+      if(c.g>.01){this.am+=33/sr;if(this.am>1)this.am-=1;s=Math.tanh(s*(1+c.g*5))/(1+c.g*1.2)*(1-c.g*.4*(.5+.5*Math.sin(TAU*this.am)))}
+      if(e===2){if(++this.bitc>=4){this.bitc=0;this.bit=Math.round(s*20)/20}s=this.bit}
+      s*=this.amp;
+      // stutter: record the voice, replay the frozen slice with a slow, darkening fade
+      this.rb[this.rw]=s;this.rw=(this.rw+1)%this.rb.length;
+      if(this.sg>.0004){const Lp=this.ll,i=this.li,w=Math.min(1,i/96,(Lp-i)/96);this.sl+=(this.loop[i]*w-this.sl)*this.slc;
+        s+=this.sl*this.sg*.95;this.li=(i+1)%Lp;this.sg*=this.sdec;this.slc=Math.max(.06,this.slc*.99998)}
+      // DJ filter
+      const ad=Math.abs(this.djs);
+      if(ad>.01){const D=this.DJ,lp=D.run(s),hp=s-D.k*D.bp-lp;const y=this.djs<0?lp:hp;s+=(y-s)*Math.min(1,ad*8)}
       const d=this.dc;const y=s-d[0]+.995*d[1];d[0]=s;d[1]=y;s=y;
       const pk=Math.abs(s);this.lev+=(pk-this.lev)*(pk>this.lev?.01:.00005);if(this.lev>.5)s*=.5/this.lev;
-      s=s===s?s:0;if(!(s===s)){for(const fl of this.F){fl.ic1=fl.ic2=0}}
+      if(!(s===s)){s=0;for(const fl of this.F){fl.ic1=fl.ic2=0}this.DJ.ic1=this.DJ.ic2=0}
       L[k]=s;Rr[k]=s;
     }
-    if(++this.post>=6){this.post=0;this.port.postMessage({a:this.amp,hm:this.hm,ovf:c.ovf})}
+    if(++this.post>=6){this.post=0;this.port.postMessage({a:this.amp,hm:this.hm,sg:this.sg})}
     return true;
   }
 }
@@ -281,19 +298,19 @@ registerProcessor('sing',Sing);
 <script>
 (()=>{
 const TAU=Math.PI*2,$=id=>document.getElementById(id);
-const ENG=[{n:'CHOIR',c:'#f2b04e',off:0},{n:'ROBOT',c:'#6fd3ff',off:0},{n:'DIVA',c:'#ff5aa0',off:12},{n:'GHOST',c:'#b49cff',off:0},{n:'MONK',c:'#7fe0a0',off:-12}];
+const ENG=[{n:'TENGU',j:'天狗',c:'#ff6a4d',off:5},{n:'ONI',j:'鬼',c:'#ff3355',off:-12},{n:'MANGA',j:'漫画',c:'#6fd3ff',off:12},{n:'KITSUNE',j:'狐',c:'#c9a2ff',off:0}];
 const SCALES=[['FREE',null],['MAJOR',[0,2,4,5,7,9,11]],['MINOR',[0,2,3,5,7,8,10]],['PENTA',[0,2,4,7,9]],['M.PENTA',[0,3,5,7,10]],['BLUES',[0,3,5,6,7,10]],['DORIAN',[0,2,3,5,7,9,10]],['HIRAJOSHI',[0,2,3,7,8]]];
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const S=Object.assign({scale:3/7,key:4/11,oct:.5,glide:.3,space:.5,harm:.6,vol:.75},LS.get('ssKnobs',{}));
 const volG=()=>.25*Math.pow(12,S.vol);
-let eng=LS.get('ssEng',0),RANGE=LS.get('ssRange',2),showVid=LS.get('ssVid',false);
+let eng=Math.min(3,LS.get('ssMask',0)),RANGE=LS.get('ssRange',2),showVid=LS.get('ssVid',false);
 const msgEl=$('msg');let msgHold=0;
 function say(t,hot,ms){msgEl.textContent=t;msgEl.classList.toggle('hot',!!hot);msgHold=performance.now()+(ms||0)}
 const scIdx=()=>Math.round(S.scale*7),keyIdx=()=>Math.round(S.key*11),octV=()=>Math.round(S.oct*4)-2;
 
 // ---------- audio ----------
-let ctx=null,node=null,G={},ready=null,running=false,lastHb=0;const st={a:0,hm:0};
+let ctx=null,node=null,G={},ready=null,running=false,lastHb=0;const st={a:0,hm:0,sg:0};
 function makeCtx(){if(ctx)return;const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({latencyHint:'interactive'})}
 async function addModule(){const src=$('dsp').textContent;
   try{await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([src],{type:'application/javascript'})))}
@@ -301,7 +318,7 @@ async function addModule(){const src=$('dsp').textContent;
 async function makeNode(){
   if(node){try{node.disconnect()}catch(e){}}
   node=new AudioWorkletNode(ctx,'sing',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});
-  node.port.onmessage=e=>{st.a=e.data.a;st.hm=e.data.hm;lastHb=performance.now()};
+  node.port.onmessage=e=>{st.a=e.data.a;st.hm=e.data.hm;st.sg=e.data.sg;lastHb=performance.now()};
   node.onprocessorerror=()=>rescue();lastHb=performance.now();node.connect(G.in);
   node.port.postMessage({eng,glide:glideT(),harm:S.harm});
 }
@@ -344,7 +361,7 @@ async function loadModel(){
     const fs=await V.FilesetResolver.forVisionTasks(MP+'/wasm');
     const opt=d=>({baseOptions:{modelAssetPath:MODEL,delegate:d},runningMode:'VIDEO',numFaces:1,outputFaceBlendshapes:true,outputFacialTransformationMatrixes:false});
     try{lm=await V.FaceLandmarker.createFromOptions(fs,opt('GPU'))}catch(e){lm=await V.FaceLandmarker.createFromOptions(fs,opt('CPU'))}
-    lmState='ready';if(!running)say('masker klaar · tik om te spelen',1,2500);
+    lmState='ready';if(!running)say('masker klaar · kies je masker',1,2500);
   }catch(e){lmState='fail';say('gezichtsherkenning niet beschikbaar · vinger op het masker',0,5000)}
 }
 loadModel();
@@ -356,35 +373,45 @@ function useCam(s){
   if(!s){camOn=false;$('camB').classList.remove('on');say('geen camera · speel met je vinger op het masker',0,4000);return}
   stream=s;video.srcObject=s;video.play().catch(()=>{});camOn=true;$('camB').classList.add('on');
 }
-// raw → features. Blendshapes give 0..1 scores per expression; calibration removes your resting face.
-const SPAN={open:.5,round:.45,smile:.55,frown:.25,brow:.45,browDown:.4,cheek:.35,blinkL:.6,blinkR:.6};
-let base=LS.get('ssCal',null),calRun=null;
-const FE={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,blinkL:0,blinkR:0,roll:0,yaw:0,shake:0};
-let faceSeen=0,lastVT=-1,prevYaw=0,closedSince=0,hold=false,sim=null;
+// expressions: blendshape scores minus your resting face, scaled so small movements already count
+const SPAN={jaw:.42,gap:.1,round:.34,smile:.38,frown:.16,brow:.3,browDown:.3,cheek:.24,blinkL:.55,blinkR:.55};
+let base=LS.get('ssCal2',null),calRun=null;
+const FE={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,blinkL:0,blinkR:0,roll:0,nod:0,yaw:0,shake:0};
+let faceSeen=0,lastVT=-1,prevYaw=0,closedSince=0,hold=false,sim=null,lastStut=0,shakeDir=0,shakeFlips=[];
 function rawFrom(res){
   const bs=res.faceBlendshapes&&res.faceBlendshapes[0];if(!bs)return null;const m={};for(const c of bs.categories)m[c.categoryName]=c.score;
-  const P=res.faceLandmarks[0];
-  const r={open:m.jawOpen||0,round:Math.max(m.mouthPucker||0,(m.mouthFunnel||0)*.9),smile:((m.mouthSmileLeft||0)+(m.mouthSmileRight||0))/2,
+  const P=res.faceLandmarks[0],asp=(video.videoHeight||3)/(video.videoWidth||4);
+  const d2=(a,b)=>Math.hypot(a.x-b.x,(a.y-b.y)*asp);
+  const fh=Math.max(.01,d2(P[10],P[152]));
+  const r={jaw:m.jawOpen||0,gap:d2(P[13],P[14])/fh,round:Math.max(m.mouthPucker||0,(m.mouthFunnel||0)*.9),smile:((m.mouthSmileLeft||0)+(m.mouthSmileRight||0))/2,
     frown:((m.mouthFrownLeft||0)+(m.mouthFrownRight||0))/2,brow:Math.max(m.browInnerUp||0,((m.browOuterUpLeft||0)+(m.browOuterUpRight||0))/2),
     browDown:((m.browDownLeft||0)+(m.browDownRight||0))/2,cheek:m.cheekPuff||0,blinkL:m.eyeBlinkLeft||0,blinkR:m.eyeBlinkRight||0};
-  // head: roll from the eye corners, yaw from the nose between the cheeks (mirrored like a selfie)
-  const a=P[33],b=P[263],ns=P[1],cl=P[234],cr=P[454];
-  r.roll=-Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
-  r.yaw=-((ns.x-(cl.x+cr.x)/2)/Math.max(.01,Math.abs(cr.x-cl.x)))*2;
+  // head: roll from the eye corners; nod from the depth of forehead vs chin; yaw from the nose between the cheeks
+  const a=P[33],b=P[263];
+  r.roll=-Math.atan2((b.y-a.y)*asp,b.x-a.x)*180/Math.PI;
+  r.nod=Math.atan2(P[10].z-P[152].z,(P[152].y-P[10].y)*asp)*180/Math.PI;
+  const ns=P[1],cl=P[234],cr=P[454];r.yaw=-((ns.x-(cl.x+cr.x)/2)/Math.max(.01,Math.abs(cr.x-cl.x)))*2;
   return r;
 }
+const nrm=(r,key)=>Math.min(1,Math.max(0,(r[key]-((base&&base[key])||0))/SPAN[key]));
 function ingest(r,now){
-  if(calRun){calRun.push(r);}
-  if(!base&&!calRun){startCal(true);}
-  const B=base||{};const k=.55;
-  for(const key in SPAN){const v=Math.min(1,Math.max(0,(r[key]-(B[key]||0))/SPAN[key]));FE[key]+=(v-FE[key])*k}
-  FE.roll+=((r.roll-(B.roll||0))-FE.roll)*.5;FE.yaw+=(r.yaw-FE.yaw)*.5;
-  const dy=Math.abs(FE.yaw-prevYaw);prevYaw=FE.yaw;FE.shake+=(Math.min(1.5,dy*14)-FE.shake)*(dy*14>FE.shake?.35:.08);
-  // both eyes closed for a moment = hold the note
+  if(calRun)calRun.push(r);
+  if(!base&&!calRun)startCal(true);
+  const k=.6,tg={open:Math.max(nrm(r,'gap'),nrm(r,'jaw')*.9)};
+  for(const key of ['round','smile','frown','brow','browDown','cheek','blinkL','blinkR'])tg[key]=nrm(r,key);
+  for(const key in tg)FE[key]+=(tg[key]-FE[key])*k;
+  FE.roll+=((r.roll-((base&&base.roll)||0))-FE.roll)*.5;FE.nod+=((r.nod-((base&&base.nod)||0))-FE.nod)*.5;
+  // quick "no" shake: the head swings left-right-left fast → stutter
+  const dy=r.yaw-prevYaw;prevYaw=r.yaw;FE.yaw=r.yaw;
+  FE.shake+=(Math.min(1.5,Math.abs(dy)*12)-FE.shake)*(Math.abs(dy)*12>FE.shake?.4:.1);
+  if(Math.abs(dy)>.035){const dir=Math.sign(dy);if(dir!==shakeDir){shakeDir=dir;shakeFlips.push(now)}}
+  shakeFlips=shakeFlips.filter(t=>now-t<520);
+  if(shakeFlips.length>=3&&now-lastStut>650){lastStut=now;shakeFlips=[];if(node)node.port.postMessage({stut:1});stutFlash=1}
   const closed=FE.blinkL>.6&&FE.blinkR>.6;
   if(closed){if(!closedSince)closedSince=now;if(now-closedSince>220)hold=true}else{closedSince=0;hold=false}
   faceSeen=now;
 }
+let stutFlash=0;
 function startCal(auto){
   calRun=[];$('cal').classList.add('on');const t0=performance.now();
   const tick=()=>{const left=2-(performance.now()-t0)/1000;
@@ -392,8 +419,8 @@ function startCal(auto){
     const rs=calRun;calRun=null;$('cal').classList.remove('on');
     if(rs.length<8){say('geen gezicht gezien · kijk recht in de camera en tik CAL',0,3500);return}
     const med=key=>{const a=rs.map(x=>x[key]).sort((x,y)=>x-y);return a[a.length>>1]};
-    base={};for(const key of [...Object.keys(SPAN),'roll'])base[key]=med(key);
-    LS.set('ssCal',base);say('CAL klaar · open je mond om te zingen',1,2500);
+    base={};for(const key of [...Object.keys(SPAN),'roll','nod'])base[key]=med(key);
+    LS.set('ssCal2',base);say('CAL klaar · open je mond om te zingen',1,2500);
   };tick();
 }
 function track(now){
@@ -403,7 +430,7 @@ function track(now){
   if(res&&res.faceLandmarks&&res.faceLandmarks.length){const r=rawFrom(res);if(r)ingest(r,now)}
 }
 
-// ---------- start: one tap (iOS needs a touch before sound + camera) ----------
+// ---------- start: pick a mask (that tap also starts sound + camera) ----------
 function startAll(){
   if(running)return;
   const pc=camOn?null:askCam();
@@ -411,7 +438,6 @@ function startAll(){
   if(pc)pc.then(useCam);
 }
 const intro=$('intro');
-intro.addEventListener('click',()=>{intro.classList.add('gone');startAll()});
 if(base)$('inote').textContent='Je rustgezicht is al bekend op deze telefoon. Safari vraagt om de camera: kies Sta toe.';
 $('camB').addEventListener('click',()=>{if(camOn){camOn=false;if(stream)stream.getTracks().forEach(t=>t.stop());$('camB').classList.remove('on');say('camera uit · vinger op het masker',0,2000);return}askCam().then(useCam)});
 $('cal').addEventListener('click',()=>{if(!camOn||lmState!=='ready'){say('camera en masker moeten aan staan',0,2500);return}if(!calRun)startCal(false)});
@@ -421,9 +447,9 @@ $('rng').textContent=RANGE+' OCT';
 $('nbox').addEventListener('click',()=>{RANGE=RANGE>=4?1:RANGE+1;$('rng').textContent=RANGE+' OCT';LS.set('ssRange',RANGE);say('BEREIK · '+RANGE+(RANGE>1?' octaven':' octaaf'),1,1500)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running&&ctx)ctx.resume()});
 
-// ---------- engines ----------
+// ---------- masks = palettes ----------
 const eBtns=[...document.querySelectorAll('.eng')];
-function setEng(i){eng=i;LS.set('ssEng',i);eBtns.forEach((b,j)=>b.classList.toggle('on',j===i));document.documentElement.style.setProperty('--eng',ENG[i].c);if(node)node.port.postMessage({eng:i});say(ENG[i].n,1,1200)}
+function setEng(i){eng=i;LS.set('ssMask',i);eBtns.forEach((b,j)=>b.classList.toggle('on',j===i));document.documentElement.style.setProperty('--eng',ENG[i].c);if(node)node.port.postMessage({eng:i});say(ENG[i].j+' '+ENG[i].n,1,1200)}
 eBtns.forEach((b,i)=>b.addEventListener('click',()=>setEng(i)));
 
 // ---------- keep the UI fixed when Safari rotates ----------
@@ -469,19 +495,21 @@ function set(k,v){v=Math.min(1,Math.max(0,v));const id=k.id;
   say({glide:'GLIDE  '+Math.round(glideT()*1000)+' ms',space:'SPACE  '+Math.round(v*99)+(v>.5?' · + echo':''),harm:'HARMONY  '+Math.round(v*99)+' · lach of frons voor het koortje',vol:'VOLUME  '+Math.round(v*99)}[id],0,1100);
 }
 
-// ---------- pitch: head tilt → note in the scale ----------
+// ---------- pitch: nod → note in the scale ----------
 let qNote=null;
+const lowM=()=>55+octV()*12+ENG[eng].off-RANGE*6;
 function midiFor(pos){
-  const base0=52+octV()*12+ENG[eng].off;let m=base0+6-RANGE*6+pos*RANGE*12;
+  const lo=lowM();let m=lo+pos*RANGE*12;
   const sc=SCALES[scIdx()][1];
-  if(sc){const k=keyIdx();let best=null,bd=99;for(let o=-3;o<=5;o++)for(const d of sc){const c=12*Math.floor(base0/12)+o*12+k+d;const dd=Math.abs(c-m);if(dd<bd){bd=dd;best=c}}
+  if(sc){const k=keyIdx();let best=null,bd=99;for(let o=-3;o<=6;o++)for(const d of sc){const c=12*Math.floor(lo/12)+o*12+k+d;const dd=Math.abs(c-m);if(dd<bd){bd=dd;best=c}}
     if(qNote!==null&&Math.abs(m-qNote)<.7&&sc.some(d=>((qNote-k-d)%12+12)%12===0))best=qNote;qNote=best;m=best}
   else qNote=null;
   return m;
 }
-function vowel(f){if(f.open<.08)return'·';if(f.round>.4)return f.open>.35?'O':'U';if(f.smile>.38&&f.open<.5)return f.open<.22?'I':'E';return f.open>.45?'A':'E'}
+function vowel(f){if(f.open<.06)return'·';if(f.round>.4)return f.open>.35?'O':'U';if(f.smile>.38&&f.open<.5)return f.open<.22?'I':'E';return f.open>.45?'A':'E'}
+const djOf=roll=>{const a=Math.abs(roll);return a<4?0:Math.sign(roll)*Math.min(1,(a-4)/20)};
 
-// ---------- finger fallback (no camera): x = tilt, height = mouth open ----------
+// ---------- finger fallback (no camera): up/down = pitch, left/right = filter ----------
 const cv=$('face'),cx2=cv.getContext('2d');let W=1,H=1,dpr=1,touch=null;
 function size(){dpr=Math.min(2,devicePixelRatio||1);W=cv.width=Math.max(1,cv.clientWidth*dpr);H=cv.height=Math.max(1,cv.clientHeight*dpr)}
 size();new ResizeObserver(size).observe(cv);
@@ -490,116 +518,171 @@ function cvPos(e){const r=cv.getBoundingClientRect();let x=(e.clientX-r.left)/r.
 cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);touch=cvPos(e);if(!running){intro.classList.add('gone');startAll()}e.preventDefault()});
 cv.addEventListener('pointermove',e=>{if(touch)touch=cvPos(e)});
 const tup=()=>{touch=null};cv.addEventListener('pointerup',tup);cv.addEventListener('pointercancel',tup);
-window.__ssSim=f=>{sim=f};      // test hook: feed features without a camera
+window.__ssSim=f=>{sim=f};
 
-// ---------- the mask ----------
+// ---------- the masks: gold line art, every part moves with your face ----------
+const GOLD='#e6c178',GOLD2='#9c7a3e';
+function maskArt(c,type,f,u,col,glow,amp){
+  c.lineCap='round';c.lineJoin='round';
+  const lw=Math.max(1.2,u*.0065);
+  const S1=(w,a)=>{c.lineWidth=lw*(w||1);c.strokeStyle=a?col:GOLD;c.stroke()};
+  const P=(pts,close)=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x*u,y*u):c.moveTo(x*u,y*u));if(close)c.closePath()};
+  const Q=(a,b,cc)=>{c.beginPath();c.moveTo(a[0]*u,a[1]*u);c.quadraticCurveTo(cc[0]*u,cc[1]*u,b[0]*u,b[1]*u)};
+  const E=(x,y,rx,ry,rot)=>{c.beginPath();c.ellipse(x*u,y*u,Math.max(.5,rx*u),Math.max(.5,ry*u),rot||0,0,TAU)};
+  const op=f.open,sm=f.smile,rd=f.round,fr=f.frown,bu=f.brow,bd=f.browDown,ck=f.cheek;
+  const eoL=Math.max(.05,1-f.blinkL),eoR=Math.max(.05,1-f.blinkR),jaw=op*.05;
+  c.shadowColor=col;c.shadowBlur=glow;
+  // mouth helper: width, opening, corner lift
+  const mouth=(y,w0,teeth,fangs)=>{const w=w0*(1+.45*sm-.45*rd),h=.006+.12*op+.03*rd*Math.min(1,op*4),cu=(sm-fr)*.045;
+    c.beginPath();c.moveTo(-w*u,(y-cu)*u);c.bezierCurveTo(-w*.5*u,(y-h*.6-.01)*u,w*.5*u,(y-h*.6-.01)*u,w*u,(y-cu)*u);c.bezierCurveTo(w*.5*u,(y+h+.012)*u,-w*.5*u,(y+h+.012)*u,-w*u,(y-cu)*u);
+    if(amp>.02){c.save();c.globalAlpha=Math.min(1,amp*1.2)*.6;c.fillStyle=col;c.fill();c.restore()}S1(1.2);
+    if(teeth&&op>.12){P([[-w*.7,y-h*.3],[w*.7,y-h*.3]]);S1(.6)}
+    if(fangs){const t=.035+ck*.03;for(const s of [-1,1]){P([[s*w*.75,y+h*.9],[s*w*.62,y+h*.9-t-.02],[s*w*.5,y+h*.8]]);S1(.9,ck>.3)}
+      for(const s of [-1,1]){P([[s*w*.35,y-h*.5],[s*w*.28,y-h*.5+.03+op*.02],[s*w*.2,y-h*.5]]);S1(.8)}}
+    return {w,h}};
+  if(type===0){ // ---------- TENGU: long nose, bushy brows, tokin cap, beard
+    P([[0,-.44],[.28,-.4],[.35,-.12],[.33,.12],[.24,.36+jaw],[0,.48+jaw],[-.24,.36+jaw],[-.33,.12],[-.35,-.12],[-.28,-.4]],true);S1(1.4);
+    P([[-.07,-.47],[.07,-.47],[.1,-.55],[0,-.61],[-.1,-.55]],true);S1(1);P([[-.1,-.5],[-.22,-.44]]);S1(.7);P([[.1,-.5],[.22,-.44]]);S1(.7);
+    for(const s of [-1,1]){const by=-.22-bu*.07,tilt=bd*.07-bu*.03;
+      for(let j=0;j<3;j++){const off=j*.018;P([[s*.06,by+tilt+off],[s*.11,by-.035+off],[s*.16,by-.01+off],[s*.21,by-.05+off],[s*.27,by-.02-bu*.03+off]]);S1(j?0.8:1.3,bu>.3||bd>.3)}}
+    for(const s of [-1,1]){const eo=s<0?eoL:eoR,ex=s*.15,ey=-.11,r=.045*(1+bu*.25);
+      E(ex,ey,r*1.25,r*eo,0);S1(1.1);if(eo>.25){E(ex,ey,r*.45,r*.45*Math.min(1,eo*1.2));c.save();c.fillStyle=hold?col:GOLD;c.fill();c.restore()}
+      P([[ex-r*1.4,ey-r*1.3*eo-.01],[ex+r*1.4,ey-r*1.1*eo-.02]]);S1(.8)}
+    const tipX=f.yaw*.12,tipY=.2-f.nod*.006;
+    P([[-.045,-.1],[-.06,.1],[tipX-.02,tipY],[tipX,tipY+.02],[tipX+.02,tipY],[.06,.1],[.045,-.1]]);S1(1.3);
+    E(-.04,.1,.012,.008);S1(.7);E(.04,.1,.012,.008);S1(.7);
+    for(const s of [-1,1]){Q([s*.05,.18],[s*.2,.22-sm*.06],[s*.13,.16-sm*.03]);S1(1.1);Q([s*.06,.2],[s*.23,.27-sm*.05],[s*.15,.2]);S1(.7)}
+    mouth(.29,.08,true,false);
+    for(let i=-2;i<=2;i++){Q([i*.05,.36+jaw],[i*.07,.5+jaw+Math.abs(i)*-.01],[i*.06+.02,.44+jaw]);S1(.7)}
+    for(const s of [-1,1]){Q([s*.09,.04],[s*.16,.16],[s*(.14+ck*.04),.08]);S1(.6,ck>.3)}
+  }else if(type===1){ // ---------- ONI: horns, heavy brows, bulging eyes, fangs and tusks
+    P([[0,-.4],[.3,-.38],[.42,-.15],[.42,.12],[.32,.38+jaw],[0,.46+jaw],[-.32,.38+jaw],[-.42,.12],[-.42,-.15],[-.3,-.38]],true);S1(1.5);
+    for(const s of [-1,1]){const hx=s*.2;c.beginPath();c.moveTo((hx-s*.06)*u,-.38*u);c.quadraticCurveTo((hx+s*.02)*u,-.6*u,(hx+s*.14)*u,-.66*u);c.quadraticCurveTo((hx+s*.06)*u,-.52*u,(hx+s*.06)*u,-.38*u);S1(1.3,ck>.3||bd>.4);
+      for(let j=1;j<4;j++){const t=j/4;P([[hx-s*.05+s*.02*t,-.38-.08*t*1.6],[hx+s*.05+s*.03*t,-.38-.06*t*1.6]]);S1(.6)}}
+    for(let i=0;i<9;i++){const x=-.28+i*.07;P([[x,-.38],[x+.03,-.47-(i%2)*.04],[x+.06,-.38]]);S1(.7)}
+    for(const s of [-1,1]){const by=-.2-bu*.06,inner=.06+bd*.05-bu*.04;P([[s*.06,by+inner],[s*.18,by-.02],[s*.32,by-.06-bu*.03]]);S1(2.2,bd>.3||bu>.3);P([[s*.08,by+inner+.03],[s*.3,by-.02]]);S1(.6)}
+    for(const s of [-1,1]){const eo=s<0?eoL:eoR,ex=s*.17,ey=-.07,r=.07*(1+bu*.2);
+      E(ex,ey,r,r*eo);S1(1.3);if(eo>.25){E(ex,ey,r*.28,r*.28);c.save();c.fillStyle=hold?col:GOLD;c.fill();c.restore()}
+      for(let j=0;j<3;j++){const a=-.8+j*.8;P([[ex+Math.cos(a)*r*1.1,ey+Math.sin(a)*r*1.1*eo],[ex+Math.cos(a)*r*1.35,ey+Math.sin(a)*r*1.35*eo]]);S1(.5)}}
+    for(const s of [-1,1]){c.beginPath();c.arc(s*.06*u,.08*u,.035*u,s<0?-.5:Math.PI*.5+.5,s<0?Math.PI*1.5-.5:Math.PI*2.5-.5,s<0);S1(1)}
+    P([[-.03,-.06],[-.05,.06]]);S1(.7);P([[.03,-.06],[.05,.06]]);S1(.7);
+    mouth(.25,.17,true,true);
+    for(const s of [-1,1]){Q([s*.33,.0],[s*.36,.24],[s*(.42+ck*.06),.12]);S1(.7,ck>.3)}
+  }else if(type===2){ // ---------- MANGA: spiky hair, huge sparkling eyes, tiny nose, blush
+    P([[0,-.42],[.3,-.36],[.37,-.1],[.32,.16],[.2,.36+jaw],[0,.47+jaw],[-.2,.36+jaw],[-.32,.16],[-.37,-.1],[-.3,-.36]],true);S1(1.3);
+    const sp=[[-.44,-.18],[-.36,-.5],[-.26,-.32],[-.18,-.62],[-.08,-.36],[.02,-.66],[.1,-.38],[.2,-.6],[.27,-.32],[.38,-.5],[.44,-.18]];P(sp);S1(1.3);
+    P([[-.3,-.3],[-.22,-.18],[-.16,-.3],[-.08,-.16],[0,-.3],[.08,-.16],[.16,-.3],[.22,-.18],[.3,-.3]]);S1(1);
+    for(const s of [-1,1]){const eo=s<0?eoL:eoR,ex=s*.15,ey=-.03,happy=sm>.55&&op<.35;
+      if(happy){Q([ex-.08,ey+.01],[ex+.08,ey+.01],[ex,ey-.08]);S1(1.6)}
+      else{const rx=.085,ry=.105*eo*(1+bu*.15);E(ex,ey,rx,ry);S1(1.3);
+        if(eo>.25){E(ex,ey+ry*.15,rx*.62,ry*.7);S1(1);E(ex-rx*.3,ey-ry*.35,rx*.22,rx*.22);c.save();c.fillStyle=hold?col:GOLD;c.fill();c.restore();E(ex+rx*.25,ey+ry*.25,rx*.1,rx*.1);c.save();c.fillStyle=GOLD;c.fill();c.restore()}
+        P([[ex-rx*1.1,ey-ry*.9],[ex+rx*1.05,ey-ry*1.05]]);S1(2.2)}
+      const by=-.17-bu*.07;Q([ex-.07,by+bd*.04*s*-1],[ex+.07,by-bd*.04*s*-1],[ex,by-.03-bu*.02]);S1(.9,bu>.3||bd>.3)}
+    P([[0,.1],[-.012,.13]]);S1(.8);
+    if(op<.08&&sm>.3){c.beginPath();c.moveTo(-.07*u,.27*u);c.quadraticCurveTo(-.035*u,.31*u,0,.27*u);c.quadraticCurveTo(.035*u,.31*u,.07*u,.27*u);S1(1.2)}else mouth(.27,.06,false,false);
+    const bl=Math.min(1,ck+sm*.6);if(bl>.1)for(const s of [-1,1])for(let j=0;j<4;j++){const x=s*(.19+j*.035);P([[x-.015,.12],[x+.015,.08]]);S1(.8,true)}
+    if(fr>.35){c.beginPath();c.moveTo(.33*u,-.16*u);c.quadraticCurveTo(.37*u,-.08*u,.33*u,-.06*u);c.quadraticCurveTo(.29*u,-.08*u,.33*u,-.16*u);S1(.9,true)}
+  }else{ // ---------- KITSUNE: fox ears, slanted eyes, spirit flame, whiskers
+    P([[-.1,-.36],[-.28,-.62],[-.33,-.22],[-.43,.0],[-.2,.24],[0,.44+jaw],[.2,.24],[.43,0],[.33,-.22],[.28,-.62],[.1,-.36]],true);S1(1.4);
+    P([[-.15,-.38],[-.26,-.54],[-.28,-.3]]);S1(.7);P([[.15,-.38],[.26,-.54],[.28,-.3]]);S1(.7);
+    const fl=.05+amp*.07;c.beginPath();c.moveTo(0,(-.2)*u);c.bezierCurveTo(-.06*u,-.26*u,-.02*u,(-.3-fl)*u,0,(-.36-fl)*u);c.bezierCurveTo(.02*u,(-.3-fl)*u,.06*u,-.26*u,0,-.2*u);S1(1.1,amp>.05);
+    for(const s of [-1,1]){const eo=s<0?eoL:eoR,x0=s*.07,x1=s*.28,y0=-.06,y1=-.15-bu*.03,g=.035*eo;
+      c.beginPath();c.moveTo(x0*u,y0*u);c.quadraticCurveTo((x0+x1)/2*u,(y0+y1)/2*u-g*u,x1*u,y1*u);c.quadraticCurveTo((x0+x1)/2*u,(y0+y1)/2*u+g*u*.6,x0*u,y0*u);S1(1.3);
+      if(eo>.3){E((x0+x1)/2,(y0+y1)/2-.004,.013,.013*eo);c.save();c.fillStyle=hold?col:GOLD;c.fill();c.restore()}
+      const my=-.2-bu*.08;for(let j=0;j<2;j++){E(s*(.12+j*.06),my-j*.015+bd*.03,.012,.007,s*.4);S1(1.2,bu>.3)}
+      for(let j=0;j<2;j++){Q([s*.1,-.06+j*.03+(y1+.15)],[s*.3,-.0+j*.04],[s*.22,-.08+j*.05]);S1(.6)}}
+    E(0,.28,.035,.022);c.save();c.fillStyle=GOLD;c.fill();c.restore();
+    P([[0,.3],[0,.33]]);S1(.8);
+    const ow=.07*(1+.4*sm-.3*rd);c.beginPath();c.moveTo(-ow*u,(.34-sm*.03)*u);c.quadraticCurveTo(-ow*.4*u,(.37+op*.1)*u,0,.33*u);c.quadraticCurveTo(ow*.4*u,(.37+op*.1)*u,ow*u,(.34-sm*.03)*u);S1(1.1);
+    if(op>.06){E(0,.355+op*.04,ow*.5,op*.05);if(amp>.02){c.save();c.globalAlpha=Math.min(1,amp)*.6;c.fillStyle=col;c.fill();c.restore()}S1(.8)}
+    for(const s of [-1,1])for(let j=0;j<3;j++){const a=(j-1)*.18+(sm-fr)*.15-ck*.1*s*0;P([[s*.08,.27+j*.02],[s*(.36+ck*.05),.2+j*.06+a*s*0-(j-1)*.04+(sm-fr)*-.04]]);S1(.6,ck>.3||sm>.4)}
+  }
+  c.shadowBlur=0;
+}
+
+// ---------- the stage ----------
 const parts=[];
 function lerp(a,b,t){return a+(b-a)*t}
-function drawMask(now,dt,f,live,amp,midi,col){
+function drawStage(now,dt,f,live,amp,midi,col,dj){
   const c=cx2;c.globalCompositeOperation='source-over';
   c.fillStyle='#07060a';c.fillRect(0,0,W,H);
-  if(showVid&&camOn&&video.readyState>=2){c.save();c.globalAlpha=.28;c.translate(W,0);c.scale(-1,1);const vw=video.videoWidth||4,vh=video.videoHeight||3,sc=Math.max(W/vw,H/vh);
+  if(showVid&&camOn&&video.readyState>=2){c.save();c.globalAlpha=.25;c.translate(W,0);c.scale(-1,1);const vw=video.videoWidth||4,vh=video.videoHeight||3,sc=Math.max(W/vw,H/vh);
     try{c.filter='grayscale(1) sepia(.7)'}catch(e){}c.drawImage(video,(W-vw*sc)/2,(H-vh*sc)/2,vw*sc,vh*sc);c.restore();try{c.filter='none'}catch(e){}}
-  const Hm=Math.min(H*.52,W*1.08),Wm=Hm*.7,cx=W/2+f.yaw*Wm*.18,cy=H*.47;
-  // ---- pitch halo above the head: the scale, with a pointer that follows your tilt ----
-  const hr=Hm*.64,hcY=cy,a0=-Math.PI/2-.74,a1=-Math.PI/2+.74;
-  c.strokeStyle='rgba(107,86,49,.7)';c.lineWidth=1.2*dpr;c.beginPath();c.arc(cx,hcY,hr,a0,a1);c.stroke();
-  const sc=SCALES[scIdx()][1],k=keyIdx();
-  const lo0=52+octV()*12+ENG[eng].off+6-RANGE*6,span=RANGE*12;
-  c.font=`${Math.max(8,hr*.055)|0}px "Share Tech Mono",monospace`;c.textAlign='center';c.textBaseline='middle';
-  for(let m=Math.ceil(lo0);m<=lo0+span;m++){const pc=((m%12)+12)%12;if(sc&&!sc.includes(((pc-k)%12+12)%12))continue;
-    const t=(m-lo0)/span,a=lerp(a0,a1,t),on=Math.round(midi)===m&&amp>.04;
-    c.strokeStyle=on?col:'rgba(207,167,94,.8)';c.lineWidth=(on?2.4:1)*dpr;c.beginPath();c.moveTo(cx+Math.cos(a)*hr,hcY+Math.sin(a)*hr);c.lineTo(cx+Math.cos(a)*hr*.95,hcY+Math.sin(a)*hr*.95);c.stroke();
-    if(pc===k||on||!sc||sc.length<=5){c.fillStyle=on?col:'rgba(207,167,94,.75)';c.fillText(KEYS[pc].replace('♯','#'),cx+Math.cos(a)*hr*1.07,hcY+Math.sin(a)*hr*1.07)}}
-  {const t=(midi-lo0)/span,a=lerp(a0,a1,Math.min(1,Math.max(0,t)));c.fillStyle=col;c.shadowColor=col;c.shadowBlur=10*dpr;c.beginPath();c.arc(cx+Math.cos(a)*hr*.9,hcY+Math.sin(a)*hr*.9,4*dpr,0,TAU);c.fill();c.shadowBlur=0}
-  c.fillStyle='rgba(207,167,94,.7)';c.font=`${Math.max(8,hr*.05)|0}px "Hiragino Sans","Noto Sans JP",sans-serif`;c.fillText('傾 TILT',cx,hcY-hr*1.16);
-  // ---- sound flying out of the mouth ----
-  const rot=Math.max(-.6,Math.min(.6,f.roll*Math.PI/180)),my0=Hm*.25+f.open*Hm*.025,mx=cx-Math.sin(rot)*my0,myy=cy+Math.cos(rot)*my0;
-  if(amp>.04&&live){const n=1+(amp*2|0);for(let i=0;i<n;i++)parts.push({x:mx,y:myy,vx:(Math.random()-.5)*1.4,vy:-(.2+Math.random()*.9)*(.5+amp),l:1,s:(1.5+Math.random()*2.5*amp)*dpr,h:Math.random()<st.hm*.6?1:0})}
+  const u=Math.min(H*.56,W*.84),cx=W*.55+f.yaw*u*.08,cy=H*.44;
+  // ---- pitch ladder on the left: nod up = higher ----
+  const lx=W*.07,ly0=cy+u*.42,ly1=cy-u*.42,sc=SCALES[scIdx()][1],k=keyIdx(),lo=lowM(),span=RANGE*12;
+  c.strokeStyle='rgba(107,86,49,.8)';c.lineWidth=1.2*dpr;c.beginPath();c.moveTo(lx,ly0);c.lineTo(lx,ly1);c.stroke();
+  c.font=`${Math.max(8,W*.028)|0}px "Share Tech Mono",monospace`;c.textAlign='left';c.textBaseline='middle';
+  for(let m=Math.ceil(lo);m<=lo+span;m++){const pc=((m%12)+12)%12;if(sc&&!sc.includes(((pc-k)%12+12)%12))continue;const y=lerp(ly0,ly1,(m-lo)/span),on=Math.round(midi)===m&&amp>.03;
+    c.strokeStyle=on?col:'rgba(207,167,94,.7)';c.lineWidth=(on?2.2:1)*dpr;c.beginPath();c.moveTo(lx-4*dpr,y);c.lineTo(lx+4*dpr,y);c.stroke();
+    if(pc===k||on){c.fillStyle=on?col:'rgba(207,167,94,.7)';c.fillText(KEYS[pc].replace('♯','#'),lx+7*dpr,y)}}
+  {const y=lerp(ly0,ly1,Math.min(1,Math.max(0,(midi-lo)/span)));c.fillStyle=col;c.shadowColor=col;c.shadowBlur=10*dpr;c.beginPath();c.moveTo(lx-9*dpr,y);c.lineTo(lx-3*dpr,y-4*dpr);c.lineTo(lx-3*dpr,y+4*dpr);c.fill();c.shadowBlur=0}
+  // ---- sound sparks behind the mask ----
+  const rot=Math.max(-.6,Math.min(.6,f.roll*Math.PI/180)),mY=.28*u,mx=cx-Math.sin(rot)*mY,my=cy+Math.cos(rot)*mY;
+  if(amp>.03&&live){const n=1+(amp*2|0);for(let i=0;i<n;i++)parts.push({x:mx,y:my,vx:(Math.random()-.5)*1.6,vy:-(.1+Math.random()*.9)*(.5+amp),l:1,s:(1+Math.random()*2*amp)*dpr})}
+  if(stutFlash>.5)for(let i=0;i<14;i++)parts.push({x:mx,y:my,vx:Math.cos(i/14*TAU)*1.4,vy:Math.sin(i/14*TAU)*1.4,l:1,s:2*dpr});
+  stutFlash*=.9;
   c.globalCompositeOperation='lighter';
-  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx*H*dt*.25;p.y+=p.vy*H*dt*.25;p.vx+=(Math.random()-.5)*dt*2*f.shake;p.l-=dt*.8;if(p.l<=0){parts.splice(i,1);continue}
-    c.fillStyle=p.h?`rgba(255,240,200,${p.l*.3})`:col+Math.round(p.l*90).toString(16).padStart(2,'0');c.beginPath();c.arc(p.x,p.y,p.s*(1.4-p.l*.4),0,TAU);c.fill()}
-  if(parts.length>400)parts.splice(0,parts.length-400);
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx*H*dt*.22;p.y+=p.vy*H*dt*.22;p.l-=dt*.75;if(p.l<=0){parts.splice(i,1);continue}
+    c.fillStyle=col+Math.round(p.l*110).toString(16).padStart(2,'0');c.beginPath();c.arc(p.x,p.y,p.s*(1.4-p.l*.4),0,TAU);c.fill()}
+  if(parts.length>360)parts.splice(0,parts.length-360);
+  // stutter echo rings while the repeat dies away
+  if(st.sg>.01){for(let j=0;j<3;j++){const ph=((now/140)+j/3)%1;c.strokeStyle=col+Math.round(st.sg*(1-ph)*160).toString(16).padStart(2,'0');c.lineWidth=1.5*dpr;c.beginPath();c.arc(mx,my,u*(.05+ph*.25),0,TAU);c.stroke()}}
   c.globalCompositeOperation='source-over';
-  // ---- the mask itself (Noh: ivory face, black hair, red lips, painted brows) ----
-  c.save();c.translate(cx,cy);c.rotate(Math.max(-.6,Math.min(.6,f.roll*Math.PI/180)));
-  c.globalAlpha=live?1:.45;
-  const jaw=f.open*Hm*.05,chk=f.cheek*Wm*.07;
-  const facePath=()=>{c.beginPath();c.moveTo(0,-Hm*.5);
-    c.bezierCurveTo(Wm*.36,-Hm*.5,Wm*.52,-Hm*.3,Wm*.5,-Hm*.05);
-    c.bezierCurveTo(Wm*.49+chk,Hm*.15,Wm*.36+chk*.6,Hm*.38+jaw,0,Hm*.5+jaw);
-    c.bezierCurveTo(-Wm*.36-chk*.6,Hm*.38+jaw,-Wm*.49-chk,Hm*.15,-Wm*.5,-Hm*.05);
-    c.bezierCurveTo(-Wm*.52,-Hm*.3,-Wm*.36,-Hm*.5,0,-Hm*.5);c.closePath()};
-  // glow behind the mask while singing
-  if(amp>.02){const gg=c.createRadialGradient(0,0,Hm*.3,0,0,Hm*.75);gg.addColorStop(0,col+'00');gg.addColorStop(.6,col+Math.round(Math.min(1,amp)*90).toString(16).padStart(2,'0'));gg.addColorStop(1,col+'00');c.fillStyle=gg;c.beginPath();c.arc(0,0,Hm*.75,0,TAU);c.fill()}
-  facePath();const fg=c.createRadialGradient(-Wm*.1,-Hm*.1,Hm*.05,0,0,Hm*.6);fg.addColorStop(0,'#fbf3e3');fg.addColorStop(.7,'#eadbbd');fg.addColorStop(1,'#b9a37a');c.fillStyle=fg;c.fill();
-  c.strokeStyle='#cfa75e';c.lineWidth=2*dpr;c.stroke();
-  // hair parting
-  c.save();facePath();c.clip();c.fillStyle='#0b0909';
-  c.beginPath();c.moveTo(0,-Hm*.52);c.quadraticCurveTo(-Wm*.12,-Hm*.36,-Wm*.55,-Hm*.28);c.lineTo(-Wm*.6,-Hm*.6);c.lineTo(0,-Hm*.6);c.fill();
-  c.beginPath();c.moveTo(0,-Hm*.52);c.quadraticCurveTo(Wm*.12,-Hm*.36,Wm*.55,-Hm*.28);c.lineTo(Wm*.6,-Hm*.6);c.lineTo(0,-Hm*.6);c.fill();
-  c.strokeStyle='rgba(11,9,9,.6)';c.lineWidth=dpr;for(let i=1;i<6;i++){c.beginPath();c.moveTo(0,-Hm*.5);c.quadraticCurveTo(-Wm*.1*i/3,-Hm*.38,-Wm*(.1+i*.08),-Hm*(.34-i*.012));c.stroke();c.beginPath();c.moveTo(0,-Hm*.5);c.quadraticCurveTo(Wm*.1*i/3,-Hm*.38,Wm*(.1+i*.08),-Hm*(.34-i*.012));c.stroke()}
-  // blush (cheek puff = growl)
-  for(const s of [-1,1]){const bg=c.createRadialGradient(s*Wm*.3,Hm*.13,0,s*Wm*.3,Hm*.13,Wm*.17);bg.addColorStop(0,`rgba(214,40,50,${.12+f.cheek*.55})`);bg.addColorStop(1,'rgba(214,40,50,0)');c.fillStyle=bg;c.fillRect(s*Wm*.3-Wm*.2,Hm*.13-Wm*.2,Wm*.4,Wm*.4)}
-  c.restore();
-  // painted brows (hikimayu): up = vibrato, down = growl
-  for(const s of [-1,1]){c.save();c.translate(s*Wm*.2,-Hm*.27-f.brow*Hm*.06+f.browDown*Hm*.03);c.rotate(s*(-.12+f.browDown*.35-f.brow*.1));
-    const bg=c.createRadialGradient(0,0,0,0,0,Wm*.09);bg.addColorStop(0,'rgba(20,14,14,.95)');bg.addColorStop(1,'rgba(20,14,14,0)');c.fillStyle=bg;c.scale(1,.5);c.beginPath();c.arc(0,0,Wm*.09,0,TAU);c.fill();c.restore()}
-  // eyes: mirrored like a selfie (your right eye on the right)
-  for(const s of [-1,1]){const bl=s<0?f.blinkL:f.blinkR,op=Math.max(.06,1-bl);
-    c.save();c.translate(s*Wm*.19,-Hm*.07);const ew=Wm*.1,eh=Hm*.035*op;
-    c.beginPath();c.moveTo(-ew,0);c.quadraticCurveTo(0,-eh*2,ew,0);c.quadraticCurveTo(0,eh*1.6,-ew,0);c.closePath();
-    c.fillStyle='#0b0909';c.fill();c.strokeStyle='#2a1c14';c.lineWidth=1.2*dpr;c.stroke();
-    if(op>.3){c.fillStyle=hold?col:'#cfa75e';c.beginPath();c.arc(-s*ew*.1,-eh*.2,Math.min(eh*.7,ew*.25),0,TAU);c.fill()}
-    c.restore()}
-  // nose
-  c.strokeStyle='rgba(120,92,60,.6)';c.lineWidth=1.2*dpr;c.beginPath();c.moveTo(-Wm*.02,-Hm*.02);c.quadraticCurveTo(-Wm*.04,Hm*.09,-Wm*.05,Hm*.11);c.quadraticCurveTo(0,Hm*.13,Wm*.05,Hm*.11);c.stroke();
-  // mouth: width from smile/round, opening from jaw, corners from smile vs frown
-  const my=Hm*.25+jaw*.5,mw=Wm*(.17+.08*f.smile-.08*f.round),mo=Hm*(.008+.12*f.open+.03*f.round*Math.min(1,f.open*4)),cu=(f.smile-f.frown)*Hm*.035;
-  c.save();c.translate(0,my);
-  c.beginPath();c.moveTo(-mw,-cu);c.bezierCurveTo(-mw*.5,-mo*.6-Hm*.022,mw*.5,-mo*.6-Hm*.022,mw,-cu);c.bezierCurveTo(mw*.5,mo+Hm*.026,-mw*.5,mo+Hm*.026,-mw,-cu);c.closePath();
-  c.fillStyle='#b8141c';c.fill();
-  c.beginPath();c.moveTo(-mw*.86,-cu*.9);c.bezierCurveTo(-mw*.4,-mo*.55,mw*.4,-mo*.55,mw*.86,-cu*.9);c.bezierCurveTo(mw*.4,mo,-mw*.4,mo,-mw*.86,-cu*.9);c.closePath();
-  c.fillStyle='#0a0606';c.fill();
-  if(amp>.02){c.save();c.clip();const mg=c.createRadialGradient(0,0,0,0,0,mw);mg.addColorStop(0,col);mg.addColorStop(1,col+'00');c.globalAlpha=Math.min(1,amp*1.3);c.fillStyle=mg;c.fillRect(-mw,-mo-Hm*.03,mw*2,mo*2+Hm*.06);c.restore()}
-  c.restore();
-  c.globalAlpha=1;c.restore();
-  // ---- labels: what each part of your face is doing ----
-  const lab=(txt,x,y,v)=>{const on=v>.15;c.font=`${Math.max(8,W*.033)|0}px "Hiragino Sans","Noto Sans JP",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillStyle=on?col:'rgba(207,167,94,.55)';if(on){c.shadowColor=col;c.shadowBlur=8*dpr}c.fillText(txt,x,y);c.shadowBlur=0;
-    const bw=W*.18,bx=x-bw/2,by=y+W*.032;c.fillStyle='rgba(107,86,49,.5)';c.fillRect(bx,by,bw,2*dpr);c.fillStyle=col;c.fillRect(bx,by,bw*Math.min(1,v),2*dpr)};
-  const G8=[['笑 '+(f.frown>f.smile+.06?'MINOR':'MAJOR'),Math.max(f.smile,f.frown)],['眉 VIBRATO',f.brow],['目 HOLD',hold?1:Math.min(f.blinkL,f.blinkR)],['揺 STUTTER',Math.min(1,f.shake)],
-    ['口 '+vowel(f),f.open],['丸 ROUND',f.round],['頬 GROWL',Math.max(f.cheek,f.browDown*.75)],['音 VOLUME',amp]];
-  G8.forEach(([t,v],i)=>lab(t,W*(.125+.25*(i%4)),H*(i<4?.83:.915),v));
-  if(!live){c.fillStyle='rgba(239,227,200,.85)';c.font=`${Math.max(10,Hm*.045)|0}px "Federo",sans-serif`;c.textAlign='center';
-    c.fillText(camOn&&lmState==='ready'?'kijk in de camera':camOn&&lmState==='loading'?'masker laden…':'vinger op het masker',W/2,H*.77)}
+  // ---- the mask ----
+  c.save();c.translate(cx,cy-f.nod*u*.004);c.rotate(rot);c.scale(1,1-Math.min(.12,Math.abs(f.nod)*.004));
+  c.globalAlpha=live?1:.5;
+  maskArt(c,eng,f,u,col,(4+amp*16)*dpr,amp);
+  c.restore();c.globalAlpha=1;
+  // ---- DJ filter gauge under the mask ----
+  const gy=cy+u*.56,gw=W*.36;
+  c.strokeStyle='rgba(107,86,49,.8)';c.lineWidth=1.2*dpr;c.beginPath();c.moveTo(cx-gw,gy);c.lineTo(cx+gw,gy);c.stroke();
+  c.beginPath();c.moveTo(cx,gy-4*dpr);c.lineTo(cx,gy+4*dpr);c.stroke();
+  c.fillStyle=Math.abs(dj)>.01?col:GOLD2;c.shadowColor=col;c.shadowBlur=Math.abs(dj)>.01?8*dpr:0;c.beginPath();c.arc(cx+dj*gw,gy,4*dpr,0,TAU);c.fill();c.shadowBlur=0;
+  c.font=`${Math.max(8,W*.026)|0}px "Share Tech Mono",monospace`;c.textAlign='center';c.fillStyle=dj<-.01?col:GOLD2;c.fillText('◂ LP',cx-gw-W*.045,gy);c.fillStyle=dj>.01?col:GOLD2;c.fillText('HP ▸',cx+gw+W*.045,gy);
+  // ---- labels ----
+  const lab=(txt,x,y,v)=>{const on=v>.15;c.font=`${Math.max(8,W*.032)|0}px "Hiragino Sans","Noto Sans JP",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillStyle=on?col:'rgba(207,167,94,.55)';if(on){c.shadowColor=col;c.shadowBlur=8*dpr}c.fillText(txt,x,y);c.shadowBlur=0;
+    const bw=W*.18,bx=x-bw/2,by=y+W*.03;c.fillStyle='rgba(107,86,49,.5)';c.fillRect(bx,by,bw,2*dpr);c.fillStyle=col;c.fillRect(bx,by,bw*Math.min(1,v),2*dpr)};
+  const G8=[['口 '+vowel(f),amp],['笑 '+(f.frown>f.smile+.06?'MINOR':'MAJOR'),Math.max(f.smile,f.frown)],['眉 VIBRATO',f.brow],['頬 GROWL',Math.max(f.cheek,f.browDown*.75)],
+    ['頷 PITCH',Math.min(1,Math.abs(f.nod)/20)],['傾 FILTER',Math.abs(dj)],['目 HOLD',hold?1:Math.min(f.blinkL,f.blinkR)],['揺 STUTTER',Math.max(st.sg,Math.min(1,f.shake*.6))]];
+  G8.forEach(([t,v],i)=>lab(t,W*(.125+.25*(i%4)),H*(i<4?.82:.905),v));
+  if(!live){c.fillStyle='rgba(239,227,200,.85)';c.font=`${Math.max(10,W*.04)|0}px "Federo",sans-serif`;c.textAlign='center';
+    c.fillText(camOn&&lmState==='ready'?'kijk in de camera':camOn&&lmState==='loading'?'masker laden…':'vinger op het masker',W/2,H*.78)}
   if(touch){c.strokeStyle=col;c.lineWidth=1.5*dpr;c.beginPath();c.arc(touch[0]*W,touch[1]*H,14*dpr,0,TAU);c.stroke()}
 }
 
+// ---------- intro: four masks to choose from ----------
+const NEUTRAL={open:.15,round:0,smile:.25,frown:0,brow:.2,browDown:0,cheek:0,blinkL:0,blinkR:0,nod:0,yaw:0,roll:0};
+ENG.forEach((E,i)=>{const b=document.createElement('button');b.type='button';b.className='mk';b.style.setProperty('--c',E.c);
+  b.innerHTML=`<canvas width="150" height="170"></canvas><span>${E.n}<small>${E.j}</small></span>`;$('masks').appendChild(b);
+  const pc=b.querySelector('canvas').getContext('2d');pc.translate(75,92);maskArt(pc,i,NEUTRAL,118,E.c,6,0);
+  b.addEventListener('click',ev=>{ev.stopPropagation();setEng(i);intro.classList.add('gone');startAll()})});
+
 // ---------- main loop ----------
-let last=performance.now(),sentF=0,lastSend=0;const OUT={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,shake:0,hold:0};
+let last=performance.now(),sentF=0,lastSend=0,sentDJ=9;const OUT={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,hold:0};
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   track(now);
-  let live=now-faceSeen<500;
-  let f=FE;
-  if(sim){f=Object.assign({},FE,sim);live=true;hold=!!sim.hold}
-  else if(touch&&!live){const t=now/1000;f=Object.assign({},FE,{open:Math.min(1,Math.max(0,(1-touch[1])*1.25-.1)),round:Math.max(0,Math.sin(t*.7))*.8,smile:Math.max(0,-Math.sin(t*.7))*.8,roll:(touch[0]-.5)*50,yaw:0,blinkL:0,blinkR:0,brow:0,cheek:0,shake:0,frown:0,browDown:0});live=true}
-  else if(!live&&!hold){f=Object.assign({},FE,{open:0})}
-  const pos=Math.min(1,Math.max(0,.5+f.roll/50));
-  const midi=midiFor(pos);
+  let live=now-faceSeen<500,f=FE;
+  if(sim){f=Object.assign({},FE,sim);live=true;hold=!!sim.hold;if(sim.stut){sim.stut=0;if(node)node.port.postMessage({stut:1});stutFlash=1}}
+  else if(touch&&!live){const t=now/1000;f=Object.assign({},FE,{open:.65,round:Math.max(0,Math.sin(t*.7))*.8,smile:Math.max(0,-Math.sin(t*.7))*.8,nod:(.5-touch[1])*40,roll:(touch[0]-.5)*60,yaw:0,blinkL:0,blinkR:0,brow:0,cheek:0,shake:0,frown:0,browDown:0});live=true}
+  else if(!live&&!hold)f=Object.assign({},FE,{open:0});
+  const pos=Math.min(1,Math.max(0,.5+f.nod/40)),midi=midiFor(pos),dj=djOf(f.roll);
   if(node){const fq=440*Math.pow(2,(midi-69)/12);if(Math.abs(fq-sentF)>.05){node.port.postMessage({f:fq});sentF=fq}
+    const djq=Math.round(dj*100)/100;if(djq!==sentDJ){node.port.postMessage({dj:djq});sentDJ=djq}
     if(now-lastSend>25){lastSend=now;for(const k in OUT)OUT[k]=k==='hold'?(hold?1:0):(f[k]||0);if(!live&&!hold)OUT.open=0;node.port.postMessage({p:OUT})}
     if(running&&ctx.state!=='running')ctx.resume();else if(running&&now-lastHb>1500)rescue()}
-  const amp=running?st.a:Math.min(1,Math.max(0,(f.open-.04)/.34));
+  const amp=running?st.a:Math.pow(Math.min(1,Math.max(0,(f.open-.02)/.78)),1.45);
   const col=ENG[eng].c;
   $('ledFace').classList.toggle('on',now-faceSeen<500);$('ledHold').classList.toggle('on',hold);
-  const nm=Math.round(midi);$('note').textContent=amp>.03?KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1):'—';$('vow').textContent=vowel(f);
-  drawMask(now,dt,f,live,amp,midi,col);
-  if(now>msgHold){if(!running)say(lmState==='loading'?'masker laden…':'tik om te spelen');
+  const nm=Math.round(midi);$('note').textContent=amp>.02?KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1):'—';$('vow').textContent=vowel(f);
+  drawStage(now,dt,f,live,amp,midi,col,dj);
+  if(now>msgHold){if(!running)say(lmState==='loading'?'masker laden…':'kies je masker');
     else if(hold)say('保 HOLD · ogen dicht houdt de noot vast',1);
-    else if(amp>.05)say('▸ '+ENG[eng].n+' · '+KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1)+' · '+vowel(f)+(st.hm>.15?(f.frown>f.smile?' · minor':' · major'):''),amp>.6);
-    else if(live)say('open je mond · kantel je hoofd voor de toonhoogte');
-    else say(camOn?(lmState==='ready'?'kijk recht in de camera':lmState==='loading'?'masker laden…':'vinger op het masker'):'vinger op het masker · hoger = mond verder open')}
+    else if(st.sg>.05)say('揺 STUTTER · sterft langzaam uit',1);
+    else if(amp>.03)say('▸ '+ENG[eng].n+' · '+KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1)+' · '+vowel(f)+(st.hm>.15?(f.frown>f.smile?' · minor':' · major'):'')+(Math.abs(dj)>.05?(dj<0?' · LP':' · HP'):''),amp>.6);
+    else if(live)say('open je mond · knik voor de toonhoogte');
+    else say(camOn?(lmState==='ready'?'kijk recht in de camera':lmState==='loading'?'masker laden…':'vinger op het masker'):'vinger op het masker · omhoog = hoger')}
   requestAnimationFrame(frame);
 }
 setEng(eng);msgHold=0;
