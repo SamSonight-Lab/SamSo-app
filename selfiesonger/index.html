@@ -162,8 +162,9 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
     <ol>
       <li><b>Mond</b> nauwelijks open = zacht, verder open = harder. De <b>vorm</b> van je mond kleurt de klank.</li>
       <li><b>Knikken</b> omhoog/omlaag = toonhoogte. <b>Hoofd buigen</b> links/rechts = DJ-filter.</li>
-      <li><b>Lachen</b> = majeur koortje, mondhoeken omlaag = mineur. <b>Wenkbrauwen</b> = vibrato, <b>wangen bol</b> = grom, <b>ogen dicht</b> = noot vasthouden, snel <b>nee schudden</b> = stutter.</li>
-      <li>Eerst 2 seconden <b>neutraal kijken</b>, mond dicht. Opnieuw met <b>CAL</b>.</li>
+      <li><b>Lachen</b> = majeur koortje, mondhoeken omlaag = mineur. <b>Wenkbrauwen</b> = vibrato, <b>wangen bol</b> = grom.</li>
+      <li><b>Neus optrekken</b> = fuzz, <b>mond opzij</b> = metaal, <b>ogen wijd</b> = shimmer, <b>lippen persen</b> = crush.</li>
+      <li><b>Ogen dicht</b> = noot vasthouden, <b>knipoog</b> = octaaf omhoog/omlaag, snel <b>nee schudden</b> = stutter.</li>
     </ol>
     <div class="ipick">KIES JE MASKER</div>
     <div class="masks" id="masks"></div>
@@ -191,10 +192,10 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
       </div>
       <div class="stage"><canvas id="face" aria-label="Je gezicht als masker. Mond open is geluid, knikken is toonhoogte, hoofd buigen is filter. Zonder camera: vinger op het masker, omhoog-omlaag is toonhoogte, links-rechts is filter."></canvas></div>
       <div class="col" id="colR">
-        <div class="notebox" id="nbox"><div class="note" id="note">—</div><div class="cents" id="vow">·</div><div class="rng" id="rng">2 OCT</div></div>
+        <div class="notebox" id="nbox"><div class="note" id="note">—</div><div class="cents" id="vow">·</div><div class="rng" id="rng">CENTER</div></div>
       </div>
     </div>
-    <div class="leds"><span><i class="led" id="ledFace"></i><button class="mini" id="camB" type="button">CAM</button></span><button class="mini" id="cal" type="button">CAL</button><span class="blow">▲ 顔 ▲</span><span><span class="hl">HOLD</span><i class="led" id="ledHold"></i></span></div>
+    <div class="leds"><span><i class="led" id="ledFace"></i><button class="mini" id="camB" type="button">CAM</button></span><span class="blow">▲ 顔 ▲</span><span><span class="hl">HOLD</span><i class="led" id="ledHold"></i></span></div>
   </main>
 </div>
 
@@ -209,22 +210,23 @@ const EK=[{fs:1.06,vib:.007,br:.06,qm:1.35,g3:.95,growl:0},{fs:.8,vib:.002,br:.0
 class Sing extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.05;this.harm=.6;this.hold=0;this.dj=0;this.djs=0;
-    this.T={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0};this.P=Object.assign({},this.T);
+    this.T={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,sneer:0,side:0,wide:0,press:0};this.P=Object.assign({},this.T);
     this.ph=new Float64Array(9);for(let i=0;i<9;i++)this.ph[i]=R();
-    this.F=[new SVF(),new SVF(),new SVF(),new SVF()];this.OV=new SVF();this.DJ=new SVF();
+    this.F=[new SVF(),new SVF(),new SVF(),new SVF()];this.OV=new SVF();this.y1=this.y2=this.y3=this.y4=0;this.cb=new Float32Array(2048);this.cw=0;this.rp=0;this.shp=0;this.crh=0;this.crc=0;
     this.lfo=0;this.am=0;this.sp=0;this.cc=0;this.dc=[0,0];this.lev=0;this.amp=0;this.post=0;this.pw=0;
     this.h1=4;this.h2=7;this.ht1=4;this.hm=0;this.tl=0;this.bit=0;this.bitc=0;this.jit=0;this.vibOn=0;
     // stutter delay: the last slice of sound repeats and slowly dies away
-    this.rb=new Float32Array(sr|0);this.rw=0;this.loop=new Float32Array(sr|0);this.ll=0;this.li=0;this.sg=0;this.sl=0;this.slc=1;
-    this.sdec=Math.exp(Math.log(.003)/(4*sr));
+    this.rb=new Float32Array(sr|0);this.rw=0;this.loop=new Float32Array(sr|0);this.ll=0;this.lc=0;this.li=0;this.sg=0;this.sl=0;this.slc=1;this.st=0;
+    this.sdec=Math.exp(Math.log(.002)/(5.5*sr));
     this.c={ampT:0,vd:0,vr:5.3,tg:.3,g:0,hmT:0};
     this.port.onmessage=e=>{const d=e.data;
       if(d.eng!==undefined)this.eng=d.eng;if(d.f)this.tf=d.f;if(d.glide!==undefined)this.glide=d.glide;if(d.harm!==undefined)this.harm=d.harm;if(d.dj!==undefined)this.dj=d.dj;
       if(d.stut)this.stutter();
       if(d.p){this.hold=d.p.hold?1:0;if(!this.hold)for(const k in this.T)if(d.p[k]!==undefined)this.T[k]=d.p[k]}};
   }
-  stutter(){const sr=this.sr,L=Math.round(sr*(.11+R()*.06));this.ll=L;const rb=this.rb,N=rb.length;
-    for(let i=0;i<L;i++)this.loop[i]=rb[(this.rw-L+i+N)%N];this.li=0;this.sg=1;this.slc=1}
+  // stutter: grab the last 160 ms, roll it faster and faster (trrrr), then let it ring out slowly
+  stutter(){const sr=this.sr,L=Math.round(sr*.16);this.ll=L;this.lc=L;const rb=this.rb,N=rb.length;
+    for(let i=0;i<L;i++)this.loop[i]=rb[(this.rw-L+i+N)%N];this.li=0;this.sg=1.3;this.slc=1;this.st=0}
   control(){
     const P=this.P,T=this.T,sr=this.sr,e=this.eng,E=EK[e],c=this.c;
     for(const k in T)P[k]+=(T[k]-P[k])*.15;
@@ -239,11 +241,13 @@ class Sing extends AudioWorkletProcessor{
     c.vd=E.vib+P.brow*.024;c.vr=5.2+P.brow*1.8;
     c.tg=1-Math.exp(-TAU*(1500+P.brow*5200+open*2200)/sr);
     c.g=Math.min(1,E.growl+Math.max(P.cheek,P.browDown*.75)*(1-E.growl));
+    c.fz=P.sneer;c.ring=Math.abs(P.side);c.rr=P.side<0?.5+P.side*-.25:2.3+P.side*2.1;c.sh=P.wide;c.cr=P.press;
     const em=Math.max(smile,P.frown);c.hmT=this.harm*Math.min(1,Math.max(0,(em-.18)/.45));
     if(smile>P.frown+.06)this.ht1=4;else if(P.frown>smile+.06)this.ht1=3;
-    // DJ filter: bend left = low-pass, right = high-pass, centre = open
+    // bend left = squelchy acid low-pass, bend right = metallic jet flanger, centre = clean
     this.djs+=(this.dj-this.djs)*.25;const d=this.djs,ad=Math.abs(d);
-    if(d<0)this.DJ.set(20000*Math.pow(140/20000,ad),.707+ad*2.4,sr);else this.DJ.set(20*Math.pow(3500/20,ad),.707+ad*2.4,sr);
+    c.lg=1-Math.exp(-TAU*Math.min(sr*.42,9000*Math.pow(200/9000,Math.pow(ad,.8)))/sr);c.lk=2.4+ad*1.3;
+    c.cd=Math.max(8,Math.round(sr*(.009-.0085*Math.pow(ad,.6))));c.cfb=.6+ad*.32;
   }
   process(ins,outs){
     const o=outs[0],L=o[0],Rr=o[1]||o[0],n=L.length,sr=this.sr,e=this.eng,E=EK[e],c=this.c;
@@ -275,17 +279,29 @@ class Sing extends AudioWorkletProcessor{
       if(e===3)s*=1.25;
       if(c.g>.01){this.am+=33/sr;if(this.am>1)this.am-=1;s=Math.tanh(s*(1+c.g*5))/(1+c.g*1.2)*(1-c.g*.4*(.5+.5*Math.sin(TAU*this.am)))}
       if(e===2){if(++this.bitc>=4){this.bitc=0;this.bit=Math.round(s*20)/20}s=this.bit}
+      // shimmer (eyes wide): bright partials above the voice
+      if(c.sh>.01){this.shp+=f/sr;if(this.shp>1)this.shp-=1;const q=TAU*this.shp;s+=(Math.sin(2*q)+.6*Math.sin(3*q)+.45*Math.sin(4*q)+.3*Math.sin(6*q))*c.sh*.16*(.7+.3*Math.sin(TAU*this.lfo*1.7))}
+      // fuzz (nose sneer): wavefolder
+      if(c.fz>.01){const x=s*(1.5+c.fz*9);s=s*(1-c.fz)+Math.sin(x)*.55*c.fz}
+      // ring mod (mouth to the side): metallic, left = low ratio, right = clangy
+      if(c.ring>.01){this.rp+=f*c.rr/sr;if(this.rp>1)this.rp-=1;s=s*(1-c.ring)+s*Math.sin(TAU*this.rp)*c.ring*1.6}
+      // crush (lips pressed): sample-rate and bit reduction
+      if(c.cr>.01){if(++this.crc>=1+Math.round(c.cr*28)){this.crc=0;const lv=Math.pow(2,10-c.cr*7);this.crh=Math.round(s*lv)/lv}s=s*(1-Math.min(1,c.cr*2))+this.crh*Math.min(1,c.cr*2)}
       s*=this.amp;
       // stutter: record the voice, replay the frozen slice with a slow, darkening fade
       this.rb[this.rw]=s;this.rw=(this.rw+1)%this.rb.length;
-      if(this.sg>.0004){const Lp=this.ll,i=this.li,w=Math.min(1,i/96,(Lp-i)/96);this.sl+=(this.loop[i]*w-this.sl)*this.slc;
-        s+=this.sl*this.sg*.95;this.li=(i+1)%Lp;this.sg*=this.sdec;this.slc=Math.max(.06,this.slc*.99998)}
-      // DJ filter
+      if(this.sg>.0004){const Lp=this.lc,i=this.li,w=Math.min(1,i/64,(Lp-i)/64);this.sl+=(this.loop[i]*w-this.sl)*this.slc;
+        s=s*(1-Math.min(.8,this.sg*.65))+this.sl*this.sg;
+        if(++this.li>=Lp){this.li=0;if(this.lc>sr*.035)this.lc=Math.max(Math.round(sr*.035),Math.round(this.lc*.8))}
+        this.st++;if(this.st>sr*.9){this.sg*=this.sdec;this.slc=Math.max(.05,this.slc*.99997)}}
       const ad=Math.abs(this.djs);
-      if(ad>.01){const D=this.DJ,lp=D.run(s),hp=s-D.k*D.bp-lp;const y=this.djs<0?lp:hp;s+=(y-s)*Math.min(1,ad*8)}
+      if(ad>.01){const mix=Math.min(1,ad*6);
+        if(this.djs<0){const xin=Math.tanh(s*1.6-c.lk*this.y4),g=c.lg;this.y1+=g*(xin-this.y1);this.y2+=g*(this.y1-this.y2);this.y3+=g*(this.y2-this.y3);this.y4+=g*(this.y3-this.y4);
+          if(!(this.y4===this.y4))this.y1=this.y2=this.y3=this.y4=0;s+=(Math.tanh(this.y4*(1+c.lk*.5)*(1+ad*1.5))*.8-s)*mix}
+        else{const N=2048,y=Math.tanh(s+c.cfb*this.cb[(this.cw-c.cd+N)%N]);this.cb[this.cw]=y;this.cw=(this.cw+1)%N;s+=(y*.75-s)*mix}}
       const d=this.dc;const y=s-d[0]+.995*d[1];d[0]=s;d[1]=y;s=y;
       const pk=Math.abs(s);this.lev+=(pk-this.lev)*(pk>this.lev?.01:.00005);if(this.lev>.5)s*=.5/this.lev;
-      if(!(s===s)){s=0;for(const fl of this.F){fl.ic1=fl.ic2=0}this.DJ.ic1=this.DJ.ic2=0}
+      if(!(s===s)){s=0;for(const fl of this.F){fl.ic1=fl.ic2=0}this.cb.fill(0)}
       L[k]=s;Rr[k]=s;
     }
     if(++this.post>=6){this.post=0;this.port.postMessage({a:this.amp,hm:this.hm,sg:this.sg})}
@@ -302,12 +318,12 @@ const ENG=[{n:'TENGU',j:'天狗',c:'#ff6a4d',off:5},{n:'ONI',j:'鬼',c:'#ff3355'
 const SCALES=[['FREE',null],['MAJOR',[0,2,4,5,7,9,11]],['MINOR',[0,2,3,5,7,8,10]],['PENTA',[0,2,4,7,9]],['M.PENTA',[0,3,5,7,10]],['BLUES',[0,3,5,6,7,10]],['DORIAN',[0,2,3,5,7,9,10]],['HIRAJOSHI',[0,2,3,7,8]]];
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const S=Object.assign({scale:3/7,key:4/11,oct:.5,glide:.3,space:.5,harm:.6,vol:.75},LS.get('ssKnobs',{}));
+const S=Object.assign({scale:3/7,key:4/11,range:1/3,glide:.3,space:.5,harm:.6,vol:.75},LS.get('ssKnobs',{}));delete S.oct;
 const volG=()=>.25*Math.pow(12,S.vol);
-let eng=Math.min(3,LS.get('ssMask',0)),RANGE=LS.get('ssRange',2),showVid=LS.get('ssVid',false);
+let eng=Math.min(3,LS.get('ssMask',0)),showVid=LS.get('ssVid',false);
 const msgEl=$('msg');let msgHold=0;
 function say(t,hot,ms){msgEl.textContent=t;msgEl.classList.toggle('hot',!!hot);msgHold=performance.now()+(ms||0)}
-const scIdx=()=>Math.round(S.scale*7),keyIdx=()=>Math.round(S.key*11),octV=()=>Math.round(S.oct*4)-2;
+const scIdx=()=>Math.round(S.scale*7),keyIdx=()=>Math.round(S.key*11),rangeV=()=>1+Math.round(S.range*3);
 
 // ---------- audio ----------
 let ctx=null,node=null,G={},ready=null,running=false,lastHb=0;const st={a:0,hm:0,sg:0};
@@ -373,55 +389,60 @@ function useCam(s){
   if(!s){camOn=false;$('camB').classList.remove('on');say('geen camera · speel met je vinger op het masker',0,4000);return}
   stream=s;video.srcObject=s;video.play().catch(()=>{});camOn=true;$('camB').classList.add('on');
 }
-// expressions: blendshape scores minus your resting face, scaled so small movements already count
-const SPAN={jaw:.42,gap:.1,round:.34,smile:.38,frown:.16,brow:.3,browDown:.3,cheek:.24,blinkL:.55,blinkR:.55};
-let base=LS.get('ssCal2',null),calRun=null;
-const FE={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,blinkL:0,blinkR:0,roll:0,nod:0,yaw:0,shake:0};
-let faceSeen=0,lastVT=-1,prevYaw=0,closedSince=0,hold=false,sim=null,lastStut=0,shakeDir=0,shakeFlips=[];
+// expressions: blendshape scores minus your resting face, which the app learns by itself (no calibration needed)
+const SPAN={jaw:.42,gap:.1,round:.34,smile:.38,frown:.16,brow:.3,browDown:.3,cheek:.24,sneer:.28,wide:.28,press:.32,blinkL:.55,blinkR:.55};
+let base=null,lastRaw=null;
+const FE={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,sneer:0,side:0,wide:0,press:0,blinkL:0,blinkR:0,roll:0,nod:0,yaw:0,shake:0};
+let faceSeen=0,lastVT=-1,prevYaw=0,closedSince=0,hold=false,sim=null,lastStut=0,shakeDir=0,shakeFlips=[],winkSince=0,winkDir=0,octShift=0,stutFlash=0;
 function rawFrom(res){
   const bs=res.faceBlendshapes&&res.faceBlendshapes[0];if(!bs)return null;const m={};for(const c of bs.categories)m[c.categoryName]=c.score;
   const P=res.faceLandmarks[0],asp=(video.videoHeight||3)/(video.videoWidth||4);
   const d2=(a,b)=>Math.hypot(a.x-b.x,(a.y-b.y)*asp);
-  const fh=Math.max(.01,d2(P[10],P[152]));
-  const r={jaw:m.jawOpen||0,gap:d2(P[13],P[14])/fh,round:Math.max(m.mouthPucker||0,(m.mouthFunnel||0)*.9),smile:((m.mouthSmileLeft||0)+(m.mouthSmileRight||0))/2,
-    frown:((m.mouthFrownLeft||0)+(m.mouthFrownRight||0))/2,brow:Math.max(m.browInnerUp||0,((m.browOuterUpLeft||0)+(m.browOuterUpRight||0))/2),
-    browDown:((m.browDownLeft||0)+(m.browDownRight||0))/2,cheek:m.cheekPuff||0,blinkL:m.eyeBlinkLeft||0,blinkR:m.eyeBlinkRight||0};
-  // head: roll from the eye corners; nod from the depth of forehead vs chin; yaw from the nose between the cheeks
+  const fh=Math.max(.01,d2(P[10],P[152])),av=(a,b)=>((m[a]||0)+(m[b]||0))/2;
+  const r={jaw:m.jawOpen||0,gap:d2(P[13],P[14])/fh,round:Math.max(m.mouthPucker||0,(m.mouthFunnel||0)*.9),smile:av('mouthSmileLeft','mouthSmileRight'),
+    frown:av('mouthFrownLeft','mouthFrownRight'),brow:Math.max(m.browInnerUp||0,av('browOuterUpLeft','browOuterUpRight')),
+    browDown:av('browDownLeft','browDownRight'),cheek:m.cheekPuff||0,sneer:av('noseSneerLeft','noseSneerRight'),wide:av('eyeWideLeft','eyeWideRight'),
+    press:Math.max(av('mouthPressLeft','mouthPressRight'),av('mouthRollLower','mouthRollUpper')),
+    side:((m.mouthLeft||0)+(m.jawLeft||0))-((m.mouthRight||0)+(m.jawRight||0)),
+    blinkL:m.eyeBlinkLeft||0,blinkR:m.eyeBlinkRight||0};
   const a=P[33],b=P[263];
   r.roll=-Math.atan2((b.y-a.y)*asp,b.x-a.x)*180/Math.PI;
   r.nod=Math.atan2(P[10].z-P[152].z,(P[152].y-P[10].y)*asp)*180/Math.PI;
   const ns=P[1],cl=P[234],cr=P[454];r.yaw=-((ns.x-(cl.x+cr.x)/2)/Math.max(.01,Math.abs(cr.x-cl.x)))*2;
   return r;
 }
-const nrm=(r,key)=>Math.min(1,Math.max(0,(r[key]-((base&&base[key])||0))/SPAN[key]));
+// resting face: each expression's floor follows your face down fast and up very slowly;
+// the head centre re-settles whenever your mouth is closed (between phrases)
+function adapt(r){
+  if(!base){base=Object.assign({},r);return}
+  for(const k in SPAN){const d=r[k]-base[k];base[k]+=d*(d<0?.25:.0012)}
+  base.side+=(r.side-base.side)*.003;
+  if(FE.open<.05&&!hold){base.roll+=(r.roll-base.roll)*.02;base.nod+=(r.nod-base.nod)*.02}
+}
+function recenter(){if(lastRaw)base=Object.assign({},lastRaw);say('midden opnieuw gezet',1,1200)}
+const nrm=(r,key)=>Math.min(1,Math.max(0,(r[key]-base[key])/SPAN[key]));
 function ingest(r,now){
-  if(calRun)calRun.push(r);
-  if(!base&&!calRun)startCal(true);
+  lastRaw=r;adapt(r);
   const k=.6,tg={open:Math.max(nrm(r,'gap'),nrm(r,'jaw')*.9)};
-  for(const key of ['round','smile','frown','brow','browDown','cheek','blinkL','blinkR'])tg[key]=nrm(r,key);
+  for(const key of ['round','smile','frown','brow','browDown','cheek','sneer','wide','press','blinkL','blinkR'])tg[key]=nrm(r,key);
+  tg.side=Math.max(-1,Math.min(1,(r.side-base.side)/.35));
   for(const key in tg)FE[key]+=(tg[key]-FE[key])*k;
-  FE.roll+=((r.roll-((base&&base.roll)||0))-FE.roll)*.5;FE.nod+=((r.nod-((base&&base.nod)||0))-FE.nod)*.5;
-  // quick "no" shake: the head swings left-right-left fast → stutter
+  FE.roll+=((r.roll-base.roll)-FE.roll)*.5;FE.nod+=((r.nod-base.nod)-FE.nod)*.5;
+  // quick "no" shake → stutter
   const dy=r.yaw-prevYaw;prevYaw=r.yaw;FE.yaw=r.yaw;
   FE.shake+=(Math.min(1.5,Math.abs(dy)*12)-FE.shake)*(Math.abs(dy)*12>FE.shake?.4:.1);
-  if(Math.abs(dy)>.035){const dir=Math.sign(dy);if(dir!==shakeDir){shakeDir=dir;shakeFlips.push(now)}}
-  shakeFlips=shakeFlips.filter(t=>now-t<520);
-  if(shakeFlips.length>=3&&now-lastStut>650){lastStut=now;shakeFlips=[];if(node)node.port.postMessage({stut:1});stutFlash=1}
-  const closed=FE.blinkL>.6&&FE.blinkR>.6;
-  if(closed){if(!closedSince)closedSince=now;if(now-closedSince>220)hold=true}else{closedSince=0;hold=false}
-  faceSeen=now;
+  if(Math.abs(dy)>.028){const dir=Math.sign(dy);if(dir!==shakeDir){shakeDir=dir;shakeFlips.push(now)}}
+  shakeFlips=shakeFlips.filter(t=>now-t<600);
+  if(shakeFlips.length>=2&&now-lastStut>700){lastStut=now;shakeFlips=[];if(node)node.port.postMessage({stut:1});stutFlash=1}
+  eyes(now);faceSeen=now;
 }
-let stutFlash=0;
-function startCal(auto){
-  calRun=[];$('cal').classList.add('on');const t0=performance.now();
-  const tick=()=>{const left=2-(performance.now()-t0)/1000;
-    if(left>0){say((auto?'eerste keer · ':'CAL · ')+'kijk neutraal, mond dicht… '+Math.ceil(left),1);setTimeout(tick,120);return}
-    const rs=calRun;calRun=null;$('cal').classList.remove('on');
-    if(rs.length<8){say('geen gezicht gezien · kijk recht in de camera en tik CAL',0,3500);return}
-    const med=key=>{const a=rs.map(x=>x[key]).sort((x,y)=>x-y);return a[a.length>>1]};
-    base={};for(const key of [...Object.keys(SPAN),'roll','nod'])base[key]=med(key);
-    LS.set('ssCal2',base);say('CAL klaar · open je mond om te zingen',1,2500);
-  };tick();
+// eyes: both closed a moment = hold the note; one eye closed (wink) = octave up/down while winking; normal blinks do nothing
+function eyes(now){
+  const L=FE.blinkL,Rr=FE.blinkR,both=L>.6&&Rr>.6;
+  if(both){if(!closedSince)closedSince=now;if(now-closedSince>260)hold=true}else{closedSince=0;hold=false}
+  const w=!both&&(Rr>.6&&L<.35?1:L>.6&&Rr<.35?-1:0);
+  if(w!==winkDir){winkDir=w;winkSince=now}
+  octShift=winkDir&&now-winkSince>140?winkDir:0;
 }
 function track(now){
   if(!lm||!camOn||video.readyState<2)return;
@@ -438,13 +459,10 @@ function startAll(){
   if(pc)pc.then(useCam);
 }
 const intro=$('intro');
-if(base)$('inote').textContent='Je rustgezicht is al bekend op deze telefoon. Safari vraagt om de camera: kies Sta toe.';
 $('camB').addEventListener('click',()=>{if(camOn){camOn=false;if(stream)stream.getTracks().forEach(t=>t.stop());$('camB').classList.remove('on');say('camera uit · vinger op het masker',0,2000);return}askCam().then(useCam)});
-$('cal').addEventListener('click',()=>{if(!camOn||lmState!=='ready'){say('camera en masker moeten aan staan',0,2500);return}if(!calRun)startCal(false)});
 function showVidB(){$('vidS').textContent=showVid?'ON':'OFF';$('vid').classList.toggle('on',showVid)}
 showVidB();$('vid').addEventListener('click',()=>{showVid=!showVid;LS.set('ssVid',showVid);showVidB();say(showVid?'VIDEO · je eigen beeld achter het masker':'VIDEO uit · alleen het masker',1,1500)});
-$('rng').textContent=RANGE+' OCT';
-$('nbox').addEventListener('click',()=>{RANGE=RANGE>=4?1:RANGE+1;$('rng').textContent=RANGE+' OCT';LS.set('ssRange',RANGE);say('BEREIK · '+RANGE+(RANGE>1?' octaven':' octaaf'),1,1500)});
+$('nbox').addEventListener('click',recenter);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running&&ctx)ctx.resume()});
 
 // ---------- masks = palettes ----------
@@ -467,7 +485,7 @@ updRot();
 const KN=[
   {id:'scale',l:'SCALE',j:'音階',blk:1,step:8,col:'colL',names:()=>SCALES.map(s=>s[0])},
   {id:'key',l:'KEY',j:'調',blk:1,step:12,col:'colL',names:()=>KEYS},
-  {id:'oct',l:'OCTAVE',j:'オクターブ',blk:1,step:5,col:'colL',names:()=>['−2','−1','0','+1','+2']},
+  {id:'range',l:'RANGE',j:'音域',blk:1,step:4,col:'colL',names:()=>['1 OCT','2 OCT','3 OCT','4 OCT']},
   {id:'vol',l:'VOLUME',j:'音量',red:1,col:'colL'},
   {id:'glide',l:'GLIDE',j:'滑り',col:'colR'},
   {id:'space',l:'SPACE',j:'空間',col:'colR'},
@@ -490,16 +508,16 @@ KN.forEach(k=>{
 function set(k,v){v=Math.min(1,Math.max(0,v));const id=k.id;
   if(k.step){const before=Math.round(S[id]*(k.step-1));S[id]=Math.round(v*(k.step-1))/(k.step-1);UI[id].draw();LS.set('ssKnobs',S);
     if(Math.round(S[id]*(k.step-1))!==before){const nm=k.names()[Math.round(S[id]*(k.step-1))];
-      say(id==='scale'?(nm==='FREE'?'SCALE · FREE · vrij glijden':'SCALE · '+KEYS[keyIdx()]+' '+nm):id==='key'?'KEY · '+nm+' '+SCALES[scIdx()][0]:'OCTAVE · '+nm,1,1200)}return}
+      say(id==='scale'?(nm==='FREE'?'SCALE · FREE · vrij glijden':'SCALE · '+KEYS[keyIdx()]+' '+nm):id==='key'?'KEY · '+nm+' '+SCALES[scIdx()][0]:'RANGE · '+nm+' · knik over dit bereik',1,1200)}return}
   S[id]=v;UI[id].draw();apply(id);
   say({glide:'GLIDE  '+Math.round(glideT()*1000)+' ms',space:'SPACE  '+Math.round(v*99)+(v>.5?' · + echo':''),harm:'HARMONY  '+Math.round(v*99)+' · lach of frons voor het koortje',vol:'VOLUME  '+Math.round(v*99)}[id],0,1100);
 }
 
 // ---------- pitch: nod → note in the scale ----------
 let qNote=null;
-const lowM=()=>55+octV()*12+ENG[eng].off-RANGE*6;
+const lowM=()=>55+ENG[eng].off-rangeV()*6;
 function midiFor(pos){
-  const lo=lowM();let m=lo+pos*RANGE*12;
+  const lo=lowM();let m=lo+pos*rangeV()*12;
   const sc=SCALES[scIdx()][1];
   if(sc){const k=keyIdx();let best=null,bd=99;for(let o=-3;o<=6;o++)for(const d of sc){const c=12*Math.floor(lo/12)+o*12+k+d;const dd=Math.abs(c-m);if(dd<bd){bd=dd;best=c}}
     if(qNote!==null&&Math.abs(m-qNote)<.7&&sc.some(d=>((qNote-k-d)%12+12)%12===0))best=qNote;qNote=best;m=best}
@@ -529,17 +547,17 @@ function maskArt(c,type,f,u,col,glow,amp){
   const P=(pts,close)=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x*u,y*u):c.moveTo(x*u,y*u));if(close)c.closePath()};
   const Q=(a,b,cc)=>{c.beginPath();c.moveTo(a[0]*u,a[1]*u);c.quadraticCurveTo(cc[0]*u,cc[1]*u,b[0]*u,b[1]*u)};
   const E=(x,y,rx,ry,rot)=>{c.beginPath();c.ellipse(x*u,y*u,Math.max(.5,rx*u),Math.max(.5,ry*u),rot||0,0,TAU)};
-  const op=f.open,sm=f.smile,rd=f.round,fr=f.frown,bu=f.brow,bd=f.browDown,ck=f.cheek;
+  const op=f.open,sm=f.smile,rd=f.round,fr=f.frown,bu=f.brow+(f.wide||0)*.6,bd=f.browDown,ck=f.cheek,sx=(f.side||0)*.06,pr=f.press||0;
   const eoL=Math.max(.05,1-f.blinkL),eoR=Math.max(.05,1-f.blinkR),jaw=op*.05;
   c.shadowColor=col;c.shadowBlur=glow;
   // mouth helper: width, opening, corner lift
-  const mouth=(y,w0,teeth,fangs)=>{const w=w0*(1+.45*sm-.45*rd),h=.006+.12*op+.03*rd*Math.min(1,op*4),cu=(sm-fr)*.045;
+  const mouth=(y,w0,teeth,fangs)=>{c.save();c.translate(sx*u,0);const w=w0*(1+.45*sm-.45*rd-.2*pr),h=(.006+.12*op+.03*rd*Math.min(1,op*4))*(1-pr*.8),cu=(sm-fr)*.045;
     c.beginPath();c.moveTo(-w*u,(y-cu)*u);c.bezierCurveTo(-w*.5*u,(y-h*.6-.01)*u,w*.5*u,(y-h*.6-.01)*u,w*u,(y-cu)*u);c.bezierCurveTo(w*.5*u,(y+h+.012)*u,-w*.5*u,(y+h+.012)*u,-w*u,(y-cu)*u);
     if(amp>.02){c.save();c.globalAlpha=Math.min(1,amp*1.2)*.6;c.fillStyle=col;c.fill();c.restore()}S1(1.2);
     if(teeth&&op>.12){P([[-w*.7,y-h*.3],[w*.7,y-h*.3]]);S1(.6)}
     if(fangs){const t=.035+ck*.03;for(const s of [-1,1]){P([[s*w*.75,y+h*.9],[s*w*.62,y+h*.9-t-.02],[s*w*.5,y+h*.8]]);S1(.9,ck>.3)}
       for(const s of [-1,1]){P([[s*w*.35,y-h*.5],[s*w*.28,y-h*.5+.03+op*.02],[s*w*.2,y-h*.5]]);S1(.8)}}
-    return {w,h}};
+    c.restore();return {w,h}};
   if(type===0){ // ---------- TENGU: long nose, bushy brows, tokin cap, beard
     P([[0,-.44],[.28,-.4],[.35,-.12],[.33,.12],[.24,.36+jaw],[0,.48+jaw],[-.24,.36+jaw],[-.33,.12],[-.35,-.12],[-.28,-.4]],true);S1(1.4);
     P([[-.07,-.47],[.07,-.47],[.1,-.55],[0,-.61],[-.1,-.55]],true);S1(1);P([[-.1,-.5],[-.22,-.44]]);S1(.7);P([[.1,-.5],[.22,-.44]]);S1(.7);
@@ -597,6 +615,10 @@ function maskArt(c,type,f,u,col,glow,amp){
     if(op>.06){E(0,.355+op*.04,ow*.5,op*.05);if(amp>.02){c.save();c.globalAlpha=Math.min(1,amp)*.6;c.fillStyle=col;c.fill();c.restore()}S1(.8)}
     for(const s of [-1,1])for(let j=0;j<3;j++){const a=(j-1)*.18+(sm-fr)*.15-ck*.1*s*0;P([[s*.08,.27+j*.02],[s*(.36+ck*.05),.2+j*.06+a*s*0-(j-1)*.04+(sm-fr)*-.04]]);S1(.6,ck>.3||sm>.4)}
   }
+  // shared reactions: sneer wrinkles on the nose, sparks round wide eyes, zigzag at the mouth corner for metal
+  if(f.sneer>.12){for(const s of [-1,1])for(let j=0;j<3;j++){P([[s*.035,-.04+j*.025],[s*.075,-.055+j*.025],[s*.105,-.035+j*.025]]);S1(.7,true)}}
+  if((f.wide||0)>.15){for(const s of [-1,1])for(let j=0;j<5;j++){const a=-Math.PI/2+(j-2)*.45;P([[s*.16+Math.cos(a)*.1,-.08+Math.sin(a)*.1],[s*.16+Math.cos(a)*(.12+f.wide*.05),-.08+Math.sin(a)*(.12+f.wide*.05)]]);S1(.6,true)}}
+  if(Math.abs(f.side||0)>.15){const s=Math.sign(f.side),x=s*.2+sx;P([[x,.22],[x+s*.03,.25],[x,.28],[x+s*.03,.31]]);S1(.8,true)}
   c.shadowBlur=0;
 }
 
@@ -608,9 +630,9 @@ function drawStage(now,dt,f,live,amp,midi,col,dj){
   c.fillStyle='#07060a';c.fillRect(0,0,W,H);
   if(showVid&&camOn&&video.readyState>=2){c.save();c.globalAlpha=.25;c.translate(W,0);c.scale(-1,1);const vw=video.videoWidth||4,vh=video.videoHeight||3,sc=Math.max(W/vw,H/vh);
     try{c.filter='grayscale(1) sepia(.7)'}catch(e){}c.drawImage(video,(W-vw*sc)/2,(H-vh*sc)/2,vw*sc,vh*sc);c.restore();try{c.filter='none'}catch(e){}}
-  const u=Math.min(H*.56,W*.84),cx=W*.55+f.yaw*u*.08,cy=H*.44;
+  const u=Math.min(H*.52,W*.88),cx=W*.55+f.yaw*u*.08,cy=H*.39;
   // ---- pitch ladder on the left: nod up = higher ----
-  const lx=W*.07,ly0=cy+u*.42,ly1=cy-u*.42,sc=SCALES[scIdx()][1],k=keyIdx(),lo=lowM(),span=RANGE*12;
+  const lx=W*.07,ly0=cy+u*.42,ly1=cy-u*.42,sc=SCALES[scIdx()][1],k=keyIdx(),lo=lowM(),span=rangeV()*12;midi-=octShift*12;
   c.strokeStyle='rgba(107,86,49,.8)';c.lineWidth=1.2*dpr;c.beginPath();c.moveTo(lx,ly0);c.lineTo(lx,ly1);c.stroke();
   c.font=`${Math.max(8,W*.028)|0}px "Share Tech Mono",monospace`;c.textAlign='left';c.textBaseline='middle';
   for(let m=Math.ceil(lo);m<=lo+span;m++){const pc=((m%12)+12)%12;if(sc&&!sc.includes(((pc-k)%12+12)%12))continue;const y=lerp(ly0,ly1,(m-lo)/span),on=Math.round(midi)===m&&amp>.03;
@@ -635,19 +657,20 @@ function drawStage(now,dt,f,live,amp,midi,col,dj){
   maskArt(c,eng,f,u,col,(4+amp*16)*dpr,amp);
   c.restore();c.globalAlpha=1;
   // ---- DJ filter gauge under the mask ----
-  const gy=cy+u*.56,gw=W*.36;
+  const gy=cy+u*.53,gw=W*.36;
   c.strokeStyle='rgba(107,86,49,.8)';c.lineWidth=1.2*dpr;c.beginPath();c.moveTo(cx-gw,gy);c.lineTo(cx+gw,gy);c.stroke();
   c.beginPath();c.moveTo(cx,gy-4*dpr);c.lineTo(cx,gy+4*dpr);c.stroke();
   c.fillStyle=Math.abs(dj)>.01?col:GOLD2;c.shadowColor=col;c.shadowBlur=Math.abs(dj)>.01?8*dpr:0;c.beginPath();c.arc(cx+dj*gw,gy,4*dpr,0,TAU);c.fill();c.shadowBlur=0;
-  c.font=`${Math.max(8,W*.026)|0}px "Share Tech Mono",monospace`;c.textAlign='center';c.fillStyle=dj<-.01?col:GOLD2;c.fillText('◂ LP',cx-gw-W*.045,gy);c.fillStyle=dj>.01?col:GOLD2;c.fillText('HP ▸',cx+gw+W*.045,gy);
+  c.font=`${Math.max(8,W*.026)|0}px "Share Tech Mono",monospace`;c.textAlign='center';c.fillStyle=dj<-.01?col:GOLD2;c.fillText('◂ ACID',cx-gw-W*.06,gy);c.fillStyle=dj>.01?col:GOLD2;c.fillText('JET ▸',cx+gw+W*.06,gy);
   // ---- labels ----
   const lab=(txt,x,y,v)=>{const on=v>.15;c.font=`${Math.max(8,W*.032)|0}px "Hiragino Sans","Noto Sans JP",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillStyle=on?col:'rgba(207,167,94,.55)';if(on){c.shadowColor=col;c.shadowBlur=8*dpr}c.fillText(txt,x,y);c.shadowBlur=0;
     const bw=W*.18,bx=x-bw/2,by=y+W*.03;c.fillStyle='rgba(107,86,49,.5)';c.fillRect(bx,by,bw,2*dpr);c.fillStyle=col;c.fillRect(bx,by,bw*Math.min(1,v),2*dpr)};
   const G8=[['口 '+vowel(f),amp],['笑 '+(f.frown>f.smile+.06?'MINOR':'MAJOR'),Math.max(f.smile,f.frown)],['眉 VIBRATO',f.brow],['頬 GROWL',Math.max(f.cheek,f.browDown*.75)],
-    ['頷 PITCH',Math.min(1,Math.abs(f.nod)/20)],['傾 FILTER',Math.abs(dj)],['目 HOLD',hold?1:Math.min(f.blinkL,f.blinkR)],['揺 STUTTER',Math.max(st.sg,Math.min(1,f.shake*.6))]];
-  G8.forEach(([t,v],i)=>lab(t,W*(.125+.25*(i%4)),H*(i<4?.82:.905),v));
+    ['鼻 FUZZ',f.sneer||0],['歪 METAL',Math.abs(f.side||0)],['驚 SHIMMER',f.wide||0],['唇 CRUSH',f.press||0],
+    ['頷 PITCH',Math.min(1,Math.abs(f.nod)/20)],['傾 '+(dj<-.01?'ACID':dj>.01?'JET':'FILTER'),Math.abs(dj)],['目 '+(octShift>0?'OCT+':octShift<0?'OCT−':'HOLD'),hold||octShift?1:Math.min(f.blinkL,f.blinkR)],['揺 STUTTER',Math.max(st.sg,Math.min(1,f.shake*.6))]];
+  G8.forEach(([t,v],i)=>lab(t,W*(.125+.25*(i%4)),H*(.775+.075*Math.floor(i/4)),v));
   if(!live){c.fillStyle='rgba(239,227,200,.85)';c.font=`${Math.max(10,W*.04)|0}px "Federo",sans-serif`;c.textAlign='center';
-    c.fillText(camOn&&lmState==='ready'?'kijk in de camera':camOn&&lmState==='loading'?'masker laden…':'vinger op het masker',W/2,H*.78)}
+    c.fillText(camOn&&lmState==='ready'?'kijk in de camera':camOn&&lmState==='loading'?'masker laden…':'vinger op het masker',W/2,H*.71)}
   if(touch){c.strokeStyle=col;c.lineWidth=1.5*dpr;c.beginPath();c.arc(touch[0]*W,touch[1]*H,14*dpr,0,TAU);c.stroke()}
 }
 
@@ -659,15 +682,15 @@ ENG.forEach((E,i)=>{const b=document.createElement('button');b.type='button';b.c
   b.addEventListener('click',ev=>{ev.stopPropagation();setEng(i);intro.classList.add('gone');startAll()})});
 
 // ---------- main loop ----------
-let last=performance.now(),sentF=0,lastSend=0,sentDJ=9;const OUT={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,hold:0};
+let last=performance.now(),sentF=0,lastSend=0,sentDJ=9;const OUT={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,sneer:0,side:0,wide:0,press:0,hold:0};
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   track(now);
   let live=now-faceSeen<500,f=FE;
-  if(sim){f=Object.assign({},FE,sim);live=true;hold=!!sim.hold;if(sim.stut){sim.stut=0;if(node)node.port.postMessage({stut:1});stutFlash=1}}
+  if(sim){f=Object.assign({},FE,sim);live=true;hold=!!sim.hold;octShift=sim.oct||0;if(sim.stut){sim.stut=0;if(node)node.port.postMessage({stut:1});stutFlash=1}}
   else if(touch&&!live){const t=now/1000;f=Object.assign({},FE,{open:.65,round:Math.max(0,Math.sin(t*.7))*.8,smile:Math.max(0,-Math.sin(t*.7))*.8,nod:(.5-touch[1])*40,roll:(touch[0]-.5)*60,yaw:0,blinkL:0,blinkR:0,brow:0,cheek:0,shake:0,frown:0,browDown:0});live=true}
   else if(!live&&!hold)f=Object.assign({},FE,{open:0});
-  const pos=Math.min(1,Math.max(0,.5+f.nod/40)),midi=midiFor(pos),dj=djOf(f.roll);
+  const pos=Math.min(1,Math.max(0,.5+f.nod/40)),midi=midiFor(pos)+octShift*12,dj=djOf(f.roll);
   if(node){const fq=440*Math.pow(2,(midi-69)/12);if(Math.abs(fq-sentF)>.05){node.port.postMessage({f:fq});sentF=fq}
     const djq=Math.round(dj*100)/100;if(djq!==sentDJ){node.port.postMessage({dj:djq});sentDJ=djq}
     if(now-lastSend>25){lastSend=now;for(const k in OUT)OUT[k]=k==='hold'?(hold?1:0):(f[k]||0);if(!live&&!hold)OUT.open=0;node.port.postMessage({p:OUT})}
@@ -680,7 +703,8 @@ function frame(now){
   if(now>msgHold){if(!running)say(lmState==='loading'?'masker laden…':'kies je masker');
     else if(hold)say('保 HOLD · ogen dicht houdt de noot vast',1);
     else if(st.sg>.05)say('揺 STUTTER · sterft langzaam uit',1);
-    else if(amp>.03)say('▸ '+ENG[eng].n+' · '+KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1)+' · '+vowel(f)+(st.hm>.15?(f.frown>f.smile?' · minor':' · major'):'')+(Math.abs(dj)>.05?(dj<0?' · LP':' · HP'):''),amp>.6);
+    else if(octShift)say('目 knipoog · octaaf '+(octShift>0?'omhoog':'omlaag'),1);
+    else if(amp>.03)say('▸ '+ENG[eng].n+' · '+KEYS[((nm%12)+12)%12]+(Math.floor(nm/12)-1)+' · '+vowel(f)+(st.hm>.15?(f.frown>f.smile?' · minor':' · major'):'')+(Math.abs(dj)>.05?(dj<0?' · ACID':' · JET'):''),amp>.6);
     else if(live)say('open je mond · knik voor de toonhoogte');
     else say(camOn?(lmState==='ready'?'kijk recht in de camera':lmState==='loading'?'masker laden…':'vinger op het masker'):'vinger op het masker · omhoog = hoger')}
   requestAnimationFrame(frame);
