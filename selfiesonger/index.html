@@ -213,14 +213,16 @@ class SVF{constructor(){this.a1=0;this.a2=0;this.a3=0;this.k=1;this.ic1=0;this.i
   run(x){const v3=x-this.ic2,v1=this.a1*this.ic1+this.a2*v3,v2=this.ic2+this.a2*this.ic1+this.a3*v3;this.ic1=2*v1-this.ic1;this.ic2=2*v2-this.ic2;this.lp=v2;this.bp=v1;return v2}}
 // palettes: 0 TENGU sophisticated crooner · 1 ONI demon growl · 2 MANGA chip-vocaloid · 3 KITSUNE airy spirit
 //           4 ROBOT vocoder · 5 MONK throat-singing · 6 HEAVEN choir · 7 CHAOS
-const EK=[{fs:1,vib:.0035,br:.03,qm:1.1,g3:.3,growl:0,bri:.5},{fs:.8,vib:.002,br:.02,qm:1,g3:.4,growl:.3,bri:1},{fs:1.3,vib:0,br:0,qm:1.1,g3:.5,growl:0,bri:1},{fs:1.12,vib:.005,br:.3,qm:1.25,g3:.55,growl:0,bri:1},
+const EK=[{fs:1,vib:.0035,br:0,qm:1.15,g3:.25,growl:0,bri:1,fx:.35,glot:1},{fs:.8,vib:.002,br:.02,qm:1,g3:.4,growl:.3,bri:1},{fs:1.3,vib:0,br:0,qm:1.1,g3:.5,growl:0,bri:1},{fs:1.12,vib:.005,br:.3,qm:1.25,g3:.55,growl:0,bri:1},
   {fs:1,vib:0,br:0,qm:1,g3:.5,growl:0,bri:1},{fs:.8,vib:.0015,br:.015,qm:1,g3:.35,growl:0,bri:.8},{fs:1.18,vib:.005,br:.07,qm:1.1,g3:.45,growl:0,bri:.75},{fs:1,vib:.01,br:.05,qm:1.2,g3:.6,growl:.12,bri:1}];
+EK.forEach(k=>{if(k.fx===undefined)k.fx=1});EK[7].fx=1.2;
+const P0=t=>t.P.open*.6;
 const VBF=[];for(let i=0;i<16;i++)VBF.push(150*Math.pow(6500/150,i/15));
 class Sing extends AudioWorkletProcessor{
   constructor(){super();const sr=this.sr=sampleRate;
     this.eng=0;this.tf=220;this.f=220;this.glide=.05;this.harm=.6;this.hold=0;this.dj=0;this.djs=0;
     this.T={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,sneer:0,side:0,wide:0,press:0};this.P=Object.assign({},this.T);
-    this.ph=new Float64Array(24);for(let i=0;i<24;i++)this.ph[i]=R();this.VB=VBF.map(()=>new SVF());this.vg=new Float32Array(16);this.cm=1;this.cmS=1;this.ct=0;this.cidx=2;this.crt=1;this.pm=0;this.nb=0;this.dr=0;
+    this.ph=new Float64Array(24);for(let i=0;i<24;i++)this.ph[i]=R();this.VB=VBF.map(()=>new SVF());this.vg=new Float32Array(16);this.gpv=new Float64Array(3);this.gfl=0;this.cm=1;this.cmS=1;this.ct=0;this.cidx=2;this.crt=1;this.pm=0;this.nb=0;this.dr=0;
     this.F=[new SVF(),new SVF(),new SVF(),new SVF()];this.OV=new SVF();this.y1=this.y2=this.y3=this.y4=0;this.cb=new Float32Array(2048);this.cw=0;this.rp=0;this.shp=0;this.crh=0;this.crc=0;
     this.lfo=0;this.am=0;this.sp=0;this.cc=0;this.dc=[0,0];this.lev=0;this.amp=0;this.post=0;this.pw=0;
     this.h1=4;this.h2=7;this.ht1=4;this.hm=0;this.tl=0;this.bit=0;this.bitc=0;this.jit=0;this.vibOn=0;
@@ -246,16 +248,17 @@ class Sing extends AudioWorkletProcessor{
     F2=Math.min(2750,Math.max(F1+250,F2));
     const fs=E.fs,qm=E.qm;
     if(e===4){const FF=[F1,F2,F3],A=[1,.75,.5];for(let i=0;i<16;i++){const fb=VBF[i];let g=.04;for(let j=0;j<3;j++){const d=Math.log2(fb/FF[j])/.22;g+=A[j]*Math.exp(-d*d)}this.vg[i]=g;this.VB[i].set(fb,7,sr)}}
-    this.F[0].set(F1*fs,F1*fs/90*qm,sr);this.F[1].set(F2*fs,F2*fs/110*qm,sr);this.F[2].set(F3*fs,F3*fs/150*qm,sr);this.F[3].set(F4*fs,F4*fs/220*qm,sr);
+    if(E.glot){this.F[0].set(F1,F1/65,sr);this.F[1].set(F2,F2/85,sr);this.F[2].set(F3,F3/120,sr);this.F[3].set(F4,F4/180,sr)}
+    else{this.F[0].set(F1*fs,F1*fs/90*qm,sr);this.F[1].set(F2*fs,F2*fs/110*qm,sr);this.F[2].set(F3*fs,F3*fs/150*qm,sr);this.F[3].set(F4*fs,F4*fs/220*qm,sr)}
     if(e===1)this.OV.set(700+(1-round)*900+smile*600,24,sr);
     if(e===5)this.OV.set(600+(1-round)*1000+smile*700,34,sr);
     // CHAOS: random pitch leaps, FM depth and ratios, self-triggered stutters — denser the wider you open
     if(e===7){this.ct-=32;if(this.ct<=0){this.ct=sr*(.05+R()*.25)/(.4+open);const M=[.5,.667,.75,1,1,1.25,1.333,1.5,2,3];this.cm=M[(R()*M.length)|0];
       this.cidx=R()*9*(.3+open);const CR=[.5,1,1.414,2,2.76,3.5,5.1];this.crt=CR[(R()*CR.length)|0];if(R()<.12*open)this.stutter();if(R()<.2)this.nb=1}}
     c.vd=E.vib+P.brow*.024;c.vr=5.2+P.brow*1.8;
-    c.tg=1-Math.exp(-TAU*(1500+P.brow*5200+open*2200)*E.bri/sr);
-    c.g=Math.min(1,E.growl+Math.max(P.cheek,P.browDown*.75)*(1-E.growl));
-    c.fz=P.sneer;c.ring=Math.abs(P.side);c.rr=P.side<0?.5+P.side*-.25:2.3+P.side*2.1;c.sh=P.wide;c.cr=P.press;
+    c.tg=1-Math.exp(-TAU*(1500+P.brow*5200+open*2200)*E.bri*(.55+.45*c.ampT)/sr);
+    c.g=Math.min(1,E.growl+Math.max(P.cheek,P.browDown*.75)*(1-E.growl)*E.fx);
+    c.fz=P.sneer*E.fx;c.ring=Math.abs(P.side)*E.fx;c.rr=P.side<0?.5+P.side*-.25:2.3+P.side*2.1;c.sh=P.wide*Math.min(1,E.fx*1.6);c.cr=P.press*E.fx;
     const em=Math.max(smile,P.frown);c.hmT=this.harm*Math.min(1,Math.max(0,(em-.18)/.45));if(e===6)c.hmT=Math.max(c.hmT,this.harm*.55);
     if(smile>P.frown+.06)this.ht1=4;else if(P.frown>smile+.06)this.ht1=3;
     // bend left = squelchy acid low-pass, bend right = metallic jet flanger, centre = clean
@@ -283,7 +286,9 @@ class Sing extends AudioWorkletProcessor{
           x*=e===6?.3:.4;if(e===6){const i=v*8+6;let p=this.ph[i]+2*fv/sr;if(p>=1)p-=1;this.ph[i]=p;x+=Math.sin(TAU*p)*.25}}
         else{const i=v*8,dt=fv/sr;let p=this.ph[i]+dt;if(p>=1)p-=1;this.ph[i]=p;
           if(e===2){this.pw+=.4/sr;if(this.pw>1)this.pw-=1;let q=p+.62+.13*Math.sin(TAU*this.pw);q-=Math.floor(q);x=(2*p-1-blep(p,dt))-(2*q-1-blep(q,dt))}
-          else if(e===0){x=(2*p-1-blep(p,dt))*.7+Math.sin(TAU*p)*.6}
+          else if(e===0){// glottal pulse (Rosenberg): open, close, rest — louder singing closes faster = brighter
+            const Tp=.42,Tn=.26-.12*this.amp;let g=p<Tp?.5*(1-Math.cos(Math.PI*p/Tp)):p<Tp+Tn?Math.cos(Math.PI*(p-Tp)/(2*Tn)):0;
+            x=(g-this.gpv[v])/(dt*7);this.gpv[v]=g;if(v===0)this.gfl=g}
           else if(e===4){let q=p+.5;if(q>=1)q-=1;x=(2*p-1-blep(p,dt))*.7+((2*p-1-blep(p,dt))-(2*q-1-blep(q,dt)))*.4}
           else if(e===7){if(v===0){this.pm+=fv*this.crt/sr;if(this.pm>1)this.pm-=1}x=Math.sin(TAU*p+this.cidx*Math.sin(TAU*this.pm))*.8+(2*p-1-blep(p,dt))*.3}
           else x=2*p-1-blep(p,dt)}
@@ -292,11 +297,11 @@ class Sing extends AudioWorkletProcessor{
       if(e===7&&this.nb>.001){src+=(R()*2-1)*this.nb;this.nb*=.9985}
       if(c.g>.01){this.sp+=f*.5/sr;if(this.sp>=1)this.sp-=1;src+=(this.sp<.5?1:-1)*c.g*.35}
       this.tl+=(src-this.tl)*c.tg;
-      const xin=this.tl+(R()*2-1)*E.br;let s;
+      const xin=this.tl+(R()*2-1)*(E.glot?.02+.06*this.gfl*(.4+P0(this)):E.br);let s;
       if(e===4){// vocoder: 16 bands on a buzzy carrier, each band opened by the vowel your mouth makes
         const cx=src+(R()*2-1)*.06;s=0;for(let i=0;i<16;i++){const B=this.VB[i];B.run(cx);s+=B.bp*B.k*this.vg[i]}s*=3.4}
       else{const F=this.F;F[0].run(xin);F[1].run(xin);F[2].run(xin);F[3].run(xin);
-        s=(F[0].bp*F[0].k+F[1].bp*F[1].k*.75+F[2].bp*F[2].k*E.g3+F[3].bp*F[3].k*.16)*2.4+this.tl*.03}
+        s=E.glot?(F[0].bp*F[0].k+F[1].bp*F[1].k*.6+F[2].bp*F[2].k*.28+F[3].bp*F[3].k*.12)*2.6+this.tl*.05:(F[0].bp*F[0].k+F[1].bp*F[1].k*.75+F[2].bp*F[2].k*E.g3+F[3].bp*F[3].k*.16)*2.4+this.tl*.03}
       if(e===1){this.OV.run(this.tl);s+=this.OV.bp*this.OV.k*1.5}
       if(e===5){this.OV.run(this.tl);s+=this.OV.bp*this.OV.k*2.4}
       if(e===3)s*=1.25;if(e===6)s*=1.15;if(e===0)s*=1.45;
@@ -337,7 +342,7 @@ registerProcessor('sing',Sing);
 <script>
 (()=>{
 const TAU=Math.PI*2,$=id=>document.getElementById(id);
-const ENG=[{n:'TENGU',j:'天狗',c:'#ff6a4d',off:0,rv:1},{n:'ONI',j:'鬼',c:'#ff3355',off:-12,rv:1},{n:'MANGA',j:'漫画',c:'#6fd3ff',off:12,rv:1},{n:'KITSUNE',j:'狐',c:'#c9a2ff',off:0,rv:1.1},
+const ENG=[{n:'TENGU',j:'天狗',c:'#ff6a4d',off:0,rv:1.15},{n:'ONI',j:'鬼',c:'#ff3355',off:-12,rv:1},{n:'MANGA',j:'漫画',c:'#6fd3ff',off:12,rv:1},{n:'KITSUNE',j:'狐',c:'#c9a2ff',off:0,rv:1.1},
   {n:'ROBOT',j:'ロボ',c:'#5cf0c8',off:0,rv:.8},{n:'MONK',j:'僧',c:'#ffb347',off:-12,rv:1.3},{n:'HEAVEN',j:'天使',c:'#fff1b0',off:12,rv:1.6},{n:'CHAOS',j:'混沌',c:'#ff40ff',off:0,rv:1}];
 const SCALES=[['FREE',null],['MAJOR',[0,2,4,5,7,9,11]],['MINOR',[0,2,3,5,7,8,10]],['PENTA',[0,2,4,7,9]],['M.PENTA',[0,3,5,7,10]],['BLUES',[0,3,5,6,7,10]],['DORIAN',[0,2,3,5,7,9,10]],['HIRAJOSHI',[0,2,3,7,8]]];
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
@@ -414,7 +419,8 @@ function useCam(s){
   stream=s;video.srcObject=s;video.play().catch(()=>{});camOn=true;$('camB').classList.add('on');
 }
 // expressions: blendshape scores minus your resting face, which the app learns by itself (no calibration needed)
-const SPAN={jaw:.42,gap:.1,round:.34,smile:.38,frown:.16,brow:.3,browDown:.3,cheek:.24,sneer:.28,wide:.28,press:.32,blinkL:.55,blinkR:.55};
+const SPAN={jaw:.42,gap:.1,round:.34,smile:.38,frown:.18,brow:.34,browDown:.38,cheek:.32,sneer:.38,wide:.36,press:.42,blinkL:.55,blinkR:.55};
+const FXK={cheek:1,browDown:1,sneer:1,wide:1,press:1,brow:1};
 let base=null,lastRaw=null;
 const FE={open:0,round:0,smile:0,frown:0,brow:0,browDown:0,cheek:0,sneer:0,side:0,wide:0,press:0,blinkL:0,blinkR:0,roll:0,nod:0,yaw:0,shake:0};
 let faceSeen=0,lastVT=-1,prevYaw=0,closedSince=0,hold=false,sim=null,lastStut=0,shakeDir=0,shakeFlips=[],winkSince=0,winkDir=0,octShift=0,stutFlash=0;
@@ -448,8 +454,8 @@ const nrm=(r,key)=>Math.min(1,Math.max(0,(r[key]-base[key])/SPAN[key]));
 function ingest(r,now){
   lastRaw=r;adapt(r);
   const k=.6,tg={open:Math.max(nrm(r,'gap'),nrm(r,'jaw')*.9)};
-  for(const key of ['round','smile','frown','brow','browDown','cheek','sneer','wide','press','blinkL','blinkR'])tg[key]=nrm(r,key);
-  tg.side=Math.max(-1,Math.min(1,(r.side-base.side)/.35));
+  for(const key of ['round','smile','frown','brow','browDown','cheek','sneer','wide','press','blinkL','blinkR']){let v=nrm(r,key);if(FXK[key])v=Math.pow(Math.max(0,(v-.18)/.82),1.6);tg[key]=v}
+  {const sd=(r.side-base.side)/.45,a=Math.pow(Math.max(0,(Math.abs(sd)-.2)/.8),1.6);tg.side=Math.sign(sd)*Math.min(1,a)}
   for(const key in tg)FE[key]+=(tg[key]-FE[key])*k;
   FE.roll+=((r.roll-base.roll)-FE.roll)*.5;FE.nod+=((r.nod-base.nod)-FE.nod)*.5;
   // quick "no" shake → stutter
