@@ -463,9 +463,13 @@ $('bRnd').addEventListener('click',randomize);let shake=0;
 
 // ---------- canvas ----------
 const cv=$('cv');let c=cv.getContext('2d');let W=1,H=1,dpr=1,bagImg=null,zoomN=null;
-function size(){const d=Math.min(2,devicePixelRatio||1),w=Math.max(1,Math.round(cv.clientWidth*d)),h=Math.max(1,Math.round(cv.clientHeight*d));if(w===W&&h===H&&d===dpr)return;dpr=d;W=cv.width=w;H=cv.height=h;geo();bagImg=null;zoomN=null}
+function size(force){const d=Math.min(2,devicePixelRatio||1),w=Math.max(1,Math.round(cv.clientWidth*d)),h=Math.max(1,Math.round(cv.clientHeight*d));
+  if(!force&&W>1&&d===dpr&&Math.abs(w-W)<W*.04&&Math.abs(h-H)<H*.04)return;   // tiny layout jitter: let CSS stretch, don't rebuild
+  if(!force&&w===W&&h===H&&d===dpr)return;dpr=d;W=cv.width=w;H=cv.height=h;c=cv.getContext('2d');geo();bagImg=null;zoomN=null}
+let rsT=0;const mainCtx=()=>cv.getContext('2d');
 cv.addEventListener('contextlost',()=>{bagImg=null;zoomN=null});cv.addEventListener('contextrestored',()=>{c=cv.getContext('2d');bagImg=null;zoomN=null});
-new ResizeObserver(size).observe(cv);
+new ResizeObserver(()=>{clearTimeout(rsT);rsT=setTimeout(()=>size(),250)}).observe(cv);
+{const sEl=document.querySelector('.status');if(sEl){const h=sEl.offsetHeight;if(h)sEl.style.cssText+=';height:'+h+'px;min-height:'+h+'px;max-height:'+h+'px;overflow:hidden'}}
 const G={};
 const COG='#8a4e24';
 const CANV='#4b2c1a',VACH='#e0b886',VACH2='#d2a46e';
@@ -485,10 +489,12 @@ function bodyPath(g){const b=G.bag,x0=b.x,x1=b.x+b.w,y0=b.y,y1=b.y+b.h,r=b.w*.06
   g.beginPath();g.moveTo(x0+b.w*.07,y0+b.h*.03);g.quadraticCurveTo(W/2,y0-b.h*.035,x1-b.w*.07,y0+b.h*.03);
   g.bezierCurveTo(x1+b.w*.01,y0+b.h*.1,x1+b.w*.012,y0+b.h*.55,x1-b.w*.004,y1-r);g.quadraticCurveTo(x1-b.w*.008,y1,x1-r,y1);
   g.lineTo(x0+r,y1);g.quadraticCurveTo(x0+b.w*.008,y1,x0+b.w*.004,y1-r);g.bezierCurveTo(x0-b.w*.012,y0+b.h*.55,x0-b.w*.01,y0+b.h*.1,x0+b.w*.07,y0+b.h*.03);g.closePath()}
-function noiseTile(n,a,soft){const t=document.createElement('canvas');t.width=t.height=n;const g=t.getContext('2d'),im=g.createImageData(n,n);
+const TC={};function noiseTile(n,a,soft){const k='n'+n+'-'+a+'-'+soft;return TC[k]||(TC[k]=noiseTile0(n,a,soft))}
+function pebbleTile(n){return TC['p'+n]||(TC['p'+n]=pebbleTile0(n))}
+function noiseTile0(n,a,soft){const t=document.createElement('canvas');t.width=t.height=n;const g=t.getContext('2d'),im=g.createImageData(n,n);
   for(let i=0;i<n*n;i++){const v=Math.random()*255;im.data[i*4]=v;im.data[i*4+1]=v;im.data[i*4+2]=v;im.data[i*4+3]=a*Math.random()}g.putImageData(im,0,0);
   if(soft){const t2=document.createElement('canvas');t2.width=t2.height=n;const g2=t2.getContext('2d');g2.filter='blur(.7px)';g2.drawImage(t,0,0);return t2}return t}
-function pebbleTile(n){const t=document.createElement('canvas');t.width=t.height=n;const g=t.getContext('2d');
+function pebbleTile0(n){const t=document.createElement('canvas');t.width=t.height=n;const g=t.getContext('2d');
   for(let i=0;i<n*n/9;i++){const x=Math.random()*n,y=Math.random()*n,r=.8+Math.random()*1.8;
     for(const[dx,dy]of [[0,0],[n,0],[-n,0],[0,n],[0,-n]]){const gr=g.createRadialGradient(x+dx-r*.3,y+dy-r*.3,0,x+dx,y+dy,r);gr.addColorStop(0,'rgba(255,230,200,.07)');gr.addColorStop(.7,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.08)');g.fillStyle=gr;g.beginPath();g.arc(x+dx,y+dy,r,0,TAU);g.fill()}}
   return t}
@@ -503,7 +509,8 @@ function motif(g,x,y,s,k,col){g.save();g.translate(x,y);g.fillStyle=col;g.stroke
   else{g.beginPath();g.arc(0,0,s*.42,0,TAU);g.stroke();g.font=`700 ${s*.42}px Georgia,serif`;g.textAlign='center';g.textBaseline='middle';g.fillText('50',0,s*.02)}
   g.restore()}
 function stitch(g,draw,col,w,d){g.save();g.setLineDash(d);g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';draw();g.stroke();g.restore()}
-function buildBag(){const o=document.createElement('canvas');o.width=W;o.height=H;const g=o.getContext('2d'),b=G.bag;
+const OFF={};function offCv(k){let o=OFF[k];if(!o)o=OFF[k]=document.createElement('canvas');if(o.width!==W||o.height!==H){o.width=W;o.height=H}else o.getContext('2d').clearRect(0,0,W,H);return o}
+function buildBag(){const o=offCv('bag');const g=o.getContext('2d'),b=G.bag;
   const grain=g.createPattern(noiseTile(80,22,true),'repeat'),peb=g.createPattern(pebbleTile(Math.round(70*dpr)),'repeat');
   // light studio backdrop, like a product shot
   const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#efedea');bg.addColorStop(.6,'#e2dfdb');bg.addColorStop(1,'#cfcbc6');g.fillStyle=bg;g.fillRect(0,0,W,H);
@@ -601,7 +608,7 @@ function zoomLayout(v){const m=W*.07,top=H*.04,ZH=H*.92;ZK=[];
   if(v<4){const L=v===2?DEN:EN,n=L.length,cols=Math.min(4,n),rows=Math.ceil(n/cols),cw=(W-2*m)/cols;L.forEach((nm,i)=>ZK.push({t:'eng',i,x:m+cw*((i%cols)+.5),y:top+ZH*(.86+.065*Math.floor(i/cols))-(rows-1)*ZH*.03,w:cw*.9,h:H*.04}))}}
 function drawZoom(v){
   const pad=W*.03,y0=H*.02,y1=H*.98;
-  if(!zoomN){const o=document.createElement('canvas');o.width=W;o.height=H;const sc=c;c=o.getContext('2d');c.fillStyle='#120b08';c.fillRect(0,0,W,H);zoomN={p:c.createPattern(pebbleTile(Math.round(120*dpr)),'repeat'),n:c.createPattern(noiseTile(96,26,true),'repeat')};
+  if(!zoomN){const o=offCv('zoom');const sc=c;c=o.getContext('2d');c.fillStyle='#120b08';c.fillRect(0,0,W,H);zoomN={p:c.createPattern(pebbleTile(Math.round(120*dpr)),'repeat'),n:c.createPattern(noiseTile(96,26,true),'repeat')};
   c.save();c.shadowColor='rgba(0,0,0,.65)';c.shadowBlur=H*.02;c.shadowOffsetY=H*.006;const lg=c.createLinearGradient(0,y0,0,y1);lg.addColorStop(0,shadeHex(COG,1.12));lg.addColorStop(.5,COG);lg.addColorStop(1,shadeHex(COG,.7));c.fillStyle=lg;c.beginPath();c.roundRect?c.roundRect(pad,y0,W-2*pad,y1-y0,W*.05):c.rect(pad,y0,W-2*pad,y1-y0);c.fill();c.restore();
   c.save();c.beginPath();c.roundRect?c.roundRect(pad,y0,W-2*pad,y1-y0,W*.05):c.rect(pad,y0,W-2*pad,y1-y0);c.clip();c.fillStyle=zoomN.p;c.fillRect(0,0,W,H);c.fillStyle=zoomN.n;c.fillRect(0,0,W,H);
   const hl=c.createRadialGradient(W*.3,H*.3,0,W*.3,H*.3,H*.7);hl.addColorStop(0,'rgba(255,225,185,.14)');hl.addColorStop(1,'rgba(0,0,0,.2)');c.fillStyle=hl;c.fillRect(0,0,W,H);c.restore();
@@ -694,7 +701,9 @@ let confetti=0;const conf=[];
 
 // ---------- frame ----------
 let last=performance.now();const fl=[0,0,0,0,0];
-function frame(now){requestAnimationFrame(frame);try{frameBody(now)}catch(err){bagImg=null;zoomN=null;console.error(err)}}
+let errT=0,wdT=0;
+function frame(now){requestAnimationFrame(frame);c=mainCtx();
+  try{frameBody(now)}catch(err){c=mainCtx();console.error(err);if(now-errT>2000){errT=now;bagImg=null;zoomN=null}}}
 function frameBody(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   if(morph){const t=Math.min(1,(now-morph.t0)/2000),e=t*t*(3-2*t);for(let r=0;r<5;r++)for(let j=0;j<10;j++)st.K[r][j]=morph.from.K[r][j]+(morph.to.K[r][j]-morph.from.K[r][j])*e;
     for(const k in morph.to.M){if(k==='key'||k==='scale'||k==='ring'){if(t>=1)st.M[k]=morph.to.M[k]}else st.M[k]=morph.from.M[k]+(morph.to.M[k]-morph.from.M[k])*e}sync();showTempo();if(t>=1){morph=null;save()}}
