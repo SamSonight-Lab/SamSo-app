@@ -514,9 +514,13 @@ $('bFreeze').addEventListener('click',()=>{st.freeze=st.freeze?0:1;save();showFr
 // random: a new band, within musical limits
 const RLIM=[[[0,1],[.1,.7],[.2,.8],[0,.7],[0,1],[.15,.6],[.1,.75],[.2,.8],[0,.7],[.6,.85]],[[.3,1],[.1,.8],[.2,.9],[0,.6],[0,.8],[.3,.8],[0,.6],[0,.6],[.1,.8],[.25,.65]],
   [[.5,1],[0,.5],[.2,.8],[.2,.7],[.2,.7],[.1,.9],[.1,.7],[0,.5],[0,.4],[.55,.9]],[[0,.67],[.2,.9],[0,1],[.2,.8],[0,.8],[.2,.7],[0,.5],[.2,.9],[.3,.9],[.2,.6]],[[0,1],[.1,.9],[0,.5],[0,.4],[0,.4],[0,.6],[0,.3],[0,.7],[.1,.7],[.1,.6]]];
+for(const r of [0,1,3]){RLIM[r][3]=[0,1];RLIM[r][4]=[0,1];RLIM[r][2]=[0,1]}RLIM[0][5]=[.1,.75];RLIM[1][5]=[.2,.9];RLIM[3][5]=[.15,.85];RLIM[2][3]=[0,1];RLIM[2][5]=[0,1];RLIM[2][6]=[0,1];
 function randomize(){for(let r=0;r<5;r++)for(let j=0;j<10;j++){const[a,b]=RLIM[r][j];let v=a+Math.random()*(b-a);const sp=stepsOf(r,j);if(sp)v=Math.round(v*(sp-1))/(sp-1);st.K[r][j]=+v.toFixed(3)}
-  st.E=[0,1,2,3,4].map(r=>r===4?0:Math.floor(Math.random()*(r===2?DEN.length:EN.length)));st.S=[0,1,2,3,4].map(()=>Math.random()<.4?0:Math.floor(Math.random()*SQN.length));st.A={};recRow=-1;st.M.tempo=+(.2+Math.random()*.55).toFixed(3);st.M.key=Math.round(Math.random()*11)/11;st.M.scale=Math.round(Math.random()*6)/6;save();sync();showTempo();
-  say('RANDOM · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+Math.round(60+st.M.tempo*120)+' BPM',1,2500);shake=1}
+  st.E=[0,1,2,3,4].map(r=>r===4?0:Math.floor(Math.random()*(r===2?DEN.length:EN.length)));st.S=[0,1,2,3,4].map(()=>Math.floor(Math.random()*SQN.length));st.A={};recRow=-1;
+  {const rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),X=st.X;X.g=[0,1,2,3].map(()=>rr(.55,.9));X.mu=[0,0,0,0];X.sa=[0,1,2,3].map(()=>Math.random()<.45?0:rr(.1,.7));X.sb=[0,1,2,3].map(()=>Math.random()<.45?0:rr(.1,.7));
+   X.ta=Math.floor(Math.random()*FXN.length);do{X.tb=Math.floor(Math.random()*FXN.length)}while(X.tb===X.ta);X.pa=[rr(0,1),rr(0,1),rr(.25,.75)];X.pb=[rr(0,1),rr(0,1),rr(.25,.75)];X.ra=rr(.4,.8);X.rb=rr(.4,.8);
+   st.M.glue=rr(.2,.8);st.M.ring=Math.random()<.3?1:0;if(node)for(let r=0;r<5;r++)node.port.postMessage({reseed:r})}st.M.tempo=+(.2+Math.random()*.55).toFixed(3);st.M.key=Math.round(Math.random()*11)/11;st.M.scale=Math.round(Math.random()*6)/6;save();sync();showTempo();
+  say('RANDOM · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+Math.round(60+st.M.tempo*120)+' BPM · FX '+FXN[st.X.ta]+'/'+FXN[st.X.tb],1,2500);shake=1}
 $('bRnd').addEventListener('click',randomize);let shake=0;
 
 // ---------- canvas ----------
