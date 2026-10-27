@@ -149,6 +149,36 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
 .stage{flex:1;min-height:0;position:relative}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 .band h1 small{font-size:.5em}
+.hap{flex:none;display:grid;grid-template-columns:minmax(0,1fr) 58px;gap:4px;margin-top:5px}
+.hapb{position:relative;height:50px;border-radius:6px;border:2px solid #e0b25a;background:linear-gradient(180deg,#f3d58f 0%,#c99a42 38%,#8a5a1c 62%,#c08a3a 100%);color:#2a1204;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;touch-action:manipulation;padding:0 6px;box-shadow:0 0 0 2px #3a1a08,0 0 16px rgba(255,90,40,.55),inset 0 2px 0 rgba(255,250,220,.7),inset 0 -3px 6px rgba(60,20,0,.5);overflow:hidden}
+.hapb::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,240,.55) 48%,transparent 62%);transform:translateX(-120%);animation:shine 4.5s ease-in-out infinite}
+@keyframes shine{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.hapb .ht{display:flex;flex-direction:column;align-items:center;font-family:Georgia,serif;font-weight:700;font-style:italic;font-size:15px;letter-spacing:.04em;white-space:nowrap;text-shadow:0 1px 0 rgba(255,240,200,.8)}
+.hapb .ht small{font-family:var(--f-label);font-style:normal;font-weight:400;font-size:8px;letter-spacing:.14em;color:#5a2a08;text-shadow:none;margin-top:1px}
+.hapb .hg{font-size:18px;flex:none;color:#5a2a08;text-shadow:0 1px 0 rgba(255,240,200,.7);animation:spin 9s linear infinite}
+.hapb .hg:last-child{animation-direction:reverse}@keyframes spin{to{transform:rotate(360deg)}}
+.hapb:active{transform:translateY(2px);box-shadow:0 0 0 2px #3a1a08,0 0 26px rgba(255,90,40,.9),inset 0 3px 8px rgba(60,20,0,.6)}
+.lockb{height:50px;border-radius:6px;border:1px solid var(--gold-dim);background:#110e13;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:18px;cursor:pointer;touch-action:manipulation;padding:0}
+.lockb small{font-family:var(--f-label);font-size:8px;letter-spacing:.14em;color:var(--gold)}
+.lockb.on{background:var(--gold);border-color:var(--gold-hi)}.lockb.on small{color:#3b2a10}
+.pre{position:fixed;inset:0;z-index:50;background:rgba(5,3,2,.78);display:flex;align-items:center;justify-content:center;padding:16px}
+.pre.gone{display:none}
+.pbox{width:100%;max-width:440px;max-height:86%;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,#2c1a0e,#170d07);border:2px solid #c99a42;border-radius:10px;padding:14px;box-shadow:0 0 30px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,220,160,.15)}
+.ph{display:flex;justify-content:space-between;align-items:center;font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:22px;color:#f0d79a;letter-spacing:.08em}
+.px{background:none;border:1px solid var(--gold-dim);color:var(--ink);border-radius:4px;width:34px;height:34px;font-size:16px;cursor:pointer}
+.prow{display:flex;gap:8px}
+.prow input{flex:1;min-width:0;height:40px;background:#0c0806;border:1px solid #c99a42;border-radius:5px;color:#f4dc9a;font-family:var(--f-mono);font-size:16px;padding:0 10px;text-transform:uppercase}
+.pbtn{height:40px;padding:0 16px;border-radius:5px;border:1px solid #e0b25a;background:linear-gradient(180deg,#f3d58f,#b8862f);color:#2a1204;font-family:var(--f-label);font-size:13px;letter-spacing:.1em;cursor:pointer}
+.pbtn.s{flex:1;background:#110e13;color:var(--ink);border-color:var(--gold-dim);font-size:11px}
+.plist{overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:60px;touch-action:pan-y}
+.pit{display:flex;gap:6px}
+.pld{flex:1;min-width:0;text-align:left;background:rgba(255,220,160,.06);border:1px solid rgba(201,154,66,.5);border-radius:5px;padding:8px 10px;color:#f4dc9a;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.pld b{font-family:var(--f-label);font-size:14px;letter-spacing:.08em;font-weight:400}
+.pld small{font-family:var(--f-mono);font-size:10px;color:#b8a078;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdel{background:#110e13;border:1px solid var(--gold-dim);color:var(--ink);border-radius:5px;min-width:40px;font-size:12px;cursor:pointer;padding:0 6px}
+.pdel.arm{background:#8a1a10;border-color:#e0301e;color:#fff}
+.pempty{font-family:var(--f-label);font-size:12px;color:#b8a078;padding:12px 4px;line-height:1.5}
+.pfoot{margin-top:2px}
 </style>
 
 <div id="intro" role="dialog" aria-label="Start">
@@ -159,11 +189,17 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
       <li>Each instrument has a <b>sequence</b> that picks notes and rhythms: the Benjolin rungler, a Turing machine, Euclid and more. Every instrument can be <b>generated or sample-based</b>.</li>
       <li><b>Tap a row</b> to zoom in, drag up/down to turn a knob, swipe sideways for the next page.</li>
       <li><b>Tap the flap</b> for MASTER: tempo (from 0 up to audio rate), key, scale, glue, RING, scenes and CROSS-MOD.</li>
-      <li><b>RANDOM</b> = a brand new band. <b>FREEZE</b> = lock all patterns. And the <b>padlock</b>… just try it.</li>
+      <li>The <b>HAPPY ACCIDENTINATOR</b> throws a brand new band at you: then tweak it yourself. 🔓 TEMPO keeps your tempo. <b>PRESETS</b> saves what you found. <b>FREEZE</b> locks all patterns. And the <b>padlock</b>… just try it.</li>
     </ol>
     <div class="icta">OPEN THE BAG</div>
   </div>
 </div>
+<div id="pre" class="pre gone" role="dialog" aria-label="Presets"><div class="pbox">
+  <div class="ph">PRESETS<button type="button" id="pClose" class="px">✕</button></div>
+  <div class="prow"><input id="pName" maxlength="24" autocomplete="off" spellcheck="false"><button type="button" id="pSave" class="pbtn">SAVE</button></div>
+  <div id="pList" class="plist"></div>
+  <div class="prow pfoot"><button type="button" id="pExp" class="pbtn s">EXPORT</button><button type="button" id="pImp" class="pbtn s">IMPORT</button></div>
+</div></div>
 <div class="rack">
   <header class="band">
     <h1><small>The Paul</small> 50 Bag</h1>
@@ -176,8 +212,10 @@ button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
       <button type="button" id="bNext">▶<small>NEXT</small></button>
       <button type="button" id="bTempo">120<small>BPM ↕</small></button>
       <button type="button" id="bFreeze">FREEZE<small>LOCK</small></button>
-      <button type="button" id="bRnd" class="red">RANDOM<small>ALL</small></button>
+      <button type="button" id="bPre">PRESETS<small>SAVE · LOAD</small></button>
     </div>
+    <div class="hap"><button type="button" id="bRnd" class="hapb"><span class="hg">⚙</span><span class="ht">HAPPY ACCIDENTINATOR<small>a brand new idea · then tweak it yourself</small></span><span class="hg">⚙</span></button>
+      <button type="button" id="bLockT" class="lockb"><span>🔓</span><small>TEMPO</small></button></div>
     <div class="status"><span class="ar">▸▸▸</span><span id="msg">tap to start</span><span class="ar">◂◂◂</span></div>
     <div class="stage"><canvas id="cv" aria-label="A leather bag. Tap a row of knobs to zoom in, the flap for master, the padlock for a surprise."></canvas></div>
   </main>
@@ -317,7 +355,7 @@ class Band extends AudioWorkletProcessor{
     this.port.onmessage=e=>{const d=e.data;
       if(d.K)d.K.forEach((k,r)=>this.K[r].set(k));if(d.r!==undefined)this.K[d.r][d.j]=d.v;if(d.E)this.E=d.E.slice();if(d.S)this.S=d.S.slice();
       if(d.M)Object.assign(this.M,d.M);if(d.freeze!==undefined)this.freeze=d.freeze;
-      if(d.X)Object.assign(this.X,d.X);if(d.C)this.C.set(d.C);if(d.CG!==undefined)this.CG=d.CG;
+      if(d.X)Object.assign(this.X,d.X);if(d.C)this.C.set(d.C);if(d.setreg)for(let r=0;r<5;r++)this.reg[r]=d.setreg[r]|0;if(d.CG!==undefined)this.CG=d.CG;
       if(d.smp){const m=d.smp,S={d:m.d,rf:m.rf,loop:m.loop};this.SM[m.slot]=S;if(m.slot==='b')this.B.v.sm=S;if(m.slot==='l')this.L.v.sm=S;if(m.slot==='p')for(const v of this.P.v)v.o.sm=S}if(d.hold)this.held[d.hold]=1;if(d.unhold)delete this.held[d.unhold];if(d.reseed!==undefined){const q=this.sq[d.reseed];this.reg[d.reseed]=(R()*255)|1;q.t=(R()*65535)|1;q.c=((R()*65535)|0)||256;q.x=.1+R()*.8;q.m=(R()*16)|0}
       if(d.aclear)this.A={};if(d.alen)this.AL=d.alen;if(d.auto)for(const k in d.auto){const v=d.auto[k];if(v){const[r,j]=k.split('-').map(Number);this.A[k]={r,j,a:Float32Array.from(v)}}else delete this.A[k]}}
     this.A={};this.AL=32;this.apos=0;this.held={};this.RA=new Rack(sr);this.RB=new Rack(sr);
@@ -473,7 +511,7 @@ const fmtB=t=>{const b=BPMF(t);return b<=0?'0 BPM':b<1200?Math.round(b)+' BPM':M
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],SCN=['MINOR','MAJOR','PENTA','M.PENTA','DORIAN','HIRAJOSHI','PHRYG.DOM'];
 const DEF={K:[[.75,.35,.45,.3,.55,.35,.45,.5,.35,.8],[.75,.3,.55,.25,.35,.5,.3,.25,.5,.5],[1,.15,.45,.45,.45,.45,.3,.15,0,.85],[.33,.6,.6,.45,.4,.45,.25,.55,.6,.45],[.75,.4,.15,0,0,.2,.05,.35,.4,.35]],
   E:[0,1,0,2,0],S:[0,0,0,0,0],C:[0,0,0,0,0,0,0,0],CG:0,SB:{b:'MELLO STRINGS',l:'MELLO FLUTE',p:'MELLO CHOIR',dk:'KICK 808',ds:'SNARE',dh:'HAT',dt:'TOM'},A:{},AL:2,X:{g:[.8,.75,.8,.7],sa:[0,.25,0,.3],sb:[0,.2,.15,0],mu:[0,0,0,0],ra:.6,rb:.5,ta:0,tb:6,pa:[.5,.45,.5],pb:[.6,.5,.5]},M:{tempo:.42,key:0,scale:0,glue:.5,vol:.75,ring:0},freeze:0,scenes:[null,null,null,null,null]};
-const st=Object.assign(JSON.parse(JSON.stringify(DEF)),LS.get('b50c',{}));if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);const save=()=>LS.set('b50c',st);
+const st=Object.assign(JSON.parse(JSON.stringify(DEF)),LS.get('b50c',{}));if(st.lockT===undefined)st.lockT=0;if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);const save=()=>LS.set('b50c',st);
 function klab(r,j){if(j===1)return SQL[st.S[r]||0];if(r!==2&&r!==4&&(j===3||j===4))return TL[st.E[r]][j-3];if(r===2&&j===3)return 'TUNE';if(r===2&&j===4)return 'DECAY';return ROWS[r].kl[j]}
 function engName(r){return r===4?'FX':r===2?DEN[st.E[2]]:EN[st.E[r]]}
 
@@ -653,9 +691,33 @@ function randomize(){for(let r=0;r<5;r++)for(let j=0;j<10;j++){const[a,b]=RLIM[r
   st.E=[0,1,2,3,4].map(r=>r===4?0:Math.floor(Math.random()*(r===2?DEN.length:EN.length)));st.S=[0,1,2,3,4].map(()=>Math.floor(Math.random()*SQN.length));st.A={};recRow=-1;
   {const rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),X=st.X;X.g=[0,1,2,3].map(()=>rr(.55,.9));X.mu=[0,0,0,0];X.sa=[0,1,2,3].map(()=>Math.random()<.45?0:rr(.1,.7));X.sb=[0,1,2,3].map(()=>Math.random()<.45?0:rr(.1,.7));
    X.ta=Math.floor(Math.random()*FXN.length);do{X.tb=Math.floor(Math.random()*FXN.length)}while(X.tb===X.ta);X.pa=[rr(0,1),rr(0,1),rr(.25,.75)];X.pb=[rr(0,1),rr(0,1),rr(.25,.75)];X.ra=rr(.4,.8);X.rb=rr(.4,.8);
-   st.M.glue=rr(.2,.8);st.M.ring=Math.random()<.3?1:0;st.C=st.C.map(()=>Math.random()<.3?rr(.05,.6):0);st.CG=Math.random()<.5?0:rr(0,.45);sendC();for(const sl of ['b','l','p',...DSL])rndSlot(sl);st.AL=[1,2,4][Math.floor(Math.random()*3)];if(node)node.port.postMessage({alen:st.AL*16});setTimeout(pushUsed,0);if(node)for(let r=0;r<5;r++)node.port.postMessage({reseed:r})}{const q=Math.random(),bp=q<.85?70+Math.random()*90:q<.95?160+Math.random()*440:3000+Math.random()*40000;st.M.tempo=+TOF(bp).toFixed(4)}st.M.key=Math.round(Math.random()*11)/11;st.M.scale=Math.round(Math.random()*6)/6;save();sync();showTempo();
-  say('RANDOM · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+fmtB(st.M.tempo)+' · FX '+FXN[st.X.ta]+'/'+FXN[st.X.tb],1,2500);shake=1}
-$('bRnd').addEventListener('click',randomize);let shake=0;
+   st.M.glue=rr(.2,.8);st.M.ring=Math.random()<.3?1:0;st.C=st.C.map(()=>Math.random()<.3?rr(.05,.6):0);st.CG=Math.random()<.5?0:rr(0,.45);sendC();for(const sl of ['b','l','p',...DSL])rndSlot(sl);st.AL=[1,2,4][Math.floor(Math.random()*3)];if(node)node.port.postMessage({alen:st.AL*16});setTimeout(pushUsed,0);if(node)for(let r=0;r<5;r++)node.port.postMessage({reseed:r})}if(!st.lockT){const q=Math.random(),bp=q<.85?70+Math.random()*90:q<.95?160+Math.random()*440:3000+Math.random()*40000;st.M.tempo=+TOF(bp).toFixed(4)}st.M.key=Math.round(Math.random()*11)/11;st.M.scale=Math.round(Math.random()*6)/6;save();sync();showTempo();
+  say('HAPPY ACCIDENT · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+fmtB(st.M.tempo)+' · FX '+FXN[st.X.ta]+'/'+FXN[st.X.tb],1,2500);shake=1}
+$('bRnd').addEventListener('click',randomize);
+function showLock(){const b=$('bLockT');b.classList.toggle('on',!!st.lockT);b.firstChild.textContent=st.lockT?'🔒':'🔓'}
+$('bLockT').addEventListener('click',()=>{st.lockT=st.lockT?0:1;save();showLock();say(st.lockT?'TEMPO LOCKED · the Accidentinator leaves the tempo alone':'TEMPO free · the Accidentinator may change it',1,1800)});showLock();
+// ---------- presets: save what you found, load it back, export/import as a file ----------
+const PK='b50p';let PR=LS.get(PK,[]);const savePR=()=>LS.set(PK,PR);
+const snap=()=>JSON.parse(JSON.stringify({K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,SB:st.SB,X:st.X,M:st.M,A:st.A,AL:st.AL,regs:Array.from(regs)}));
+function applyP(p){const q=JSON.parse(JSON.stringify(p));const keepVol=st.M.vol,keepT=st.M.tempo;for(const k of ['K','E','S','C','CG','SB','X','A','AL'])if(q[k]!==undefined)st[k]=q[k];
+  if(q.M)st.M=Object.assign(st.M,q.M);st.M.vol=keepVol;if(st.lockT)st.M.tempo=keepT;recRow=-1;save();sync();pushUsed();showTempo();if(node&&q.regs)node.port.postMessage({setreg:q.regs})}
+function nextName(){let i=PR.length+1,n;do{n='PBAG '+String(i).padStart(3,'0');i++}while(PR.some(p=>p.n===n));return n}
+function renderPR(){const L=$('pList');L.innerHTML='';if(!PR.length){L.innerHTML='<div class="pempty">No presets yet. Found something good? Give it a name and tap SAVE.</div>';return}
+  PR.forEach((p,i)=>{const r=document.createElement('div');r.className='pit';const d=new Date(p.d);
+    r.innerHTML=`<button type="button" class="pld"><b></b><small>${p.s.E.slice(0,4).map((e,j)=>j===2?DEN[e]:EN[e]).join(' · ')} · ${fmtB(p.s.M.tempo)} · ${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</small></button><button type="button" class="pdel">✕</button>`;
+    r.querySelector('b').textContent=p.n;
+    r.querySelector('.pld').addEventListener('click',()=>{applyP(p.s);$('pre').classList.add('gone');say('PRESET · '+p.n+' loaded'+(st.lockT?' · tempo kept':''),1,1800)});
+    const del=r.querySelector('.pdel');del.addEventListener('click',()=>{if(del.classList.contains('arm')){PR.splice(i,1);savePR();renderPR()}else{del.classList.add('arm');del.textContent='DELETE?';setTimeout(()=>{del.classList.remove('arm');del.textContent='✕'},2500)}});
+    L.appendChild(r)})}
+$('bPre').addEventListener('click',()=>{$('pName').value=nextName();renderPR();$('pre').classList.remove('gone')});
+$('pClose').addEventListener('click',()=>$('pre').classList.add('gone'));
+$('pre').addEventListener('click',e=>{if(e.target.id==='pre')$('pre').classList.add('gone')});
+$('pSave').addEventListener('click',()=>{const n=($('pName').value||'').trim().toUpperCase()||nextName(),ex=PR.findIndex(p=>p.n===n),item={n,d:Date.now(),s:snap()};
+  if(ex>=0)PR[ex]=item;else PR.unshift(item);savePR();renderPR();$('pName').value=nextName();say('PRESET · '+n+' saved',1,1600)});
+$('pExp').addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'paul50bag',v:1,presets:PR})],{type:'application/json'}));a.download='paul50bag-presets.json';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500)});
+const pFile=document.createElement('input');pFile.type='file';pFile.accept='.json,application/json';pFile.style.display='none';document.body.appendChild(pFile);
+$('pImp').addEventListener('click',()=>pFile.click());
+pFile.addEventListener('change',async()=>{const f=pFile.files&&pFile.files[0];if(!f)return;try{const j=JSON.parse(await f.text());const L=(j.presets||[]).filter(p=>p&&p.n&&p.s&&p.s.K);let added=0;for(const p of L)if(!PR.some(q=>q.n===p.n&&q.d===p.d)){PR.push(p);added++}savePR();renderPR();say('IMPORT · '+added+' presets',1,1600)}catch(e){say('cannot read this preset file',0,2000)}pFile.value=''});let shake=0;
 
 // ---------- canvas ----------
 const cv=$('cv');let c=cv.getContext('2d');let W=1,H=1,dpr=1,bagImg=null,zoomN=null;
@@ -706,11 +768,45 @@ function motif(g,x,y,s,k,col){g.save();g.translate(x,y);g.fillStyle=col;g.stroke
   g.restore()}
 function stitch(g,draw,col,w,d){g.save();g.setLineDash(d);g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';draw();g.stroke();g.restore()}
 const OFF={};function offCv(k){let o=OFF[k];if(!o)o=OFF[k]=document.createElement('canvas');if(o.width!==W||o.height!==H){o.width=W;o.height=H}else o.getContext('2d').clearRect(0,0,W,H);return o}
+// ---------- steampunk workshop backdrop: riveted copper plates, brass pipes, gears, a gauge, warm light ----------
+function steamBg(g,grain){const U=Math.min(W,H);
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#2b1a0f');bg.addColorStop(.55,'#1d120a');bg.addColorStop(1,'#0e0805');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const gear=(x,y,r,n,col,hole)=>{g.save();g.translate(x,y);g.beginPath();for(let i=0;i<n;i++){const a0=i/n*TAU,a1=(i+.5)/n*TAU,dt=TAU/n*.12;
+      g.lineTo(Math.cos(a0+dt)*r,Math.sin(a0+dt)*r);g.lineTo(Math.cos(a1-dt)*r,Math.sin(a1-dt)*r);g.lineTo(Math.cos(a1+dt)*r*.84,Math.sin(a1+dt)*r*.84);g.lineTo(Math.cos(a0+TAU/n-dt)*r*.84,Math.sin(a0+TAU/n-dt)*r*.84)}g.closePath();
+    g.moveTo(r*hole,0);g.arc(0,0,r*hole,0,TAU,true);for(let k=0;k<5;k++){const a=k/5*TAU+.3;g.moveTo(Math.cos(a)*r*.62,Math.sin(a)*r*.62);g.arc(Math.cos(a)*r*.48,Math.sin(a)*r*.48,r*.14,0,TAU,true)}
+    const gr=g.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r);gr.addColorStop(0,shadeHex(col,1.5));gr.addColorStop(1,shadeHex(col,.55));g.fillStyle=gr;g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=U*.02;g.fill('evenodd');g.shadowBlur=0;
+    g.strokeStyle='rgba(255,215,150,.18)';g.lineWidth=U*.003;g.stroke();g.restore()};
+  // gears in the dark, partly off-screen
+  gear(W*.02,H*.16,U*.28,18,'#4a2e18',.18);gear(W*.98,H*.06,U*.2,14,'#3c2614',.2);gear(W*1.02,H*.62,U*.3,20,'#43291a',.16);gear(-W*.04,H*.86,U*.26,16,'#3a2414',.18);gear(W*.86,H*.25,U*.1,10,'#5a3a1c',.25);
+  // riveted copper plates
+  const plate=(x,y,w,h)=>{const pg=g.createLinearGradient(x,y,x+w*.3,y+h);pg.addColorStop(0,'rgba(150,84,44,.55)');pg.addColorStop(1,'rgba(70,36,18,.55)');g.fillStyle=pg;g.fillRect(x,y,w,h);
+    g.strokeStyle='rgba(255,200,140,.18)';g.lineWidth=U*.004;g.strokeRect(x,y,w,h);g.strokeStyle='rgba(0,0,0,.5)';g.strokeRect(x+U*.004,y+U*.004,w,h);
+    const rv=(rx,ry)=>{const rr=U*.008,q=g.createRadialGradient(rx-rr*.3,ry-rr*.3,0,rx,ry,rr);q.addColorStop(0,'#f2d29a');q.addColorStop(.6,'#9a6a30');q.addColorStop(1,'#3a2410');g.fillStyle=q;g.beginPath();g.arc(rx,ry,rr,0,TAU);g.fill()};
+    const st2=U*.06;for(let px=x+U*.02;px<x+w-U*.01;px+=st2){rv(px,y+U*.018);rv(px,y+h-U*.018)}for(let py=y+U*.02+st2;py<y+h-U*.03;py+=st2){rv(x+U*.018,py);rv(x+w-U*.018,py)}};
+  plate(W*.04,H*.03,W*.92,H*.2);plate(W*.03,H*.555,W*.94,H*.42);
+  // brass pipes with flanges and a valve wheel
+  const pipe=(x0,y0,x1,y1,r)=>{const hor=Math.abs(x1-x0)>Math.abs(y1-y0),pg=hor?g.createLinearGradient(0,y0-r,0,y0+r):g.createLinearGradient(x0-r,0,x0+r,0);
+    pg.addColorStop(0,'#5a3a14');pg.addColorStop(.35,'#e9c87a');pg.addColorStop(.55,'#b98a3c');pg.addColorStop(1,'#3a240c');g.fillStyle=pg;g.shadowColor='rgba(0,0,0,.55)';g.shadowBlur=U*.015;
+    if(hor)g.fillRect(Math.min(x0,x1),y0-r,Math.abs(x1-x0),r*2);else g.fillRect(x0-r,Math.min(y0,y1),r*2,Math.abs(y1-y0));g.shadowBlur=0;
+    const fl=(fx,fy)=>{g.fillStyle=pg;if(hor)g.fillRect(fx-r*.5,fy-r*1.35,r,r*2.7);else g.fillRect(fx-r*1.35,fy-r*.5,r*2.7,r)};
+    const L=hor?Math.abs(x1-x0):Math.abs(y1-y0);for(let t=.18;t<1;t+=.32)fl(hor?Math.min(x0,x1)+L*t:x0,hor?y0:Math.min(y0,y1)+L*t)};
+  pipe(0,H*.245,W,H*.245,U*.016);pipe(W*.06,H*.245,W*.06,H,U*.02);pipe(W*.94,0,W*.94,H*.245,U*.014);
+  {const vx=W*.06,vy=H*.43,vr=U*.05;g.strokeStyle='#c7953f';g.lineWidth=U*.009;g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=U*.012;g.beginPath();g.arc(vx,vy,vr,0,TAU);g.stroke();
+    for(let k=0;k<4;k++){const a=k/4*TAU+.4;g.beginPath();g.moveTo(vx,vy);g.lineTo(vx+Math.cos(a)*vr,vy+Math.sin(a)*vr);g.stroke()}g.shadowBlur=0;g.fillStyle='#e9c87a';g.beginPath();g.arc(vx,vy,U*.012,0,TAU);g.fill()}
+  // pressure gauge
+  {const gx=W*.86,gy=H*.12,gr=U*.07,q=g.createRadialGradient(gx-gr*.3,gy-gr*.3,0,gx,gy,gr*1.2);q.addColorStop(0,'#f6dc9c');q.addColorStop(.7,'#a8742e');q.addColorStop(1,'#3a240c');
+    g.fillStyle=q;g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=U*.02;g.beginPath();g.arc(gx,gy,gr*1.15,0,TAU);g.fill();g.shadowBlur=0;g.fillStyle='#efe3c4';g.beginPath();g.arc(gx,gy,gr,0,TAU);g.fill();
+    g.strokeStyle='#2a1606';g.lineWidth=U*.003;for(let k=0;k<=10;k++){const a=Math.PI*.75+Math.PI*1.5*k/10;g.beginPath();g.moveTo(gx+Math.cos(a)*gr*.78,gy+Math.sin(a)*gr*.78);g.lineTo(gx+Math.cos(a)*gr*.92,gy+Math.sin(a)*gr*.92);g.stroke()}
+    g.fillStyle='#b8321e';g.beginPath();g.arc(gx,gy,gr*.6,Math.PI*.75+Math.PI*1.5*.85,Math.PI*2.25);g.arc(gx,gy,gr*.68,Math.PI*2.25,Math.PI*.75+Math.PI*1.5*.85,true);g.fill();
+    g.font=`700 ${gr*.24}px Georgia,serif`;g.textAlign='center';g.textBaseline='middle';g.fillStyle='#2a1606';g.fillText('50',gx,gy+gr*.45);
+    const na=Math.PI*.75+Math.PI*1.5*.8;g.strokeStyle='#1a0c04';g.lineWidth=U*.005;g.beginPath();g.moveTo(gx,gy);g.lineTo(gx+Math.cos(na)*gr*.8,gy+Math.sin(na)*gr*.8);g.stroke();g.fillStyle='#c99a42';g.beginPath();g.arc(gx,gy,gr*.1,0,TAU);g.fill()}
+  // texture, warm spotlight on the bag, deep vignette
+  g.globalAlpha=.5;g.fillStyle=grain;g.fillRect(0,0,W,H);g.globalAlpha=1;
+  const sp=g.createRadialGradient(W/2,G.bag.y+G.bag.h*.4,0,W/2,G.bag.y+G.bag.h*.4,U*.8);sp.addColorStop(0,'rgba(255,190,110,.32)');sp.addColorStop(.5,'rgba(255,150,70,.1)');sp.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  const vg=g.createRadialGradient(W/2,H*.45,U*.3,W/2,H*.5,H*.85);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.7)');g.fillStyle=vg;g.fillRect(0,0,W,H)}
 function buildBag(){const o=offCv('bag');const g=o.getContext('2d'),b=G.bag;
   const grain=g.createPattern(noiseTile(80,22,true),'repeat'),peb=g.createPattern(pebbleTile(Math.round(70*dpr)),'repeat');
-  // light studio backdrop, like a product shot
-  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#efedea');bg.addColorStop(.6,'#e2dfdb');bg.addColorStop(1,'#cfcbc6');g.fillStyle=bg;g.fillRect(0,0,W,H);
-  const vg=g.createRadialGradient(W/2,H*.45,H*.1,W/2,H*.5,H*.8);vg.addColorStop(0,'rgba(255,255,255,0)');vg.addColorStop(1,'rgba(90,80,70,.25)');g.fillStyle=vg;g.fillRect(0,0,W,H);
+  steamBg(g,grain);
   // contact + soft floor shadow
   g.save();g.filter=`blur(${H*.02}px)`;g.fillStyle='rgba(40,28,20,.35)';g.beginPath();g.ellipse(W/2+W*.03,b.y+b.h+H*.006,b.w*.52,H*.022,0,0,TAU);g.fill();g.restore();
   g.save();g.filter=`blur(${H*.004}px)`;g.fillStyle='rgba(30,20,14,.6)';g.beginPath();g.ellipse(W/2,b.y+b.h-H*.002,b.w*.46,H*.006,0,0,TAU);g.fill();g.restore();g.filter='none';
@@ -948,12 +1044,12 @@ function frameBody(now){const dt=Math.min(.05,(now-last)/1000);last=now;
     for(let r=0;r<5;r++){const K=st.K[r];for(let j=0;j<10;j++){const[x,y]=G.kpos(r,j);knob(x,y,G.kr,kv(r,j),ROWS[r].c,0);if(lane(r,j)){c.fillStyle='#e0301e';c.beginPath();c.arc(x+G.kr*1.1,y-G.kr*1.1,G.kr*.22,0,TAU);c.fill()}if(fl[r]>.1&&K[9]>.03){c.strokeStyle=ROWS[r].c;c.globalAlpha=fl[r]*.8;c.lineWidth=G.kr*.25;c.beginPath();c.arc(x,y,G.kr*1.32,0,TAU);c.stroke();c.globalAlpha=1}}}
     padlock(now);
     // DJ mixer strip under the bag: 5 channels + 2 effect returns
-    {const M=G.mix,cw=M.w/7,ty0=M.y+M.h*.2,ty1=M.y+M.h*.9;c.fillStyle='rgba(60,40,28,.07)';c.beginPath();c.roundRect?c.roundRect(M.x,M.y,M.w,M.h,W*.02):c.rect(M.x,M.y,M.w,M.h);c.fill();
-      c.strokeStyle='rgba(60,40,28,.25)';c.lineWidth=1*dpr;c.beginPath();c.moveTo(M.x+cw*5,M.y+M.h*.05);c.lineTo(M.x+cw*5,M.y+M.h*.95);c.stroke();
+    {const M=G.mix,cw=M.w/7,ty0=M.y+M.h*.2,ty1=M.y+M.h*.9;c.fillStyle='rgba(12,7,3,.62)';c.beginPath();c.roundRect?c.roundRect(M.x,M.y,M.w,M.h,W*.02):c.rect(M.x,M.y,M.w,M.h);c.fill();c.strokeStyle='rgba(217,172,82,.55)';c.lineWidth=1.5*dpr;c.stroke();
+      c.strokeStyle='rgba(217,172,82,.35)';c.lineWidth=1*dpr;c.beginPath();c.moveTo(M.x+cw*5,M.y+M.h*.05);c.lineTo(M.x+cw*5,M.y+M.h*.95);c.stroke();
       for(let i=0;i<7;i++){const x=M.x+cw*(i+.5);c.fillStyle=chCol(i);c.font=`700 ${Math.min(cw*.2,H*.016)}px "Federo",sans-serif`;c.textAlign='center';c.textBaseline='middle';
-        c.fillStyle=i<5?'#3a2414':'#6b4a20';c.fillText(CH[i],x,M.y+M.h*.07);
-        if(i<5){const on=((regs[i]>>7)&1)&&st.K[i][9]>.03;c.fillStyle=on?ROWS[i].c:'rgba(60,40,28,.25)';c.beginPath();c.arc(x,M.y+M.h*.135,M.h*.016,0,TAU);c.fill()}
-        else{c.font=`${Math.min(cw*.15,H*.012)}px "Federo",sans-serif`;c.fillStyle='#6b4a30';c.fillText(FXN[i===5?st.X.ta:st.X.tb],x,M.y+M.h*.135)}
+        c.fillStyle=i<5?'#efd9a8':'#d9ac52';c.fillText(CH[i],x,M.y+M.h*.07);
+        if(i<5){const on=((regs[i]>>7)&1)&&st.K[i][9]>.03;c.fillStyle=on?ROWS[i].c:'rgba(239,217,168,.18)';c.beginPath();c.arc(x,M.y+M.h*.135,M.h*.016,0,TAU);c.fill()}
+        else{c.font=`${Math.min(cw*.15,H*.012)}px "Federo",sans-serif`;c.fillStyle='#b8a078';c.fillText(FXN[i===5?st.X.ta:st.X.tb],x,M.y+M.h*.135)}
         fader(x,ty0,ty1,cw,chGet(i),chCol(i),i<4&&st.X.mu[i])}}
     if(st.freeze){c.fillStyle='rgba(170,210,255,.07)';c.fillRect(0,0,W,H)}
   }else drawZoom(view);
@@ -968,7 +1064,7 @@ window.__b50=()=>({st,view,running});
 </script>
 
 <script>
-(()=>{const block=e=>{if(e.touches&&e.touches.length>1)return;e.preventDefault()};
+(()=>{const block=e=>{if(e.touches&&e.touches.length>1)return;if(e.target&&e.target.closest&&e.target.closest('.plist'))return;e.preventDefault()};
 document.addEventListener('touchmove',block,{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 let lastTap=0;document.addEventListener('touchend',e=>{const n=Date.now(),t=e.target;if(!(t.closest&&t.closest('button,input,a,label'))&&n-lastTap<380)e.preventDefault();lastTap=n},{passive:false});
