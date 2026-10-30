@@ -359,7 +359,7 @@ class Rack{constructor(sr){this.sr=sr;this.d=[new Float32Array(sr*2|0),new Float
   run0(t,x,p1,p2,step){const sr=this.sr;let l=0,r=0;
     if(t===0){const mult=[1,2,3,4,6,8][Math.min(5,Math.floor(p1*6))],N=this.d[0].length,len=Math.min(N-2,Math.round(step*mult));
       const a=this.d[0][(this.w-len+N)%N],b=this.d[1][(this.w-len+N)%N];this.lp[0]+=(a-this.lp[0])*.45;this.lp[1]+=(b-this.lp[1])*.45;
-      this.d[0][this.w]=Math.tanh(x+this.lp[1]*p2*.9);this.d[1][this.w]=Math.tanh(this.lp[0]*p2*.9+x*.3);this.w=(this.w+1)%N;l=this.lp[0];r=this.lp[1]}
+      this.d[0][this.w]=Math.tanh(x+this.lp[1]*p2*.88);this.d[1][this.w]=Math.tanh(this.lp[0]*p2*.88+x*.3);this.w=(this.w+1)%N;l=this.lp[0];r=this.lp[1]}
     else if(t===1||t===6){let v=x;
       if(t===6){const N=8192;this.ps[this.pw]=this.fl[0]+this.fl[1];this.pw=(this.pw+1)%N;this.pr+=2;if(this.pr>=N)this.pr-=N;     // octave-up grains fed back in
         const L=2048,ph=((this.pw-this.pr+N)%N)%L,g=Math.sin(Math.PI*ph/L),i1=Math.floor(this.pw-ph+N)%N,i2=Math.floor(this.pw-((ph+L/2)%L)+N)%N;v+=(this.ps[(i1)%N]*g+this.ps[i2]*Math.cos(Math.PI*ph/L))*p2*.35}
@@ -401,7 +401,7 @@ class Band extends AudioWorkletProcessor{
       if(d.smp){const m=d.smp,S={d:m.d,rf:m.rf,loop:m.loop};this.SM[m.slot]=S;if(m.slot==='b')this.B.v.sm=S;if(m.slot==='l')this.L.v.sm=S;if(m.slot==='p')for(const v of this.P.v)v.o.sm=S}if(d.hold)this.held[d.hold]=1;if(d.unhold)delete this.held[d.unhold];if(d.reseed!==undefined){const q=this.sq[d.reseed];this.reg[d.reseed]=(R()*255)|1;q.t=(R()*65535)|1;q.c=((R()*65535)|0)||256;q.x=.1+R()*.8;q.m=(R()*16)|0}
       if(d.aclear)this.A={};if(d.alen)this.AL=d.alen;if(d.auto)for(const k in d.auto){const v=d.auto[k];if(v){const[r,j]=k.split('-').map(Number);this.A[k]={r,j,a:Float32Array.from(v)}}else delete this.A[k]}}
     this.A={};this.AL=32;this.apos=0;this.held={};this.RA=new Rack(sr);this.RB=new Rack(sr);
-    this.X={g:[.8,.8,.8,.8],sa:[0,0,0,0],sb:[0,0,0,0],mu:[0,0,0,0],ra:.6,rb:.6,ta:0,tb:1,pa:[.5,.5,.5],pb:[.5,.5,.5]}}
+    this.X={g:[.8,.8,.8,.8],sa:[0,0,0,0],sb:[0,0,0,0],mu:[0,0,0,0],ra:.6,rb:.6,ta:1,tb:0,pa:[.6,.45,.5],pb:[.5,.5,.5],rv:.35,dl:.2,rm:0,fb:.35};this.rmp=0}
   note(base,deg){const s=SC[Math.round(this.M.scale*(SC.length-1))],L=s.length;const n=base+Math.round(this.M.key*11)+s[((deg%L)+L)%L]+12*Math.floor(deg/L);return 440*Math.pow(2,(n-69)/12)}
   idx(r,v){return Math.round(v*(DIV[r].length-1))}
   clock(r){const K=this.KS[r];
@@ -503,9 +503,11 @@ class Band extends AudioWorkletProcessor{
       // DJ mixer: channel faders, two sends into two effect racks, returns
       const X=this.X,gg=i=>X.mu[i]?0:X.g[i]*X.g[i]*1.3,g0=gg(0),g1=gg(1),g2=gg(2),g3=gg(3);
       const duck=1-CR[0]*Math.min(1,D.ke*1.6),cb=by*g0*duck,cl=lyL*g1*duck,cr=lyR*g1*duck,cd=dx*g2,cpl=pL*g3*duck,cpr=pR*g3*duck,cm1=(cl+cr)*.5,cm3=(cpl+cpr)*.5;
-      const sA=cb*X.sa[0]+cm1*X.sa[1]+cd*X.sa[2]+cm3*X.sa[3],sB=cb*X.sb[0]+cm1*X.sb[1]+cd*X.sb[2]+cm3*X.sb[3];
-      const ra=this.RA.run(X.ta,sA,X.pa[0],X.pa[1],this.stepLen,X.pa[2]),rb=this.RB.run(X.tb,sB,X.pb[0],X.pb[1],this.stepLen,X.pb[2]);
-      let mL=cb+cl+cd+cpl+ra[0]*X.ra*1.3+rb[0]*X.rb*1.3,mR=cb+cr+cd+cpr+ra[1]*X.ra*1.3+rb[1]*X.rb*1.3;
+      // master bus: everything goes to one reverb and one delay (FEEDBK = how long the echoes keep going, up to self-oscillation), then a ring modulator
+      let dryL=cb+cl+cd+cpl,dryR=cb+cr+cd+cpr;const mono=(dryL+dryR)*.5;
+      const rvA=X.rv*X.rv,dlA=X.dl*X.dl;const ra=this.RA.run(1,mono*Math.min(1,rvA*2.2),X.pa[0],X.pa[1],this.stepLen,X.pa[2]),rb=this.RB.run(0,mono*Math.min(1,dlA*2.5),X.pb[0],X.fb*1.28,this.stepLen,X.pb[2]);
+      let mL=dryL+ra[0]*1.4+rb[0]*1.3,mR=dryR+ra[1]*1.4+rb[1]*1.3;
+      if(X.rm>.003){this.rmp+=(this.rf*1.5+60)/sr;if(this.rmp>1)this.rmp-=1;const car=Math.sin(TAU*this.rmp),a=X.rm;mL=mL*(1-a)+mL*car*a*1.5;mR=mR*(1-a)+mR*car*a*1.5}
       if(!(mL===mL&&mR===mR)){this.RA=new Rack(sr);this.RB=new Rack(sr);mL=mR=0}
       // 五 CHAOS FX on the whole band
       const N=this.mb[0].length;this.mb[0][this.mw]=mL;this.mb[1][this.mw]=mR;this.mw=(this.mw+1)%N;
@@ -554,8 +556,8 @@ const BPMF=t=>t<.03?0:t<.8?10*Math.pow(30,(t-.03)/.77):300*Math.pow(200,(t-.8)/.
 const fmtB=t=>{const b=BPMF(t);return b<=0?'0 BPM':b<1200?Math.round(b)+' BPM':Math.round(b/15)+' Hz'};
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],SCN=['MINOR','MAJOR','PENTA','M.PENTA','DORIAN','HIRAJOSHI','PHRYG.DOM'];
 const DEF={K:[[.75,.35,.45,.3,.55,.35,.45,.5,.35,.8],[.75,.3,.55,.25,.35,.5,.3,.25,.5,.5],[1,.15,.45,.45,.45,.45,.3,.15,0,.85],[.33,.6,.6,.45,.4,.45,.25,.55,.6,.45],[.75,.4,.15,0,0,.2,.05,.35,.4,.35]],
-  E:[0,1,0,2,0],S:[0,0,0,0,0],C:[0,0,0,0,0,0,0,0],CG:0,SB:{b:'MELLO STRINGS',l:'MELLO FLUTE',p:'MELLO CHOIR',dk:'KICK 808',ds:'SNARE',dh:'HAT',dt:'TOM'},A:{},AL:2,X:{g:[.8,.75,.8,.7],sa:[0,.25,0,.3],sb:[0,.2,.15,0],mu:[0,0,0,0],ra:.6,rb:.5,ta:0,tb:6,pa:[.5,.45,.5],pb:[.6,.5,.5]},M:{tempo:.42,key:0,scale:0,glue:.5,vol:.75,ring:0},freeze:0,scenes:[null,null,null,null,null]};
-const st=Object.assign(JSON.parse(JSON.stringify(DEF)),LS.get('b50c',{}));if(st.lockT===undefined)st.lockT=0;if(st.RX===undefined)st.RX=.35;if(st.DR===undefined)st.DR=0;if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);const save=()=>LS.set('b50c',st);
+  E:[0,1,0,2,0],S:[0,0,0,0,0],C:[0,0,0,0,0,0,0,0],CG:0,SB:{b:'MELLO STRINGS',l:'MELLO FLUTE',p:'MELLO CHOIR',dk:'KICK 808',ds:'SNARE',dh:'HAT',dt:'TOM'},A:{},AL:2,X:{g:[.8,.75,.8,.7],sa:[0,.25,0,.3],sb:[0,.2,.15,0],mu:[0,0,0,0],ra:.6,rb:.5,ta:1,tb:0,pa:[.6,.45,.5],pb:[.5,.5,.5],rv:.35,dl:.2,rm:0,fb:.35},M:{tempo:.42,key:0,scale:0,glue:.5,vol:.75,ring:0},freeze:0,scenes:[null,null,null,null,null]};
+const st=Object.assign(JSON.parse(JSON.stringify(DEF)),LS.get('b50c',{}));if(st.lockT===undefined)st.lockT=0;if(st.X.rv===undefined)Object.assign(st.X,{rv:.35,dl:.2,rm:0,fb:.35,pa:[.6,.45,.5],pb:[.5,.5,.5]});if(st.RX===undefined)st.RX=.35;if(st.DR===undefined)st.DR=0;if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);const save=()=>LS.set('b50c',st);
 function klab(r,j){if(j===1)return SQL[st.S[r]||0];if(r!==2&&r!==4&&(j===3||j===4))return TL[st.E[r]][j-3];if(r===2&&j===3)return 'TUNE';if(r===2&&j===4)return 'DECAY';return ROWS[r].kl[j]}
 function engName(r){return r===4?'FX':r===2?DEN[st.E[2]]:EN[st.E[r]]}
 
@@ -692,11 +694,11 @@ const CRN=[['KICK →','DUCK'],['BASS →','LEAD FM'],['LEAD →','BASS FILTER']
 const sendC=()=>{if(node)node.port.postMessage({C:st.C,CG:st.CG})};
 const sendX=()=>{if(node)node.port.postMessage({X:st.X})};let touchKey=null;
 const FXN=['DELAY','REVERB','CHORUS','PHASER','LO-FI','AUTO-WAH','SHIMMER','GRAINS'],FXP=[['TIME','FDBK','TONE'],['SIZE','DAMP','TONE'],['RATE','DEPTH','TONE'],['RATE','FDBK','TONE'],['RATE','BITS','TONE'],['SPEED','RESO','TONE'],['SIZE','SHIMMER','TONE'],['SIZE','DENSITY','PITCH']];
-const CH=['BASS','LEAD','DRUMS','PAD','CHAOS','RET A','RET B'];
-function chGet(i){return i<4?st.X.g[i]:i===4?st.K[4][9]:i===5?st.X.ra:st.X.rb}
-function chSet(i,v){v=+Math.min(1,Math.max(0,v)).toFixed(3);if(i<4)st.X.g[i]=v;else if(i===5)st.X.ra=v;else if(i===6)st.X.rb=v;
+const CH=['BASS','LEAD','DRUMS','PAD','CHAOS','REVERB','DELAY','RING','FEEDBK'],NCH=9;
+function chGet(i){const X=st.X;return i<4?X.g[i]:i===4?st.K[4][9]:i===5?(X.rv??.35):i===6?(X.dl??.2):i===7?(X.rm??0):(X.fb??.35)}
+function chSet(i,v){v=+Math.min(1,Math.max(0,v)).toFixed(3);if(i<4)st.X.g[i]=v;else if(i===5)st.X.rv=v;else if(i===6)st.X.dl=v;else if(i===7)st.X.rm=v;else if(i===8)st.X.fb=v;
   if(i===4){st.K[4][9]=v;delete st.A['4-9'];node&&node.port.postMessage({r:4,j:9,v,auto:{'4-9':null}})}else sendX()}
-function chCol(i){return i<5?ROWS[i].c:'#d9ac52'}
+function chCol(i){return i<5?ROWS[i].c:['#c9a464','#9ab8c8','#d9a2ff','#e0603a'][i-5]}
 function fader(x,y0,y1,w,v,col,mute){c.fillStyle='rgba(20,8,2,.55)';c.beginPath();c.roundRect?c.roundRect(x-w*.09,y0,w*.18,y1-y0,w*.09):c.rect(x-w*.09,y0,w*.18,y1-y0);c.fill();
   c.strokeStyle='rgba(255,230,190,.25)';c.lineWidth=1*dpr;for(let t=0;t<=10;t++){const y=y1-(y1-y0)*t/10;c.beginPath();c.moveTo(x-w*.32,y);c.lineTo(x-w*.18,y);c.moveTo(x+w*.18,y);c.lineTo(x+w*.32,y);c.stroke()}
   const yv=y1-(y1-y0)*v;c.fillStyle=mute?'rgba(80,80,80,.6)':col;c.globalAlpha=.75;c.fillRect(x-w*.04,yv,w*.08,y1-yv);c.globalAlpha=1;
@@ -720,7 +722,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running&&
 
 // ---------- views & buttons ----------
 let view=-1;
-function setView(v){view=v;$('bAll').classList.toggle('on',v<0);say(v<0?'the bag · tap a row or the flap':v===7?'CROSS-MOD · instruments drive each other · MADNESS opens everything':v===6?'MIXER · faders, sends and two FX racks':v===5?'MASTER · tempo, key, glue, scenes':ROWS[v].j+' '+ROWS[v].n,1,1400)}
+function setView(v){view=v;$('bAll').classList.toggle('on',v<0);say(v<0?'the bag · tap a row or the flap':v===7?'CROSS-MOD · instruments drive each other · MADNESS opens everything':v===6?'MIXER · band levels plus reverb, delay, ring and feedback':v===5?'MASTER · tempo, key, glue, scenes':ROWS[v].j+' '+ROWS[v].n,1,1400)}
 $('bAll').addEventListener('click',()=>setView(-1));
 $('bPrev').addEventListener('click',()=>setView(view<=0?(view<0?0:7):view-1));
 $('bNext').addEventListener('click',()=>setView(view<0?0:(view+1)%8));
@@ -795,7 +797,12 @@ function randomize(){const x=RX(),rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),
   for(const sl of ['b','l','p',...DSL])rndSlot(sl);st.AL=[1,2,4][Math.floor(Math.random()*3)];if(node)node.port.postMessage({alen:st.AL*16});setTimeout(pushUsed,0);if(node)for(let r=0;r<5;r++)node.port.postMessage({reseed:r});
   if(!st.lockT){const q=Math.random();let bp=80+Math.random()*50;if(x>.3)bp=60+Math.random()*(70+150*x);if(q<x*x*.35)bp=Math.random()<.5?Math.random()*25:600+Math.random()*40000*x;st.M.tempo=+TOF(bp).toFixed(4)}
   st.M.key=Math.round(Math.random()*11)/11;st.M.scale=pickW(WSC,x)/6;const wts=[['',.26],['AMBIENT',.24*(1-x*.7)],['SYMPHONIC',.22*(1-x*.6)],['TECHNO',.24],['GLITCH CHAOS',.08+.42*x]];let tot=wts.reduce((p,q)=>p+q[1],0)*Math.random(),amb='';for(const[w,v]of wts){tot-=v;if(tot<=0){amb=w;break}}
-  if(amb==='AMBIENT')ambientize();else if(amb==='SYMPHONIC')symphonize();else if(amb==='TECHNO')technoize();else if(amb==='GLITCH CHAOS')glitchize();save();sync();showTempo();
+  {const X=st.X;X.rv=RR(.15,.5);X.dl=Math.random()<.5?RR(.05,.35):0;X.rm=Math.random()<x*.4?RR(.1,.5):0;X.fb=RR(.2,.55);X.pa=[RR(.3,.9),RR(.2,.6),.5];X.pb=[RR(0,1),.5,.5]}
+  if(amb==='AMBIENT')ambientize();else if(amb==='SYMPHONIC')symphonize();else if(amb==='TECHNO')technoize();else if(amb==='GLITCH CHAOS')glitchize();
+  {const X=st.X;if(amb==='AMBIENT')Object.assign(X,{rv:RR(.6,.85),dl:RR(.25,.5),rm:0,fb:RR(.45,.65),pa:[RR(.75,.98),RR(.2,.45),.5]});
+   if(amb==='SYMPHONIC')Object.assign(X,{rv:RR(.5,.75),dl:RR(0,.2),rm:0,fb:RR(.2,.4),pa:[RR(.6,.85),RR(.3,.55),.5]});
+   if(amb==='TECHNO')Object.assign(X,{rv:RR(.12,.3),dl:RR(.25,.5),rm:Math.random()<.2?RR(.1,.3):0,fb:RR(.3,.55),pb:[PKR([.3,.55,.7]),.5,.5]});
+   if(amb==='GLITCH CHAOS')Object.assign(X,{rv:RR(.2,.7),dl:RR(.3,.8),rm:RR(.3,.85),fb:RR(.6,1)})}save();sync();showTempo();
   say('HAPPY ACCIDENT '+(amb?'· '+amb+' ':'')+Math.round(x*100)+'% · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+fmtB(st.M.tempo)+' · FX '+FXN[st.X.ta]+'/'+FXN[st.X.tb],1,2500);shake=1}
 $('bRnd').addEventListener('click',randomize);
 function showSl(){for(const[id,v]of [['sRX',RX()],['sDR',st.DR]]){const e=$(id);e.querySelector('.fill').style.width=(v*100)+'%';e.querySelector('.thumb').style.left=(v*100)+'%'}$('drv').textContent=Math.round(st.DR*100)+'%'}
@@ -844,7 +851,7 @@ const COG='#8a4e24';
 const CANV='#4b2c1a',VACH='#e0b886',VACH2='#d2a46e';
 function geo(){
   // a boston bag seen straight on, like a product photo: rounded barrel body, zip top, tabs, one rolled handle
-  const bw=Math.min(W*.86,H*.585),bx=(W-bw)/2,bh=bw*.6,need=1.12*bw+H*.345,by=bw*.52+H*.015+Math.max(0,H-need)*.35;G.bag={x:bx,y:by,w:bw,h:bh};
+  const bw=Math.min(W*.86,H*.535),bx=(W-bw)/2,bh=bw*.6,need=1.12*bw+H*.395,by=bw*.52+H*.015+Math.max(0,H-need)*.35;G.bag={x:bx,y:by,w:bw,h:bh};
   G.cx=W/2;
   // knob grid on the canvas: 5 rows × 10, aligned with the monogram
   G.gx0=bx+bw*.085;G.gx1=bx+bw*.915;G.gy0=by+bh*.25;G.gy1=by+bh*.86;
@@ -852,7 +859,7 @@ function geo(){
   G.kpos=(r,j)=>[G.gx0+(G.gx1-G.gx0)*j/9,G.gy0+(G.gy1-G.gy0)*r/4];
   G.rowY=r=>G.gy0+(G.gy1-G.gy0)*r/4;
   G.lock={x:W/2,y:by+bh*.035};
-  {const mh=Math.min(H*.27,W*.62),mw=Math.min(W*.9,mh*1.9);G.mix={x:(W-mw)/2,y:by+bh+H*.035,w:mw,h:mh};G.list=G.mix;G.mixP={Y0:by+bh+H*.045,Hd:mh*.85,ts:.8,w:mw,h:mh}}
+  {const mh=Math.min(H*.32,W*.72),mw=Math.min(W*.96,mh*2.2);G.mix={x:(W-mw)/2,y:by+bh+H*.035,w:mw,h:mh};G.list=G.mix;G.mixP={Y0:by+bh+H*.045,Hd:mh*.85,ts:.8,w:mw,h:mh}}
 }
 function bodyPath(g){const b=G.bag,x0=b.x,x1=b.x+b.w,y0=b.y,y1=b.y+b.h,r=b.w*.06;
   g.beginPath();g.moveTo(x0+b.w*.07,y0+b.h*.03);g.quadraticCurveTo(W/2,y0-b.h*.035,x1-b.w*.07,y0+b.h*.03);
@@ -1049,20 +1056,12 @@ function zoomLayout(v){const m=W*.07,top=H*.04,ZH=H*.92;ZK=[];
     for(let i=0;i<8;i++)ZK.push({t:'xk',lab:CRN[i].join(' '),cr:i,x:m+cw*((i%4)+.5),y:H*(.22+Math.floor(i/4)*.2),r:kr,g:()=>st.C[i],s:v=>{st.C[i]=+v.toFixed(3);sendC()}});
     ZK.push({t:'xk',lab:'MADNESS',big:1,x:W/2,y:H*.67,r:kr*1.7,g:()=>st.CG,s:v=>{st.CG=+v.toFixed(3);sendC()}});
     ZK.push({t:'xzero',x:W*.27,y:H*.86,w:W*.34,h:H*.045});ZK.push({t:'xrnd',x:W*.73,y:H*.86,w:W*.34,h:H*.045});return}
-  if(v===6){const cw=(W-2*m)/5,kr=Math.min(cw*.2,H*.026);
-    for(let i=0;i<5;i++){const x=m+cw*(i+.5);
-      if(i<4){ZK.push({t:'xk',lab:CH[i]+' SEND A',sh:'A',x,y:top+ZH*.17,r:kr,g:()=>st.X.sa[i],s:v=>{st.X.sa[i]=+v.toFixed(3);sendX()}});
-        ZK.push({t:'xk',lab:CH[i]+' SEND B',sh:'B',x,y:top+ZH*.26,r:kr,g:()=>st.X.sb[i],s:v=>{st.X.sb[i]=+v.toFixed(3);sendX()}});
-        ZK.push({t:'mute',i,x,y:top+ZH*.605,w:cw*.8,h:H*.032})}
-      else ZK.push({t:'note',x,y:top+ZH*.215});
-      ZK.push({t:'fd',i,lab:CH[i],x,y0:top+ZH*.34,y1:top+ZH*.565,w:cw*.8,h:ZH*.25,yc:top+ZH*.4525,g:()=>chGet(i),s:v=>chSet(i,v)});
-      ZK.push({t:'dice',r0:i,x,y:top+ZH*.65,w:cw*.8,h:H*.032})}
-    for(let k=0;k<2;k++){const y=top+ZH*(.75+k*.135),A=k?'b':'a',P=k?st.X.pb:st.X.pa,T=()=>k?st.X.tb:st.X.ta;
-      ZK.push({t:'fxt',k,x:m+W*.105,y,w:W*.21,h:H*.045});
-      ZK.push({t:'xk',lab:'',pi:0,k,x:W*.4,y,r:kr*1.1,g:()=>(k?st.X.pb:st.X.pa)[0],s:v=>{(k?st.X.pb:st.X.pa)[0]=+v.toFixed(3);sendX()}});
-      ZK.push({t:'xk',lab:'',pi:1,k,x:W*.55,y,r:kr*1.1,g:()=>(k?st.X.pb:st.X.pa)[1],s:v=>{(k?st.X.pb:st.X.pa)[1]=+v.toFixed(3);sendX()}});
-      ZK.push({t:'xk',lab:'',pi:2,k,x:W*.7,y,r:kr*1.1,g:()=>(k?st.X.pb:st.X.pa)[2],s:v=>{(k?st.X.pb:st.X.pa)[2]=+v.toFixed(3);sendX()}});
-      ZK.push({t:'xk',lab:'RETURN '+(k?'B':'A'),x:W*.86,y,r:kr*1.1,g:()=>chGet(5+k),s:v=>chSet(5+k,v)})}
+  if(v===6){const mm=W*.05,cw=(W-2*mm)/NCH,kr=Math.min(W*.06,H*.032);
+    for(let i=0;i<NCH;i++){const x=mm+cw*(i+.5);
+      ZK.push({t:'fd',i,lab:CH[i],x,y0:top+ZH*.17,y1:top+ZH*.6,w:cw*.9,h:ZH*.46,yc:top+ZH*.385,g:()=>chGet(i),s:v=>chSet(i,v)});
+      if(i<4)ZK.push({t:'mute',i,x,y:top+ZH*.65,w:cw*.88,h:H*.03});if(i<5)ZK.push({t:'dice',r0:i,x,y:top+ZH*.695,w:cw*.88,h:H*.03})}
+    ZK.push({t:'xk',lab:'REVERB SIZE',x:W*.3,y:top+ZH*.82,r:kr,g:()=>st.X.pa[0],s:v=>{st.X.pa[0]=+v.toFixed(3);sendX()}});
+    ZK.push({t:'xk',lab:'DELAY TIME',x:W*.7,y:top+ZH*.82,r:kr,g:()=>st.X.pb[0],s:v=>{st.X.pb[0]=+v.toFixed(3);sendX()}});
     return}
   if(v===5){const r=Math.min(W*.065,H*.042);ML.forEach(([id,lab,stp],i)=>ZK.push({t:'m',id,lab,stp,x:m+(W-2*m)*(i+.5)/5,y:top+ZH*.2,r}));
     ZK.push({t:'ring',x:W*.22,y:top+ZH*.43,w:W*.26,h:H*.045});ZK.push({t:'frz',x:W*.5,y:top+ZH*.43,w:W*.26,h:H*.045});ZK.push({t:'xgo',x:W*.78,y:top+ZH*.43,w:W*.26,h:H*.045});
@@ -1103,16 +1102,13 @@ function drawZoom(v){
     return}
   if(v===6){emb('MIXER',W/2,H*.075,`italic 700 ${H*.034}px Georgia,serif`);const fs=`${H*.014}px "Federo",sans-serif`;
     const chip=(k,on,col,txt)=>{c.fillStyle=on?col:'rgba(40,18,6,.45)';c.beginPath();c.roundRect?c.roundRect(k.x-k.w/2,k.y-k.h/2,k.w,k.h,k.h*.45):c.rect(k.x-k.w/2,k.y-k.h/2,k.w,k.h);c.fill();c.strokeStyle='#d9ac52';c.lineWidth=1.3*dpr;c.stroke();
-      c.fillStyle=on?'#1a0c04':'#efd9a8';c.font=`${Math.min(H*.015,k.w*.17)}px "Federo",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(txt,k.x,k.y)};
+      c.fillStyle=on?'#1a0c04':'#efd9a8';c.font=`${Math.min(H*.013,k.w*.2)}px "Federo",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(txt,k.x,k.y)};
     for(const k of ZK){
-      if(k.t==='fd'){const col=chCol(k.i);emb(CH[k.i],k.x,H*.04+H*.92*.115,`700 ${H*.016}px "Federo",sans-serif`);fader(k.x,k.y0,k.y1,k.w,k.g(),col,k.i<4&&st.X.mu[k.i])}
-      else if(k.t==='xk'){const col=k.k!==undefined?'#d9ac52':(k.sh==='A'?'#c8a040':'#7a9ac0');knob(k.x,k.y,k.r,k.g(),col,0);
-        const lb=k.pi!==undefined?FXP[k.k?st.X.tb:st.X.ta][k.pi]:k.sh?'SEND '+k.sh:k.lab;emb(lb,k.x,k.y+k.r*1.85,fs)}
+      if(k.t==='fd'){emb(CH[k.i],k.x,H*.04+H*.92*.14,`700 ${Math.min(H*.014,k.w*.24)}px "Federo",sans-serif`);fader(k.x,k.y0,k.y1,k.w,k.g(),chCol(k.i),k.i<4&&st.X.mu[k.i])}
+      else if(k.t==='xk'){knob(k.x,k.y,k.r,k.g(),'#d9ac52',0);emb(k.lab,k.x,k.y+k.r*1.9,fs)}
       else if(k.t==='mute')chip(k,st.X.mu[k.i],'#e0301e','MUTE');
-      else if(k.t==='dice')chip(k,false,'#d9ac52','🎲 RND');
-      else if(k.t==='note'){emb('master FX',k.x,k.y-H*.012,fs);emb('no sends',k.x,k.y+H*.012,fs)}
-      else if(k.t==='fxt'){chip(k,true,'#d9ac52',(k.k?'B · ':'A · ')+FXN[k.k?st.X.tb:st.X.ta]);emb('tap = other effect',k.x,k.y+k.h*.95,`${H*.012}px "Federo",sans-serif`)}}
-    emb('TWO FX RACKS · turn up SEND A/B per channel',W/2,H*.04+H*.92*.698,`700 ${H*.016}px "Federo",sans-serif`);return}
+      else if(k.t==='dice')chip(k,false,'#d9ac52','🎲')}
+    emb('BAND · CHAOS · REVERB · DELAY · RING · FEEDBACK',W/2,H*.04+H*.92*.745,`${H*.013}px "Federo",sans-serif`);return}
   const Rw=ROWS[v],K=st.K[v];
   emb(Rw.j+'  '+Rw.n+(v<4?' · '+engName(v):''),W/2,H*.075,`italic 700 ${H*.032}px Georgia,serif`);
   emb('SEQUENCE · '+SQN[st.S[v]||0],W/2,H*.557,`${H*.016}px "Federo",sans-serif`);if(v<4)emb('ENGINE · '+engName(v),W/2,H*.682,`${H*.016}px "Federo",sans-serif`);
@@ -1134,7 +1130,7 @@ function drawZoom(v){
 
 // ---------- interaction ----------
 const ptr=new Map();
-function mixHit(x,y){const P=G.mixP;if(!P)return null;const v=(y-P.Y0)/P.Hd;if(v<0||v>1)return null;const s=P.ts+(1-P.ts)*v,u=(x-W/2)/(P.w*s)*P.w+P.w/2;if(u<0||u>P.w)return null;return{u,ly:v*P.h,i:Math.min(6,Math.floor(u/(P.w/7)))}}
+function mixHit(x,y){const P=G.mixP;if(!P)return null;const v=(y-P.Y0)/P.Hd;if(v<0||v>1)return null;const s=P.ts+(1-P.ts)*v,u=(x-W/2)/(P.w*s)*P.w+P.w/2;if(u<0||u>P.w)return null;return{u,ly:v*P.h,i:Math.min(NCH-1,Math.floor(u/(P.w/NCH)))}}
 function posOf(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr]}
 cv.addEventListener('pointerdown',e=>{if(!running){$('intro').classList.add('gone');start()}cv.setPointerCapture(e.pointerId);const[x,y]=posOf(e);const P={x0:x,y0:y,t0:performance.now(),moved:false};
   if(view<0&&G.mixP){const h=mixHit(x,y);if(h&&h.ly>G.mixP.h*.16)P.f={i:h.i,v0:chGet(h.i),len:G.mixP.Hd*.7}}
@@ -1204,12 +1200,13 @@ function frameBody(now){const dt=Math.min(.05,(now-last)/1000);last=now;
     padlock(now);
     // DJ mixer strip under the bag: 5 channels + 2 effect returns
     {const MP=G.mixP;if(!OFF.mix){OFF.mix=document.createElement('canvas')}const mc=OFF.mix;if(mc.width!==Math.round(MP.w)||mc.height!==Math.round(MP.h)){mc.width=Math.round(MP.w);mc.height=Math.round(MP.h)}const cMain=c;c=mc.getContext('2d');c.clearRect(0,0,mc.width,mc.height);
-     const M={x:0,y:0,w:MP.w,h:MP.h},cw=M.w/7,ty0=M.y+M.h*.2,ty1=M.y+M.h*.9;{const tg=c.createLinearGradient(0,M.y,0,M.y+M.h);tg.addColorStop(0,'#1c130c');tg.addColorStop(1,'#0c0805');c.save();c.shadowColor='rgba(0,0,0,.7)';c.shadowBlur=W*.03;c.shadowOffsetY=W*.008;c.fillStyle=tg;c.beginPath();c.roundRect?c.roundRect(M.x,M.y,M.w,M.h,W*.025):c.rect(M.x,M.y,M.w,M.h);c.fill();c.restore();c.strokeStyle='#8a6e40';c.lineWidth=1.2*dpr;c.stroke();c.strokeStyle='rgba(255,225,170,.12)';c.beginPath();c.roundRect?c.roundRect(M.x+3*dpr,M.y+3*dpr,M.w-6*dpr,M.h-6*dpr,W*.02):c.rect(M.x,M.y,M.w,M.h);c.stroke()}
+     const M={x:0,y:0,w:MP.w,h:MP.h},cw=M.w/NCH,ty0=M.y+M.h*.2,ty1=M.y+M.h*.9;{const tg=c.createLinearGradient(0,M.y,0,M.y+M.h);tg.addColorStop(0,'#1c130c');tg.addColorStop(1,'#0c0805');c.save();c.shadowColor='rgba(0,0,0,.7)';c.shadowBlur=W*.03;c.shadowOffsetY=W*.008;c.fillStyle=tg;c.beginPath();c.roundRect?c.roundRect(M.x,M.y,M.w,M.h,W*.025):c.rect(M.x,M.y,M.w,M.h);c.fill();c.restore();c.strokeStyle='#8a6e40';c.lineWidth=1.2*dpr;c.stroke();c.strokeStyle='rgba(255,225,170,.12)';c.beginPath();c.roundRect?c.roundRect(M.x+3*dpr,M.y+3*dpr,M.w-6*dpr,M.h-6*dpr,W*.02):c.rect(M.x,M.y,M.w,M.h);c.stroke()}
       c.strokeStyle='rgba(217,172,82,.35)';c.lineWidth=1*dpr;c.beginPath();c.moveTo(M.x+cw*5,M.y+M.h*.05);c.lineTo(M.x+cw*5,M.y+M.h*.95);c.stroke();
-      for(let i=0;i<7;i++){const x=M.x+cw*(i+.5);c.fillStyle=chCol(i);c.font=`700 ${Math.min(cw*.2,H*.016)}px "Federo",sans-serif`;c.textAlign='center';c.textBaseline='middle';
+      c.font=`${Math.min(cw*.16,H*.011)}px "Federo",sans-serif`;c.fillStyle='rgba(201,164,100,.6)';c.textAlign='center';c.fillText('MASTER FX',M.x+cw*7,M.y+M.h*.965);c.fillText('BAND',M.x+cw*2.5,M.y+M.h*.965);
+      for(let i=0;i<NCH;i++){const x=M.x+cw*(i+.5);c.font=`700 ${Math.min(cw*.23,H*.016)}px "Federo",sans-serif`;c.textAlign='center';c.textBaseline='middle';
         c.fillStyle=i<5?'#efd9a8':'#d9ac52';c.fillText(CH[i],x,M.y+M.h*.07);
         if(i<5){const on=((regs[i]>>7)&1)&&st.K[i][9]>.03;c.fillStyle=on?ROWS[i].c:'rgba(239,217,168,.18)';c.beginPath();c.arc(x,M.y+M.h*.135,M.h*.016,0,TAU);c.fill()}
-        else{c.font=`${Math.min(cw*.15,H*.012)}px "Federo",sans-serif`;c.fillStyle='#b8a078';c.fillText(FXN[i===5?st.X.ta:st.X.tb],x,M.y+M.h*.135)}
+        else{c.fillStyle=chCol(i);c.globalAlpha=.25+.75*chGet(i);c.beginPath();c.arc(x,M.y+M.h*.135,M.h*.016,0,TAU);c.fill();c.globalAlpha=1}
         fader(x,ty0,ty1,cw,chGet(i),chCol(i),i<4&&st.X.mu[i])}
      c=cMain;
      // project the flat mixer onto the table: far edge narrower, front edge full width, then the slab's front face and its shadow
@@ -1223,7 +1220,7 @@ function frameBody(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   if(confetti>0){if(conf.length<160)for(let i=0;i<4;i++)conf.push({x:Math.random()*W,y:-10,vx:(Math.random()-.5)*60,vy:80+Math.random()*120,r:Math.random()*TAU,c:ROWS[(Math.random()*5)|0].c});confetti-=dt/9}
   for(let i=conf.length-1;i>=0;i--){const p=conf[i];p.x+=p.vx*dt*dpr;p.y+=p.vy*dt*dpr;p.r+=dt*5;if(p.y>H){conf.splice(i,1);continue}c.save();c.translate(p.x,p.y);c.rotate(p.r);c.fillStyle=p.c;c.fillRect(-4*dpr,-2*dpr,8*dpr,4*dpr);c.restore()}
   if(running&&node&&now-lastHb>1500)rescue();
-  if(now>msgHold)say(!running?'tap to open the bag':view===7?'CROSS-MOD · '+(st.CG>.02?'MADNESS '+Math.round(st.CG*99):'tame'):view===6?'MIXER · sends A/B into the FX racks':view<0?'Benjolin 50.0 · '+fmtB(st.M.tempo)+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]:view===5?'MASTER':ROWS[view].j+' '+ROWS[view].n+' · swipe for the next one',false);
+  if(now>msgHold)say(!running?'tap to open the bag':view===7?'CROSS-MOD · '+(st.CG>.02?'MADNESS '+Math.round(st.CG*99):'tame'):view===6?'MIXER · reverb, delay, ring and feedback on the master':view<0?'Benjolin 50.0 · '+fmtB(st.M.tempo)+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]:view===5?'MASTER':ROWS[view].j+' '+ROWS[view].n+' · swipe for the next one',false);
 }
 size();showFreeze();setView(-1);msgHold=0;requestAnimationFrame(frame);
 window.__b50=()=>({st,view,running});
