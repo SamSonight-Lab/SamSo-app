@@ -1005,17 +1005,38 @@ function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tem
     const bob=Math.sin(tnow*.9+ph)*ch*.06,rot=tilt+Math.sin(tnow*.6+ph)*.02;
     c.save();c.translate(C.x+cw*.04,C.y+ch*.95);c.scale(1,.22);const q=c.createRadialGradient(0,0,0,0,0,cw*.55);q.addColorStop(0,`rgba(0,0,0,${.5-bob/ch})`);q.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=q;c.beginPath();c.arc(0,0,cw*.55,0,TAU);c.fill();c.restore();
     c.save();c.translate(C.x,C.y+bob);c.rotate(rot);c.translate(-C.x,-C.y);cass(C,pos);c.restore()}
-  // cat's-eye display: monochrome green Julia fractal, the eye closes and opens with the level
-  {const N=64;if(!LV.fr){LV.fr=document.createElement('canvas');LV.fr.width=LV.fr.height=N;LV.fx=LV.fr.getContext('2d');LV.fd=LV.fx.createImageData(N,N)}
-   if((LV.fc++&1)===0){const D=LV.fd.data,ang=LV.t*.22+lvl*.7,cr=.7885*Math.cos(ang),ci=.7885*Math.sin(ang),zm=1.35-.2*Math.min(1,lvl*2),MI=22;
-     for(let y=0;y<N;y++)for(let x=0;x<N;x++){let zr=(x/N-.5)*2*zm,zi=(y/N-.5)*2*zm,i=0;for(;i<MI;i++){const t=zr*zr-zi*zi+cr;zi=2*zr*zi+ci;zr=t;if(zr*zr+zi*zi>4)break}const v=i>=MI?.35:.1+.9*Math.pow(i/MI,.42),p=(y*N+x)*4;D[p]=v*70;D[p+1]=v*255;D[p+2]=v*120;D[p+3]=255}
+  // a real cat's eye inside the handle: golden-green iris (a slowly turning Julia fractal as its texture), a vertical slit pupil that widens with the music, glossy cornea, the odd blink
+  {const N=72;if(!LV.fr){LV.fr=document.createElement('canvas');LV.fr.width=LV.fr.height=N;LV.fx=LV.fr.getContext('2d');LV.fd=LV.fx.createImageData(N,N);LV.lv=0;LV.blink=0;LV.nb=performance.now()+4000;LV.px=0;LV.py=0;LV.tx=0;LV.ty=0}
+   if((LV.fc++&1)===0){const D=LV.fd.data,ang=LV.t*.18+lvl*.5,cr=.7885*Math.cos(ang),ci=.7885*Math.sin(ang),MI=20;
+     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const dx=x/N-.5,dy=y/N-.5,rad=Math.hypot(dx,dy)*2,th=Math.atan2(dy,dx);
+       // sample the fractal in polar form so its detail runs out radially like iris fibres
+       let zr=Math.cos(th*3)*(.35+rad*.9),zi=Math.sin(th*3)*(.35+rad*.9),i=0;for(;i<MI;i++){const t=zr*zr-zi*zi+cr;zi=2*zr*zi+ci;zr=t;if(zr*zr+zi*zi>4)break}
+       const f=i>=MI?1:i/MI,fib=.5+.5*Math.sin(th*48+Math.sin(th*7)*3+rad*6),ring=Math.min(1,Math.max(0,(rad-.2)/.25)),v=(.55+.3*f+.15*fib)*(.7+.3*ring),p=(y*N+x)*4;
+       // colour: green-gold near the pupil, warm yellow in the middle, olive-brown at the edge
+       const g1=rad<.45?rad/.45:1,R=(110+120*g1)*v,G=(120+95*g1-40*Math.max(0,rad-.75)*4)*v,B=(25+15*g1)*v;D[p]=R;D[p+1]=G;D[p+2]=B;D[p+3]=255}
      LV.fx.putImageData(LV.fd,0,0)}
-   const {x,y,r}=eye;c.save();c.shadowColor='rgba(0,0,0,.8)';c.shadowBlur=U*.03;const bz=c.createLinearGradient(x-r,y-r,x+r,y+r);bz.addColorStop(0,'#fff1c8');bz.addColorStop(.45,'#c9a464');bz.addColorStop(1,'#3a2410');c.fillStyle=bz;c.beginPath();c.arc(x,y,r*1.22,0,TAU);c.fill();c.restore();
-   c.fillStyle='#050805';c.beginPath();c.arc(x,y,r,0,TAU);c.fill();c.save();c.beginPath();c.arc(x,y,r*.96,0,TAU);c.clip();c.imageSmoothingEnabled=true;c.globalAlpha=.95;c.drawImage(LV.fr,x-r,y-r,r*2,r*2);c.globalAlpha=1;
-   const open=(.62-.5*Math.min(1,lvl*1.6))*Math.PI/2;c.fillStyle='rgba(2,10,4,.82)';c.beginPath();c.moveTo(x,y);c.arc(x,y,r,-Math.PI/2-open,-Math.PI/2+open);c.closePath();c.fill();
-   c.strokeStyle='rgba(140,255,170,.55)';c.lineWidth=U*.003;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(-Math.PI/2-open)*r,y+Math.sin(-Math.PI/2-open)*r);c.moveTo(x,y);c.lineTo(x+Math.cos(-Math.PI/2+open)*r,y+Math.sin(-Math.PI/2+open)*r);c.stroke();
-   const gl=c.createRadialGradient(x,y,r*.2,x,y,r);gl.addColorStop(0,'rgba(120,255,160,0)');gl.addColorStop(1,'rgba(120,255,160,.18)');c.fillStyle=gl;c.fillRect(x-r,y-r,r*2,r*2);c.restore();
-   c.fillStyle='#0b0f0b';c.beginPath();c.arc(x,y,r*.24,0,TAU);c.fill();c.fillStyle='rgba(255,255,255,.18)';c.beginPath();c.ellipse(x-r*.35,y-r*.45,r*.35,r*.16,-.6,0,TAU);c.fill()}}
+   const {x,y,r}=eye,now2=performance.now();LV.lv+=(Math.min(1,lvl*1.8)-LV.lv)*.08;
+   if(now2>LV.nb){LV.blink=1;LV.nb=now2+3000+Math.random()*7000}LV.blink=Math.max(0,LV.blink-dt*5);
+   if(Math.random()<dt*.6){LV.tx=(Math.random()-.5)*r*.18;LV.ty=(Math.random()-.5)*r*.1}LV.px+=(LV.tx-LV.px)*dt*6;LV.py+=(LV.ty-LV.py)*dt*6;
+   // brass bezel
+   c.save();c.shadowColor='rgba(0,0,0,.8)';c.shadowBlur=U*.03;const bz=c.createLinearGradient(x-r,y-r,x+r,y+r);bz.addColorStop(0,'#fff1c8');bz.addColorStop(.45,'#c9a464');bz.addColorStop(1,'#3a2410');c.fillStyle=bz;c.beginPath();c.arc(x,y,r*1.22,0,TAU);c.fill();c.restore();
+   c.fillStyle='#0a0705';c.beginPath();c.arc(x,y,r,0,TAU);c.fill();
+   c.save();c.beginPath();c.arc(x,y,r*.985,0,TAU);c.clip();
+   // iris (turning very slowly) and the dark limbal ring
+   c.save();c.translate(x+LV.px*.3,y+LV.py*.3);c.rotate(LV.t*.02);c.imageSmoothingEnabled=true;c.drawImage(LV.fr,-r,-r,r*2,r*2);c.restore();
+   const lim=c.createRadialGradient(x,y,r*.55,x,y,r);lim.addColorStop(0,'rgba(0,0,0,0)');lim.addColorStop(.8,'rgba(20,12,0,.35)');lim.addColorStop(1,'rgba(5,3,0,.92)');c.fillStyle=lim;c.fillRect(x-r,y-r,r*2,r*2);
+   // slit pupil: pointed top and bottom, widening with the level
+   const pw=r*(.05+.33*LV.lv),ph=r*.86,cx=x+LV.px,cy=y+LV.py;
+   const pg=c.createRadialGradient(cx,cy,0,cx,cy,Math.max(pw,r*.2));pg.addColorStop(0,'#000');pg.addColorStop(1,'#050302');c.fillStyle=pg;
+   c.beginPath();c.moveTo(cx,cy-ph);c.bezierCurveTo(cx+pw*1.15,cy-ph*.45,cx+pw*1.15,cy+ph*.45,cx,cy+ph);c.bezierCurveTo(cx-pw*1.15,cy+ph*.45,cx-pw*1.15,cy-ph*.45,cx,cy-ph);c.fill();
+   c.strokeStyle='rgba(40,30,0,.6)';c.lineWidth=U*.002;c.stroke();
+   // cornea: soft reflection of the room plus a sharp highlight
+   const co=c.createRadialGradient(x-r*.35,y-r*.4,0,x-r*.35,y-r*.4,r*.9);co.addColorStop(0,'rgba(255,250,235,.28)');co.addColorStop(.4,'rgba(255,250,235,.06)');co.addColorStop(1,'rgba(255,250,235,0)');c.fillStyle=co;c.fillRect(x-r,y-r,r*2,r*2);
+   c.fillStyle='rgba(255,255,255,.85)';c.beginPath();c.ellipse(x-r*.38,y-r*.42,r*.11,r*.07,-.6,0,TAU);c.fill();c.fillStyle='rgba(255,255,255,.4)';c.beginPath();c.arc(x+r*.3,y+r*.35,r*.035,0,TAU);c.fill();
+   // eyelids for the blink
+   if(LV.blink>0){const k=Math.sin(LV.blink*Math.PI),lid=r*1.02*k;c.fillStyle='#2a1a10';c.fillRect(x-r,y-r,r*2,lid);c.fillRect(x-r,y+r-lid,r*2,lid)}
+   c.restore();
+   c.strokeStyle='rgba(0,0,0,.6)';c.lineWidth=U*.004;c.beginPath();c.arc(x,y,r,0,TAU);c.stroke()}}
 function padlock(now){const x=G.lock.x,y=G.lock.y,r=G.bag.w*.05,sw=Math.sin(now/800)*.05+swing*Math.sin(now/90)*.35;swing*=.97;
   // zipper pulls
   c.fillStyle=brass(c,x-r*.5,y,r*.4);c.beginPath();c.roundRect?c.roundRect(x-r*.9,y-r*.2,r*.6,r*.4,r*.1):c.rect(x-r*.9,y-r*.2,r*.6,r*.4);c.fill();
