@@ -743,6 +743,18 @@ function pickW(ws,x){const w=ws.map(v=>.04+Math.exp(-Math.pow(v-x,2)/.06));let t
 function rk(r,j,x){const[a,b]=RLIM[r][j],lo=a*(1-x),hi=b+(1-b)*x;let v=lo+Math.random()*(hi-lo);const sp=stepsOf(r,j);if(sp)v=Math.round(v*(sp-1))/(sp-1);return +v.toFixed(3)}
 function rndSlot(sl){const x=RX(),list=(userS[sl]?['EIGEN']:[]).concat(ALLB.map(b=>b.n));st.SB[sl]=list[pickW(list.map(n=>n==='EIGEN'?.5:wildOf(n,sl)),x)]}
 function rndEngine(r,x){if(r===2)st.E[2]=pickW(WD,x);else if(r!==4)st.E[r]=pickW(WE,x);st.S[r]=pickW(WS,x)}
+function ambientize(){const rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),pk=a=>a[Math.floor(Math.random()*a.length)],K=st.K,X=st.X;
+  K[0]=[0,rr(.08,.25),rr(.2,.45),rr(0,1),rr(0,1),rr(.2,.42),rr(.1,.3),rr(.7,.95),rr(0,.15),rr(.45,.62)];
+  K[1]=[0,rr(.08,.3),rr(.35,.7),rr(0,1),rr(0,1),rr(.3,.5),rr(.1,.3),rr(.6,.95),rr(.55,.85),rr(.3,.48)];
+  K[2]=[K[2][0],rr(0,.2),rr(0,.15),rr(.2,.5),rr(.5,.9),rr(.2,.5),rr(0,.3),0,0,Math.random()<.7?0:rr(.12,.25)];
+  K[3]=[0,rr(.05,.25),rr(.4,.85),rr(.3,.6),rr(.5,.85),rr(.35,.65),rr(.1,.3),rr(.75,.98),rr(.7,.92),rr(.55,.72)];
+  K[4]=[K[4][0],rr(0,.2),0,0,0,rr(0,.15),0,rr(.4,.7),rr(.5,.8),rr(.12,.28)];
+  st.E[0]=pk([2,7,8,12,5]);st.E[1]=pk([6,11,2,7,1]);st.E[2]=pk([0,6]);st.E[3]=pk([5,2,8,7,12]);st.S=[pk([1,5]),pk([1,5,6]),2,1,pk([1,5])];
+  for(const sl of ['b','l','p'])st.SB[sl]=pk(['CHOIR','KIDS','MELLO FLUTE','MELLO STRINGS','MELLO CHOIR','WIND','WAVES']);
+  X.g=[.75,.7,.6,.8];X.mu=[0,0,0,0];X.sa=[rr(.1,.3),rr(.4,.7),0,rr(.4,.7)];X.sb=[0,rr(.3,.55),0,rr(.2,.45)];X.ta=pk([1,6]);X.tb=pk([0,7,2]);
+  X.pa=[rr(.7,.95),rr(.2,.5),rr(.35,.55)];X.pb=[rr(.3,.8),rr(.3,.6),rr(.35,.55)];X.ra=rr(.6,.8);X.rb=rr(.45,.65);
+  st.C=st.C.map(()=>0);st.CG=0;st.M.ring=0;st.M.glue=rr(.35,.55);st.M.scale=pk([1,2,4,0])/6;if(!st.lockT)st.M.tempo=+TOF(40+Math.random()*35).toFixed(4);
+  if(st.DR<.25){st.DR=+(.28+Math.random()*.12).toFixed(3);showSl()}sendC()}
 function randomize(){const x=RX(),rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),X=st.X;
   for(let r=0;r<5;r++){for(let j=0;j<10;j++)st.K[r][j]=rk(r,j,x);rndEngine(r,x)}st.A={};recRow=-1;
   X.g=[0,1,2,3].map(()=>rr(.55,.9));X.mu=[0,0,0,0];X.sa=[0,1,2,3].map(()=>Math.random()<.45?0:rr(.1,.4+.4*x));X.sb=[0,1,2,3].map(()=>Math.random()<.45?0:rr(.1,.4+.4*x));
@@ -750,8 +762,8 @@ function randomize(){const x=RX(),rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),
   st.M.glue=rr(.35+.2*(1-x),.85);st.M.ring=Math.random()<x*.55?1:0;st.C=st.C.map(()=>Math.random()<x*.75?rr(.03,.15+.75*x):0);st.CG=x>.55?rr(0,(x-.5)*1.5):0;sendC();
   for(const sl of ['b','l','p',...DSL])rndSlot(sl);st.AL=[1,2,4][Math.floor(Math.random()*3)];if(node)node.port.postMessage({alen:st.AL*16});setTimeout(pushUsed,0);if(node)for(let r=0;r<5;r++)node.port.postMessage({reseed:r});
   if(!st.lockT){const q=Math.random();let bp=80+Math.random()*50;if(x>.3)bp=60+Math.random()*(70+150*x);if(q<x*x*.35)bp=Math.random()<.5?Math.random()*25:600+Math.random()*40000*x;st.M.tempo=+TOF(bp).toFixed(4)}
-  st.M.key=Math.round(Math.random()*11)/11;st.M.scale=pickW(WSC,x)/6;save();sync();showTempo();
-  say('HAPPY ACCIDENT '+Math.round(x*100)+'% · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+fmtB(st.M.tempo)+' · FX '+FXN[st.X.ta]+'/'+FXN[st.X.tb],1,2500);shake=1}
+  st.M.key=Math.round(Math.random()*11)/11;st.M.scale=pickW(WSC,x)/6;const amb=Math.random()<.28*(1-x*.75);if(amb)ambientize();save();sync();showTempo();
+  say('HAPPY ACCIDENT '+(amb?'· AMBIENT ':'')+Math.round(x*100)+'% · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+fmtB(st.M.tempo)+' · FX '+FXN[st.X.ta]+'/'+FXN[st.X.tb],1,2500);shake=1}
 $('bRnd').addEventListener('click',randomize);
 function showSl(){for(const[id,v]of [['sRX',RX()],['sDR',st.DR]]){const e=$(id);e.querySelector('.fill').style.width=(v*100)+'%';e.querySelector('.thumb').style.left=(v*100)+'%'}$('drv').textContent=Math.round(st.DR*100)+'%'}
 for(const id of ['sRX','sDR']){const e=$(id),tr=e.querySelector('.trk');let on=false;const set=ev=>{const r=tr.getBoundingClientRect();let v=Math.min(1,Math.max(0,(ev.clientX-r.left)/r.width));v=+v.toFixed(3);
@@ -912,7 +924,7 @@ let swing=0,bgImg=null;
 const LV={pos:0,ang:0,fr:null,fd:null,fc:0,t:0};
 function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tempo),sp=Math.min(bpm,420)/120;LV.pos+=dt*sp*W*.05;LV.t+=dt*(.3+sp*.4);
   // two real-proportioned clear loop cassettes (100 x 64 mm); the endless loop winds over guide rollers INSIDE the shell
-  const cw=W*.29,ch=cw*.635,eye={x:W/2,y:b.y-bh*.27,r:bh*.14};
+  const cw=W*.28,ch=cw*.635,eye={x:W/2,y:b.y-bh*.27,r:bh*.14};
   // A runs with the master tempo; B stutters and wanders, driven by the CHAOS row and the Accidentinator/Drift settings
   if(LV.vB===undefined){LV.vB=1;LV.tB=1;LV.posB=0}
   if(fl[4]>.9||Math.random()<dt*(.3+st.DR*2)){const wild=.3+st.K[4][2]*.9+RX()*.6+st.DR*.6,r=Math.random();LV.tB=r<.12*wild?0:r<.25*wild?-(.4+Math.random()*1.2):(.2+Math.random()*1.8*wild)}
@@ -933,11 +945,15 @@ function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tem
     c.beginPath();loop.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.strokeStyle='#2a1608';c.lineWidth=U*.0065;c.stroke();
     c.beginPath();loop.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.strokeStyle='#5c3618';c.lineWidth=U*.0038;c.stroke();
     c.setLineDash([U*.008,U*.03]);c.lineDashOffset=-pos;c.beginPath();loop.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.strokeStyle='rgba(255,215,160,.65)';c.lineWidth=U*.002;c.stroke();c.setLineDash([]);
-    // guide rollers (white nylon on brass pins)
-    for(const[rx,ry]of R){const rr=cw*.028;c.fillStyle='#e9e2d4';c.beginPath();c.arc(rx,ry,rr,0,TAU);c.fill();c.strokeStyle='rgba(60,50,40,.6)';c.lineWidth=U*.0012;for(let k=0;k<3;k++){const a=pos/(rr*1.2)+k*TAU/3;c.beginPath();c.moveTo(rx,ry);c.lineTo(rx+Math.cos(a)*rr*.8,ry+Math.sin(a)*rr*.8);c.stroke()}c.fillStyle='#c9a464';c.beginPath();c.arc(rx,ry,rr*.32,0,TAU);c.fill()}
-    // the two hubs, turning with the tape
-    for(const fx of [.29,.71]){const[hx,hy]=P(fx,.49),hr=cw*.06,a0=pos/(cw*.06);c.fillStyle='rgba(245,238,224,.9)';c.beginPath();c.arc(hx,hy,hr,0,TAU);c.fill();c.fillStyle='rgba(18,13,10,.95)';c.beginPath();c.arc(hx,hy,hr*.6,0,TAU);c.fill();
-      c.fillStyle='rgba(245,238,224,.95)';for(let t=0;t<6;t++){const a=a0+t*TAU/6;c.beginPath();c.moveTo(hx+Math.cos(a-.18)*hr*.6,hy+Math.sin(a-.18)*hr*.6);c.lineTo(hx+Math.cos(a)*hr*.38,hy+Math.sin(a)*hr*.38);c.lineTo(hx+Math.cos(a+.18)*hr*.6,hy+Math.sin(a+.18)*hr*.6);c.fill()}}
+    // guide rollers and hubs as tiny open reels, like an old reel-to-reel deck: polished flange, three cut-outs, centre spindle
+    const reel=(rx,ry,rr,ang,big)=>{const q=c.createRadialGradient(rx-rr*.4,ry-rr*.45,rr*.05,rx,ry,rr);q.addColorStop(0,'#ffffff');q.addColorStop(.35,'#d8dade');q.addColorStop(.75,'#8a8e94');q.addColorStop(1,'#3a3c40');
+      c.fillStyle=q;c.beginPath();c.arc(rx,ry,rr,0,TAU);for(let k=0;k<3;k++){const a=ang+k*TAU/3,cx=rx+Math.cos(a)*rr*.5,cy=ry+Math.sin(a)*rr*.5,hr=rr*(big?.27:.24);c.moveTo(cx+hr,cy);c.arc(cx,cy,hr,0,TAU,true)}c.fill('evenodd');
+      c.strokeStyle='rgba(255,255,255,.55)';c.lineWidth=Math.max(1,rr*.08);c.beginPath();c.arc(rx,ry,rr*.93,Math.PI*1.05,Math.PI*1.7);c.stroke();
+      c.strokeStyle='rgba(20,20,24,.6)';c.lineWidth=Math.max(1,rr*.06);c.beginPath();c.arc(rx,ry,rr,0,TAU);c.stroke();
+      const sq=c.createRadialGradient(rx-rr*.08,ry-rr*.08,0,rx,ry,rr*.2);sq.addColorStop(0,'#fff1c8');sq.addColorStop(1,'#8a6a30');c.fillStyle=sq;c.beginPath();c.arc(rx,ry,rr*.2,0,TAU);c.fill();
+      if(big){c.fillStyle='#1a1410';for(let t=0;t<3;t++){const a=ang*1.0+t*TAU/3;c.fillRect(rx+Math.cos(a)*rr*.12-rr*.03,ry+Math.sin(a)*rr*.12-rr*.03,rr*.06,rr*.06)}}};
+    for(const[rx,ry]of R){const rr=cw*.036;reel(rx,ry,rr,pos/(rr*1.1),false)}
+    for(const fx of [.29,.71]){const[hx,hy]=P(fx,.49),hr=cw*.075;reel(hx,hy,hr,pos/(cw*.07),true)}
     // small ivory label strip along the top, with typography
     const[lx,ly]=P(.07,.06),lw=cw*.86,lh=ch*.17;c.fillStyle='rgba(239,230,210,.95)';c.beginPath();c.roundRect?c.roundRect(lx,ly,lw,lh,lh*.2):c.rect(lx,ly,lw,lh);c.fill();
     c.fillStyle=`rgb(${C.tint})`;c.fillRect(lx,ly+lh*.82,lw,lh*.12);
@@ -945,8 +961,8 @@ function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tem
     c.textAlign='right';c.font=`${lh*.36}px "Federo",sans-serif`;c.fillStyle='#6a4e2a';c.fillText(C.t2,lx+lw*.96,ly+lh*.42);
     // screws
     for(const[fx,fy]of [[.04,.06],[.96,.06],[.04,.94],[.96,.94],[.5,.68]]){const[sx,sy]=P(fx,fy);c.fillStyle='#b8b0a4';c.beginPath();c.arc(sx,sy,cw*.012,0,TAU);c.fill();c.strokeStyle='#3a3430';c.lineWidth=U*.001;c.beginPath();c.moveTo(sx-cw*.008,sy);c.lineTo(sx+cw*.008,sy);c.stroke()}};
-  cass({x:W*.17,y:b.y-bh*.24,t1:'PT · 50',t2:'A · TEMPO',tint:'201,164,100'},LV.pos);
-  cass({x:W*.83,y:b.y-bh*.24,t1:'50 Years',t2:'B · CHAOS',tint:'184,64,42'},LV.posB);
+  cass({x:W*.16,y:b.y-bh*.47,t1:'PT · 50',t2:'A · TEMPO',tint:'201,164,100'},LV.pos);
+  cass({x:W*.84,y:b.y-bh*.47,t1:'50 Years',t2:'B · CHAOS',tint:'184,64,42'},LV.posB);
   // cat's-eye display: monochrome green Julia fractal, the eye closes and opens with the level
   {const N=64;if(!LV.fr){LV.fr=document.createElement('canvas');LV.fr.width=LV.fr.height=N;LV.fx=LV.fr.getContext('2d');LV.fd=LV.fx.createImageData(N,N)}
    if((LV.fc++&1)===0){const D=LV.fd.data,ang=LV.t*.22+lvl*.7,cr=.7885*Math.cos(ang),ci=.7885*Math.sin(ang),zm=1.35-.2*Math.min(1,lvl*2),MI=22;
