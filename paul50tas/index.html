@@ -911,43 +911,42 @@ let swing=0,bgImg=null;
 // ---------- live machinery behind the handle: two cassettes with a running tape loop, and a cat's-eye fractal display ----------
 const LV={pos:0,ang:0,fr:null,fd:null,fc:0,t:0};
 function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tempo),sp=Math.min(bpm,420)/120;LV.pos+=dt*sp*W*.05;LV.t+=dt*(.3+sp*.4);
-  const cw=W*.27,ch=cw*.63,eye={x:W/2,y:b.y-bh*.27,r:bh*.14},ext=cw*.62;
-  const pts=(arr)=>{c.beginPath();arr.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]))};
-  const roller=(x,y,rr)=>{const q=c.createRadialGradient(x-rr*.35,y-rr*.35,0,x,y,rr);q.addColorStop(0,'#fff1c8');q.addColorStop(.55,'#c9a464');q.addColorStop(1,'#4a3214');c.fillStyle=q;c.beginPath();c.arc(x,y,rr,0,TAU);c.fill();
-    c.strokeStyle='rgba(40,24,8,.8)';c.lineWidth=U*.0018;for(let k=0;k<3;k++){const a=LV.pos/(rr*1.3)+k*TAU/3;c.beginPath();c.moveTo(x+Math.cos(a)*rr*.3,y+Math.sin(a)*rr*.3);c.lineTo(x+Math.cos(a)*rr*.82,y+Math.sin(a)*rr*.82);c.stroke()}
-    c.fillStyle='#1a1006';c.beginPath();c.arc(x,y,rr*.22,0,TAU);c.fill()};
-  const wind=.5+.5*Math.sin(LV.pos/(W*3));
-  [{x:W*.175,y:b.y-bh*.2,t1:'PT · 50',t2:'LOOP A',tint:'201,164,100',f:wind},{x:W*.825,y:b.y-bh*.2,t1:'50 Years',t2:'LOOP B',tint:'184,64,42',f:1-wind}].forEach(C=>{
-    const x0=C.x-cw/2,y0=C.y-ch/2,rad=cw*.045,PB=y0+ch*.1,PT=y0-ext,px0=C.x-cw*.43,pw=cw*.86;
-    // tinted acrylic extension plate bolted on top of the shell
-    c.save();c.shadowColor='rgba(0,0,0,.6)';c.shadowBlur=U*.02;c.shadowOffsetY=U*.006;c.fillStyle=`rgba(${C.tint},.20)`;c.beginPath();c.roundRect?c.roundRect(px0,PT,pw,PB-PT,cw*.06):c.rect(px0,PT,pw,PB-PT);c.fill();c.restore();
-    const pg=c.createLinearGradient(px0,PT,px0+pw,PB);pg.addColorStop(0,'rgba(255,240,210,.16)');pg.addColorStop(.5,'rgba(255,240,210,0)');pg.addColorStop(1,'rgba(255,240,210,.06)');c.fillStyle=pg;c.fill();
-    c.strokeStyle=`rgba(${C.tint},.75)`;c.lineWidth=U*.002;c.stroke();
-    for(const[bx,by]of [[.06,.1],[.94,.1],[.5,.06]]){c.fillStyle='#c9a464';c.beginPath();c.arc(px0+pw*bx,PT+(PB-PT)*by,cw*.012,0,TAU);c.fill()}
-    // the loop: out of the shell, zig-zag over five rollers, back in
-    const hy=y0+ch*.42,R=[[C.x-cw*.33,PB-ext*.28],[C.x-cw*.2,PT+ext*.17],[C.x,PB-ext*.36],[C.x+cw*.2,PT+ext*.17],[C.x+cw*.33,PB-ext*.28]];
-    const path=[[C.x-cw*.19,hy-ch*.12],...R,[C.x+cw*.19,hy-ch*.12]];
-    c.lineJoin='round';c.lineCap='round';pts(path);c.strokeStyle='#2a1608';c.lineWidth=U*.007;c.stroke();pts(path);c.strokeStyle='#5a3418';c.lineWidth=U*.004;c.stroke();
-    c.setLineDash([U*.01,U*.04]);c.lineDashOffset=-LV.pos;pts(path);c.strokeStyle='rgba(255,215,160,.6)';c.lineWidth=U*.0022;c.stroke();c.setLineDash([]);
-    for(const p of R)roller(p[0],p[1],U*.014);
-    // smoked translucent shell
-    c.save();c.shadowColor='rgba(0,0,0,.75)';c.shadowBlur=U*.025;c.shadowOffsetY=U*.008;const sg=c.createLinearGradient(0,y0,0,y0+ch);sg.addColorStop(0,'rgba(58,46,38,.94)');sg.addColorStop(1,'rgba(22,17,14,.96)');c.fillStyle=sg;c.beginPath();c.roundRect?c.roundRect(x0,y0,cw,ch,rad):c.rect(x0,y0,cw,ch);c.fill();c.restore();
-    c.strokeStyle='rgba(255,235,200,.16)';c.lineWidth=U*.002;c.beginPath();c.roundRect?c.roundRect(x0+1,y0+1,cw-2,ch-2,rad):c.rect(x0,y0,cw,ch);c.stroke();
-    // ivory label with fine typography
-    const lx=x0+cw*.07,ly=y0+ch*.09,lw=cw*.86,lh=ch*.56;c.fillStyle='#efe6d2';c.beginPath();c.roundRect?c.roundRect(lx,ly,lw,lh,rad*.5):c.rect(lx,ly,lw,lh);c.fill();
-    c.fillStyle=`rgb(${C.tint})`;c.fillRect(lx,ly+lh*.86,lw,lh*.05);c.fillStyle='rgba(60,40,20,.35)';c.fillRect(lx+lw*.06,ly+lh*.24,lw*.88,1);
-    c.fillStyle='#2a1a0c';c.font=`italic 600 ${lh*.22}px "Cormorant Garamond",Georgia,serif`;c.textAlign='left';c.textBaseline='middle';c.fillText(C.t1,lx+lw*.06,ly+lh*.13);
-    c.textAlign='right';c.font=`${lh*.11}px "Federo",sans-serif`;c.fillStyle='#6a4e2a';c.fillText(C.t2,lx+lw*.94,ly+lh*.13);
-    // window: reels and tape packs
-    const wx=C.x-cw*.28,wy=ly+lh*.34,ww=cw*.56,wh=lh*.42,wy2=wy+wh/2;c.save();c.beginPath();c.roundRect?c.roundRect(wx,wy,ww,wh,wh*.45):c.rect(wx,wy,ww,wh);c.clip();c.fillStyle='#120d0a';c.fillRect(wx,wy,ww,wh);
-    [[C.x-cw*.19,.07+.1*C.f],[C.x+cw*.19,.07+.1*(1-C.f)]].forEach(([hx,pr])=>{c.fillStyle='#4a2c16';c.beginPath();c.arc(hx,wy2,cw*pr,0,TAU);c.fill();c.strokeStyle='rgba(255,200,140,.14)';c.lineWidth=1;c.beginPath();c.arc(hx,wy2,cw*pr*.75,0,TAU);c.stroke()});
-    c.fillStyle='rgba(255,255,255,.07)';c.fillRect(wx,wy,ww,wh*.35);c.restore();
-    [C.x-cw*.19,C.x+cw*.19].forEach(hx=>{const hr=cw*.045,a0=LV.pos/(cw*.08);c.fillStyle='#f2ead8';c.beginPath();c.arc(hx,wy2,hr,0,TAU);c.fill();c.fillStyle='#120d0a';c.beginPath();c.arc(hx,wy2,hr*.55,0,TAU);c.fill();
-      c.fillStyle='#f2ead8';for(let t=0;t<6;t++){const a=a0+t*TAU/6;c.beginPath();c.arc(hx+Math.cos(a)*hr*.45,wy2+Math.sin(a)*hr*.45,hr*.14,0,TAU);c.fill()}});
-    c.strokeStyle='rgba(120,90,50,.6)';c.lineWidth=U*.0015;c.beginPath();c.roundRect?c.roundRect(wx,wy,ww,wh,wh*.45):c.rect(wx,wy,ww,wh);c.stroke();
-    // head area and screws
-    c.fillStyle='rgba(12,9,7,.9)';c.beginPath();c.moveTo(x0+cw*.2,y0+ch);c.lineTo(x0+cw*.26,y0+ch*.78);c.lineTo(x0+cw*.74,y0+ch*.78);c.lineTo(x0+cw*.8,y0+ch);c.closePath();c.fill();
-    for(const[sx,sy]of [[.045,.07],[.955,.07],[.045,.93],[.955,.93],[.5,.92]]){c.fillStyle='#c9a464';c.beginPath();c.arc(x0+cw*sx,y0+ch*sy,cw*.012,0,TAU);c.fill()}});
+  // two real-proportioned clear loop cassettes (100 x 64 mm); the endless loop winds over guide rollers INSIDE the shell
+  const cw=W*.29,ch=cw*.635,eye={x:W/2,y:b.y-bh*.27,r:bh*.14};
+  // A runs with the master tempo; B stutters and wanders, driven by the CHAOS row and the Accidentinator/Drift settings
+  if(LV.vB===undefined){LV.vB=1;LV.tB=1;LV.posB=0}
+  if(fl[4]>.9||Math.random()<dt*(.3+st.DR*2)){const wild=.3+st.K[4][2]*.9+RX()*.6+st.DR*.6,r=Math.random();LV.tB=r<.12*wild?0:r<.25*wild?-(.4+Math.random()*1.2):(.2+Math.random()*1.8*wild)}
+  LV.vB+=(LV.tB-LV.vB)*Math.min(1,dt*(4+st.K[4][2]*20));LV.posB+=dt*sp*W*.05*LV.vB;
+  const cass=(C,pos)=>{const x0=C.x-cw/2,y0=C.y-ch/2,rad=cw*.035,P=(fx,fy)=>[x0+cw*fx,y0+ch*fy];
+    // shell: clear, slightly smoked, with a bright rim
+    c.save();c.shadowColor='rgba(0,0,0,.7)';c.shadowBlur=U*.025;c.shadowOffsetY=U*.008;c.fillStyle='rgba(30,26,24,.55)';c.beginPath();c.roundRect?c.roundRect(x0,y0,cw,ch,rad):c.rect(x0,y0,cw,ch);c.fill();c.restore();
+    const sg=c.createLinearGradient(x0,y0,x0+cw,y0+ch);sg.addColorStop(0,'rgba(255,250,240,.16)');sg.addColorStop(.5,'rgba(255,250,240,.03)');sg.addColorStop(1,'rgba(255,250,240,.10)');c.fillStyle=sg;c.beginPath();c.roundRect?c.roundRect(x0,y0,cw,ch,rad):c.rect(x0,y0,cw,ch);c.fill();
+    c.strokeStyle='rgba(255,245,225,.45)';c.lineWidth=U*.0025;c.stroke();
+    // head area (the bottom trapezoid) with its openings
+    c.fillStyle='rgba(255,250,240,.07)';c.beginPath();const t1=P(.18,1),t2=P(.24,.79),t3=P(.76,.79),t4=P(.82,1);c.moveTo(...t1);c.lineTo(...t2);c.lineTo(...t3);c.lineTo(...t4);c.closePath();c.fill();c.strokeStyle='rgba(255,245,225,.3)';c.lineWidth=U*.0015;c.stroke();
+    for(const fx of [.28,.39,.5,.61,.72]){const[hx,hy]=P(fx,.92);c.fillStyle='rgba(0,0,0,.55)';c.beginPath();c.roundRect?c.roundRect(hx-cw*.022,hy-ch*.035,cw*.044,ch*.07,cw*.01):c.rect(hx-cw*.02,hy-ch*.03,cw*.04,ch*.06);c.fill()}
+    // window outline between the hubs
+    const[wx,wy]=P(.27,.36);c.strokeStyle='rgba(255,245,225,.22)';c.beginPath();c.roundRect?c.roundRect(wx,wy,cw*.46,ch*.26,ch*.08):c.rect(wx,wy,cw*.46,ch*.26);c.stroke();
+    // the endless loop: along the bottom edge (past the heads), up the corner, zig-zag over the inner rollers, back down
+    const R=[P(.075,.84),P(.13,.5),P(.3,.27),P(.42,.7),P(.58,.27),P(.7,.7),P(.87,.5),P(.925,.84)];
+    const loop=[...R,R[0]];c.lineJoin='round';c.lineCap='round';
+    c.beginPath();loop.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.strokeStyle='#2a1608';c.lineWidth=U*.0065;c.stroke();
+    c.beginPath();loop.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.strokeStyle='#5c3618';c.lineWidth=U*.0038;c.stroke();
+    c.setLineDash([U*.008,U*.03]);c.lineDashOffset=-pos;c.beginPath();loop.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.strokeStyle='rgba(255,215,160,.65)';c.lineWidth=U*.002;c.stroke();c.setLineDash([]);
+    // guide rollers (white nylon on brass pins)
+    for(const[rx,ry]of R){const rr=cw*.028;c.fillStyle='#e9e2d4';c.beginPath();c.arc(rx,ry,rr,0,TAU);c.fill();c.strokeStyle='rgba(60,50,40,.6)';c.lineWidth=U*.0012;for(let k=0;k<3;k++){const a=pos/(rr*1.2)+k*TAU/3;c.beginPath();c.moveTo(rx,ry);c.lineTo(rx+Math.cos(a)*rr*.8,ry+Math.sin(a)*rr*.8);c.stroke()}c.fillStyle='#c9a464';c.beginPath();c.arc(rx,ry,rr*.32,0,TAU);c.fill()}
+    // the two hubs, turning with the tape
+    for(const fx of [.29,.71]){const[hx,hy]=P(fx,.49),hr=cw*.06,a0=pos/(cw*.06);c.fillStyle='rgba(245,238,224,.9)';c.beginPath();c.arc(hx,hy,hr,0,TAU);c.fill();c.fillStyle='rgba(18,13,10,.95)';c.beginPath();c.arc(hx,hy,hr*.6,0,TAU);c.fill();
+      c.fillStyle='rgba(245,238,224,.95)';for(let t=0;t<6;t++){const a=a0+t*TAU/6;c.beginPath();c.moveTo(hx+Math.cos(a-.18)*hr*.6,hy+Math.sin(a-.18)*hr*.6);c.lineTo(hx+Math.cos(a)*hr*.38,hy+Math.sin(a)*hr*.38);c.lineTo(hx+Math.cos(a+.18)*hr*.6,hy+Math.sin(a+.18)*hr*.6);c.fill()}}
+    // small ivory label strip along the top, with typography
+    const[lx,ly]=P(.07,.06),lw=cw*.86,lh=ch*.17;c.fillStyle='rgba(239,230,210,.95)';c.beginPath();c.roundRect?c.roundRect(lx,ly,lw,lh,lh*.2):c.rect(lx,ly,lw,lh);c.fill();
+    c.fillStyle=`rgb(${C.tint})`;c.fillRect(lx,ly+lh*.82,lw,lh*.12);
+    c.fillStyle='#2a1a0c';c.font=`italic 600 ${lh*.62}px "Cormorant Garamond",Georgia,serif`;c.textAlign='left';c.textBaseline='middle';c.fillText(C.t1,lx+lw*.04,ly+lh*.42);
+    c.textAlign='right';c.font=`${lh*.36}px "Federo",sans-serif`;c.fillStyle='#6a4e2a';c.fillText(C.t2,lx+lw*.96,ly+lh*.42);
+    // screws
+    for(const[fx,fy]of [[.04,.06],[.96,.06],[.04,.94],[.96,.94],[.5,.68]]){const[sx,sy]=P(fx,fy);c.fillStyle='#b8b0a4';c.beginPath();c.arc(sx,sy,cw*.012,0,TAU);c.fill();c.strokeStyle='#3a3430';c.lineWidth=U*.001;c.beginPath();c.moveTo(sx-cw*.008,sy);c.lineTo(sx+cw*.008,sy);c.stroke()}};
+  cass({x:W*.17,y:b.y-bh*.24,t1:'PT · 50',t2:'A · TEMPO',tint:'201,164,100'},LV.pos);
+  cass({x:W*.83,y:b.y-bh*.24,t1:'50 Years',t2:'B · CHAOS',tint:'184,64,42'},LV.posB);
   // cat's-eye display: monochrome green Julia fractal, the eye closes and opens with the level
   {const N=64;if(!LV.fr){LV.fr=document.createElement('canvas');LV.fr.width=LV.fr.height=N;LV.fx=LV.fr.getContext('2d');LV.fd=LV.fx.createImageData(N,N)}
    if((LV.fc++&1)===0){const D=LV.fd.data,ang=LV.t*.22+lvl*.7,cr=.7885*Math.cos(ang),ci=.7885*Math.sin(ang),zm=1.35-.2*Math.min(1,lvl*2),MI=22;
