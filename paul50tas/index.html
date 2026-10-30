@@ -530,10 +530,14 @@ function engName(r){return r===4?'FX':r===2?DEN[st.E[2]]:EN[st.E[r]]}
 
 // ---------- audio ----------
 let ctx=null,node=null,ready=null,running=false,lastHb=0,regs=[0,0,0,0,0],flash=[0,0,0,0,0];
-function makeCtx(){if(ctx)return;const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({latencyHint:'interactive'})}
-async function addModule(){const src=$('dsp').textContent;
-  try{await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([src],{type:'application/javascript'})))}
-  catch(e){await ctx.audioWorklet.addModule('data:application/javascript;base64,'+btoa(unescape(encodeURIComponent(src))))}}
+function makeCtx(){if(ctx)return;try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({latencyHint:'interactive'})}
+async function addModule(){const src=$('dsp').textContent,errs=[];
+  // inside the iOS app the engine ships as a real file (blob:/data: worklets can fail in an app web view); on the web we build it from the page
+  const tries=[];if(location.protocol==='capacitor:'||location.protocol==='file:')tries.push(()=>ctx.audioWorklet.addModule('dsp.js'));
+  tries.push(()=>ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([src],{type:'application/javascript'}))));
+  tries.push(()=>ctx.audioWorklet.addModule('data:application/javascript;base64,'+btoa(unescape(encodeURIComponent(src)))));
+  for(const t of tries){try{await t();return}catch(e){errs.push(String(e&&e.message||e))}}
+  say('audio engine could not start · '+errs.join(' | '),1,15000);throw new Error('worklet')}
 let master=null,rebuilding=false;
 function sync(){if(node)node.port.postMessage({K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,DR:st.DR,M:st.M,X:st.X,freeze:st.freeze,aclear:1,auto:st.A,alen:st.AL*16})}
 // ---------- built-in one-shots for the sample slots (synthesized, no files needed) ----------
@@ -678,7 +682,8 @@ async function makeNode(){if(node){try{node.disconnect()}catch(e){}}
 async function rescue(){if(rebuilding)return;rebuilding=true;try{if(ctx.state!=='running')await ctx.resume();await makeNode();say('▸ engine restarted',0,1200)}catch(e){}rebuilding=false}
 function boot(){if(ready)return ready;makeCtx();ready=(async()=>{await addModule();master=ctx.createGain();master.gain.value=0;
   const lim=ctx.createDynamicsCompressor();lim.threshold.value=-3;lim.ratio.value=20;lim.attack.value=.002;lim.release.value=.12;master.connect(lim).connect(ctx.destination);await makeNode()})();return ready}
-function start(){if(running)return;makeCtx();boot().then(async()=>{await ctx.resume();running=true;master.gain.setTargetAtTime(.95,ctx.currentTime,.05);say('Benjolin 50.0 · the band is playing · happy birthday Paul!',1,2800)})}
+function start(){if(running)return;makeCtx();try{ctx.resume();const ub=ctx.createBufferSource();ub.buffer=ctx.createBuffer(1,1,22050);ub.connect(ctx.destination);ub.start(0)}catch(e){}   // resume inside the tap itself: WebKit only unlocks audio during the gesture
+  boot().catch(e=>console.error(e)).then(async()=>{if(!node)return;await ctx.resume();running=true;master.gain.setTargetAtTime(.95,ctx.currentTime,.05);say('Benjolin 50.0 · the band is playing · happy birthday Paul!',1,2800)})}
 $('intro').addEventListener('click',()=>{$('intro').classList.add('gone');start()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running&&ctx)ctx.resume()});
 
