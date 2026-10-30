@@ -852,7 +852,7 @@ function geo(){
   G.kpos=(r,j)=>[G.gx0+(G.gx1-G.gx0)*j/9,G.gy0+(G.gy1-G.gy0)*r/4];
   G.rowY=r=>G.gy0+(G.gy1-G.gy0)*r/4;
   G.lock={x:W/2,y:by+bh*.035};
-  G.mix={x:W*.05,y:by+bh+H*.055,w:W*.9,h:H*.3};G.list=G.mix;
+  G.mix={x:W*.05,y:by+bh+H*.05,w:W*.9,h:H*.3};G.list=G.mix;G.mixP={Y0:by+bh+H*.06,Hd:H*.3*.8,ts:.8,w:W*.9,h:H*.3};
 }
 function bodyPath(g){const b=G.bag,x0=b.x,x1=b.x+b.w,y0=b.y,y1=b.y+b.h,r=b.w*.06;
   g.beginPath();g.moveTo(x0+b.w*.07,y0+b.h*.03);g.quadraticCurveTo(W/2,y0-b.h*.035,x1-b.w*.07,y0+b.h*.03);
@@ -880,29 +880,33 @@ function motif(g,x,y,s,k,col){g.save();g.translate(x,y);g.fillStyle=col;g.stroke
 function stitch(g,draw,col,w,d){g.save();g.setLineDash(d);g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';draw();g.stroke();g.restore()}
 const OFF={};function offCv(k){let o=OFF[k];if(!o)o=OFF[k]=document.createElement('canvas');if(o.width!==W||o.height!==H){o.width=W;o.height=H}else o.getContext('2d').clearRect(0,0,W,H);return o}
 // ---------- steampunk workshop backdrop: riveted copper plates, brass pipes, gears, a gauge, warm light ----------
-function steamBg(g,grain){const U=Math.min(W,H),b=G.bag;
-  // luxe atelier: a dark warm room, one soft key light on the bag, a walnut surface it stands on
-  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#16100b');bg.addColorStop(.45,'#0e0a07');bg.addColorStop(1,'#060403');g.fillStyle=bg;g.fillRect(0,0,W,H);
-  // fine velvet wall texture
-  g.globalAlpha=.35;g.fillStyle=grain;g.fillRect(0,0,W,H);g.globalAlpha=1;
-  // walnut table top from just under the bag to the bottom
-  const ty=b.y+b.h*.97,tg=g.createLinearGradient(0,ty,0,H);tg.addColorStop(0,'#3a2416');tg.addColorStop(.08,'#2a190e');tg.addColorStop(1,'#120a05');g.fillStyle=tg;g.fillRect(0,ty,W,H-ty);
-  g.save();g.globalAlpha=.18;g.strokeStyle='#7a4a28';g.lineWidth=U*.0015;let sd=3;const rnd=()=>{sd=(sd*16807)%2147483647;return sd/2147483647};
-  for(let i=0;i<46;i++){const y0=ty+rnd()*(H-ty),amp=U*(.002+rnd()*.006);g.beginPath();for(let x=0;x<=W;x+=W/40){const y=y0+Math.sin(x/W*6+i)*amp+Math.sin(x/W*17+i*2)*amp*.4;x?g.lineTo(x,y):g.moveTo(x,y)}g.stroke()}g.restore();
-  g.fillStyle='rgba(255,215,160,.10)';g.fillRect(0,ty,W,U*.003);
-  // soft key light from above
-  const sp=g.createRadialGradient(W/2,b.y+b.h*.35,0,W/2,b.y+b.h*.35,U*.95);sp.addColorStop(0,'rgba(255,200,140,.16)');sp.addColorStop(.45,'rgba(255,170,100,.05)');sp.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
-  const cone=g.createLinearGradient(0,0,0,b.y+b.h);cone.addColorStop(0,'rgba(255,220,170,.06)');cone.addColorStop(1,'rgba(255,220,170,0)');g.fillStyle=cone;g.beginPath();g.moveTo(W*.38,0);g.lineTo(W*.62,0);g.lineTo(W*.98,b.y+b.h);g.lineTo(W*.02,b.y+b.h);g.closePath();g.fill();
-  // reflection pool of the bag on the table
-  const rp=g.createRadialGradient(W/2,ty+U*.02,0,W/2,ty+U*.02,b.w*.6);rp.addColorStop(0,'rgba(255,190,120,.10)');rp.addColorStop(1,'rgba(0,0,0,0)');g.save();g.translate(0,0);g.scale(1,1);g.fillStyle=rp;g.fillRect(0,ty,W,U*.25);g.restore();
-  const vg=g.createRadialGradient(W/2,H*.42,U*.35,W/2,H*.5,H*.9);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.75)');g.fillStyle=vg;g.fillRect(0,0,W,H)}
+function steamBg(g,grain){const U=Math.min(W,H),b=G.bag,hy=b.y+b.h*.8,vpx=W/2,vpy=hy-H*.55;G.hy=hy;
+  // the wall: deep warm darkness with a soft pool of light behind the bag and the cassettes
+  const bg=g.createLinearGradient(0,0,0,hy);bg.addColorStop(0,'#120c08');bg.addColorStop(1,'#1c130c');g.fillStyle=bg;g.fillRect(0,0,W,hy);
+  const pool=g.createRadialGradient(W/2,b.y-b.h*.1,0,W/2,b.y-b.h*.1,U*.85);pool.addColorStop(0,'rgba(255,196,130,.20)');pool.addColorStop(.5,'rgba(255,160,90,.06)');pool.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=pool;g.fillRect(0,0,W,hy);
+  g.globalAlpha=.3;g.fillStyle=grain;g.fillRect(0,0,W,hy);g.globalAlpha=1;
+  // the table top in perspective: walnut planks running toward a vanishing point
+  const tg=g.createLinearGradient(0,hy,0,H);tg.addColorStop(0,'#21140b');tg.addColorStop(.35,'#3b2414');tg.addColorStop(1,'#4a2e18');g.fillStyle=tg;g.fillRect(0,hy,W,H-hy);
+  g.save();g.beginPath();g.rect(0,hy,W,H-hy);g.clip();let sd=7;const rnd=()=>{sd=(sd*16807)%2147483647;return sd/2147483647};
+  for(let i=-14;i<=14;i++){const xb=W/2+i*W*.16;g.strokeStyle='rgba(10,5,2,.55)';g.lineWidth=U*.002;g.beginPath();g.moveTo(vpx+(xb-vpx)*((hy-vpy)/(H-vpy)),hy);g.lineTo(xb,H);g.stroke()}
+  for(let k=0;k<160;k++){const xb=rnd()*W*3-W,t0=rnd()*.9,len=.05+rnd()*.3;const P=t=>{const y=hy+(H-hy)*t,f=(y-vpy)/(H-vpy);return[vpx+(xb-vpx)*f,y]};const[a1,b1]=P(t0),[a2,b2]=P(Math.min(1,t0+len));
+    g.strokeStyle=`rgba(${rnd()<.5?'120,72,38':'20,10,4'},${.12+rnd()*.15})`;g.lineWidth=U*(.0008+rnd()*.0015);g.beginPath();g.moveTo(a1,b1);g.quadraticCurveTo((a1+a2)/2+(rnd()-.5)*U*.01,(b1+b2)/2,a2,b2);g.stroke()}
+  // lacquer sheen of the key light on the table
+  const sh=g.createRadialGradient(W/2,hy+(H-hy)*.25,0,W/2,hy+(H-hy)*.25,W*.7);sh.addColorStop(0,'rgba(255,215,160,.16)');sh.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=sh;g.fillRect(0,hy,W,H-hy);
+  const fade=g.createLinearGradient(0,hy,0,hy+(H-hy)*.25);fade.addColorStop(0,'rgba(0,0,0,.6)');fade.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=fade;g.fillRect(0,hy,W,H-hy);g.restore();
+  // the back edge of the table catches a line of light
+  g.fillStyle='rgba(255,210,150,.22)';g.fillRect(0,hy,W,Math.max(1,U*.002));
+  const vg=g.createRadialGradient(W/2,H*.45,U*.4,W/2,H*.5,H*.95);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.7)');g.fillStyle=vg;g.fillRect(0,0,W,H)}
 function buildBg(){const o=offCv('bg'),g=o.getContext('2d');steamBg(g,g.createPattern(noiseTile(80,22,true),'repeat'));return o}
 function buildBag(){const o=offCv('bag');const g=o.getContext('2d'),b=G.bag;
   const grain=g.createPattern(noiseTile(80,22,true),'repeat'),peb=g.createPattern(pebbleTile(Math.round(70*dpr)),'repeat');
 
-  // contact + soft floor shadow
-  g.save();g.filter=`blur(${H*.02}px)`;g.fillStyle='rgba(40,28,20,.35)';g.beginPath();g.ellipse(W/2+W*.03,b.y+b.h+H*.006,b.w*.52,H*.022,0,0,TAU);g.fill();g.restore();
-  g.save();g.filter=`blur(${H*.004}px)`;g.fillStyle='rgba(30,20,14,.6)';g.beginPath();g.ellipse(W/2,b.y+b.h-H*.002,b.w*.46,H*.006,0,0,TAU);g.fill();g.restore();g.filter='none';
+  // shadows on the table: a wide soft one and a dark contact line (gradients, so they look the same on every device)
+  const shd=(cx,cy,rx,ry,a)=>{g.save();g.translate(cx,cy);g.scale(1,ry/rx);const q=g.createRadialGradient(0,0,0,0,0,rx);q.addColorStop(0,`rgba(0,0,0,${a})`);q.addColorStop(.6,`rgba(0,0,0,${a*.45})`);q.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=q;g.beginPath();g.arc(0,0,rx,0,TAU);g.fill();g.restore()};
+  shd(W/2,b.y+b.h+H*.012,b.w*.66,H*.05,.75);shd(W/2,b.y+b.h,b.w*.5,H*.012,.9);
+  // the bag's depth: the far top edge and the top face, lit by the key light
+  g.save();g.translate(W/2,b.y-b.h*.11);g.scale(.94,1);g.translate(-W/2,-b.y);bodyPath(g);g.restore();
+  {const tf=g.createLinearGradient(0,b.y-b.h*.13,0,b.y+b.h*.06);tf.addColorStop(0,'#6a4026');tf.addColorStop(.45,'#4a2c1a');tf.addColorStop(1,'#1e120a');g.fillStyle=tf;g.fill();g.save();g.clip();g.fillStyle=peb;g.fillRect(0,0,W,H);g.fillStyle=grain;g.fillRect(0,0,W,H);g.restore();g.strokeStyle='#8c2a1c';g.lineWidth=W*.004;g.stroke()}
   // side ends peeking out (the bag's round ends), with red edge paint
   for(const s of [-1,1]){const x=W/2+s*b.w*.497,yy=b.y+b.h*.52;g.fillStyle=shadeHex(CANV,.55);g.beginPath();g.ellipse(x,yy,b.w*.025,b.h*.47,0,0,TAU);g.fill();
     g.strokeStyle='#8c2a1c';g.lineWidth=W*.004;g.beginPath();g.ellipse(x,yy,b.w*.025,b.h*.47,0,0,TAU);g.stroke()}
@@ -994,8 +998,11 @@ function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tem
     c.textAlign='right';c.font=`${lh*.36}px "Federo",sans-serif`;c.fillStyle='#6a4e2a';c.fillText(C.t2,lx+lw*.96,ly+lh*.42);
     // screws
     for(const[fx,fy]of [[.04,.06],[.96,.06],[.04,.94],[.96,.94],[.5,.68]]){const[sx,sy]=P(fx,fy);c.fillStyle='#b8b0a4';c.beginPath();c.arc(sx,sy,cw*.012,0,TAU);c.fill();c.strokeStyle='#3a3430';c.lineWidth=U*.001;c.beginPath();c.moveTo(sx-cw*.008,sy);c.lineTo(sx+cw*.008,sy);c.stroke()}};
-  cass({x:W*.15,y:b.y-bh*.66,t1:'PT · 50',t2:'A · TEMPO',tint:'201,164,100'},LV.pos);
-  cass({x:W*.85,y:b.y-bh*.66,t1:'50 Years',t2:'B · CHAOS',tint:'184,64,42'},LV.posB);
+  const tnow=performance.now()/1000;
+  for(const[C,pos,ph,tilt] of [[{x:W*.15,y:b.y-bh*.68,t1:'PT · 50',t2:'A · TEMPO',tint:'201,164,100'},LV.pos,0,-.06],[{x:W*.85,y:b.y-bh*.68,t1:'50 Years',t2:'B · CHAOS',tint:'184,64,42'},LV.posB,1.7,.07]]){
+    const bob=Math.sin(tnow*.9+ph)*ch*.06,rot=tilt+Math.sin(tnow*.6+ph)*.02;
+    c.save();c.translate(C.x+cw*.04,C.y+ch*.95);c.scale(1,.22);const q=c.createRadialGradient(0,0,0,0,0,cw*.55);q.addColorStop(0,`rgba(0,0,0,${.5-bob/ch})`);q.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=q;c.beginPath();c.arc(0,0,cw*.55,0,TAU);c.fill();c.restore();
+    c.save();c.translate(C.x,C.y+bob);c.rotate(rot);c.translate(-C.x,-C.y);cass(C,pos);c.restore()}
   // cat's-eye display: monochrome green Julia fractal, the eye closes and opens with the level
   {const N=64;if(!LV.fr){LV.fr=document.createElement('canvas');LV.fr.width=LV.fr.height=N;LV.fx=LV.fr.getContext('2d');LV.fd=LV.fx.createImageData(N,N)}
    if((LV.fc++&1)===0){const D=LV.fd.data,ang=LV.t*.22+lvl*.7,cr=.7885*Math.cos(ang),ci=.7885*Math.sin(ang),zm=1.35-.2*Math.min(1,lvl*2),MI=22;
@@ -1123,9 +1130,10 @@ function drawZoom(v){
 
 // ---------- interaction ----------
 const ptr=new Map();
+function mixHit(x,y){const P=G.mixP;if(!P)return null;const v=(y-P.Y0)/P.Hd;if(v<0||v>1)return null;const s=P.ts+(1-P.ts)*v,u=(x-W/2)/(P.w*s)*P.w+P.w/2;if(u<0||u>P.w)return null;return{u,ly:v*P.h,i:Math.min(6,Math.floor(u/(P.w/7)))}}
 function posOf(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr]}
 cv.addEventListener('pointerdown',e=>{if(!running){$('intro').classList.add('gone');start()}cv.setPointerCapture(e.pointerId);const[x,y]=posOf(e);const P={x0:x,y0:y,t0:performance.now(),moved:false};
-  if(view<0&&G.mix){const M=G.mix;if(x>M.x&&x<M.x+M.w&&y>M.y+M.h*.16&&y<M.y+M.h){const i=Math.min(6,Math.floor((x-M.x)/(M.w/7)));P.f={i,v0:chGet(i),len:M.h*.7}}}
+  if(view<0&&G.mixP){const h=mixHit(x,y);if(h&&h.ly>G.mixP.h*.16)P.f={i:h.i,v0:chGet(h.i),len:G.mixP.Hd*.7}}
   if(view>=0){let best=null,bd=1e9;for(const k of ZK){if(k.t==='note')continue;const ky=k.yc||k.y,d=k.w?(Math.abs(x-k.x)<k.w/2&&Math.abs(y-ky)<k.h/2?0:1e9):Math.hypot(k.x-x,k.y-y)/k.r;if(d<bd){bd=d;best=k}}
     if(best&&(best.w?bd===0:bd<2)){P.k=best;if(best.t==='k')P.v0=kv(view,best.j);if(best.g)P.v0=best.g();if(best.t==='m')P.v0=st.M[best.id];
       if(best.t==='scene')P.hold=setTimeout(()=>{st.scenes[best.i]={K:JSON.parse(JSON.stringify(st.K)),M:Object.assign({},st.M),E:st.E.slice(),S:st.S.slice(),C:st.C.slice(),CG:st.CG,X:JSON.parse(JSON.stringify(st.X)),A:JSON.parse(JSON.stringify(st.A))};save();say('scene '+(best.i+1)+' stored',1,1500);P.stored=true},650)}}
@@ -1145,8 +1153,7 @@ cv.addEventListener('pointermove',e=>{const P=ptr.get(e.pointerId);if(!P)return;
 function endPtr(e){const P=ptr.get(e.pointerId);if(!P)return;if(P.held){const key=view+'-'+P.k.j;if(node){node.port.postMessage({auto:{[key]:st.A[key]}});node.port.postMessage({unhold:key})}touchKey=null}ptr.delete(e.pointerId);const[x,y]=posOf(e);if(P.hold)clearTimeout(P.hold);const dx=x-P.x0,dy=y-P.y0;
   if(view<0&&!P.moved){
     if(G.lockHit&&Math.hypot(x-G.lockHit.x,y-G.lockHit.y)<G.lockHit.r*1.2)party();
-    else if(P.f){if(y<G.mix.y+G.mix.h*.2)setView(P.f.i<5?P.f.i:6)}
-    else if(y>G.mix.y&&y<G.mix.y+G.mix.h*.2){const i=Math.min(6,Math.floor((x-G.mix.x)/(G.mix.w/7)));setView(i<5?i:6)}
+    else if(mixHit(x,y)){const h=mixHit(x,y);if(h.ly<G.mixP.h*.2)setView(h.i<5?h.i:6)}
     else if(y>=G.gy0-(G.gy1-G.gy0)/8&&y<=G.gy1+(G.gy1-G.gy0)/8){const r=Math.round((y-G.gy0)/((G.gy1-G.gy0)/4));setView(Math.max(0,Math.min(4,r)))}
     else if(y<G.gy0)setView(5)}
   else if(view>=0){
@@ -1192,13 +1199,21 @@ function frameBody(now){const dt=Math.min(.05,(now-last)/1000);last=now;
     for(let r=0;r<5;r++){const K=st.K[r];for(let j=0;j<10;j++){const[x,y]=G.kpos(r,j);knob(x,y,G.kr,kv(r,j),ROWS[r].c,0);if(lane(r,j)){c.fillStyle='#e0301e';c.beginPath();c.arc(x+G.kr*1.1,y-G.kr*1.1,G.kr*.22,0,TAU);c.fill()}if(fl[r]>.1&&K[9]>.03){c.strokeStyle=ROWS[r].c;c.globalAlpha=fl[r]*.8;c.lineWidth=G.kr*.25;c.beginPath();c.arc(x,y,G.kr*1.32,0,TAU);c.stroke();c.globalAlpha=1}}}
     padlock(now);
     // DJ mixer strip under the bag: 5 channels + 2 effect returns
-    {const M=G.mix,cw=M.w/7,ty0=M.y+M.h*.2,ty1=M.y+M.h*.9;{const tg=c.createLinearGradient(0,M.y,0,M.y+M.h);tg.addColorStop(0,'#1c130c');tg.addColorStop(1,'#0c0805');c.save();c.shadowColor='rgba(0,0,0,.7)';c.shadowBlur=W*.03;c.shadowOffsetY=W*.008;c.fillStyle=tg;c.beginPath();c.roundRect?c.roundRect(M.x,M.y,M.w,M.h,W*.025):c.rect(M.x,M.y,M.w,M.h);c.fill();c.restore();c.strokeStyle='#8a6e40';c.lineWidth=1.2*dpr;c.stroke();c.strokeStyle='rgba(255,225,170,.12)';c.beginPath();c.roundRect?c.roundRect(M.x+3*dpr,M.y+3*dpr,M.w-6*dpr,M.h-6*dpr,W*.02):c.rect(M.x,M.y,M.w,M.h);c.stroke()}
+    {const MP=G.mixP;if(!OFF.mix){OFF.mix=document.createElement('canvas')}const mc=OFF.mix;if(mc.width!==Math.round(MP.w)||mc.height!==Math.round(MP.h)){mc.width=Math.round(MP.w);mc.height=Math.round(MP.h)}const cMain=c;c=mc.getContext('2d');c.clearRect(0,0,mc.width,mc.height);
+     const M={x:0,y:0,w:MP.w,h:MP.h},cw=M.w/7,ty0=M.y+M.h*.2,ty1=M.y+M.h*.9;{const tg=c.createLinearGradient(0,M.y,0,M.y+M.h);tg.addColorStop(0,'#1c130c');tg.addColorStop(1,'#0c0805');c.save();c.shadowColor='rgba(0,0,0,.7)';c.shadowBlur=W*.03;c.shadowOffsetY=W*.008;c.fillStyle=tg;c.beginPath();c.roundRect?c.roundRect(M.x,M.y,M.w,M.h,W*.025):c.rect(M.x,M.y,M.w,M.h);c.fill();c.restore();c.strokeStyle='#8a6e40';c.lineWidth=1.2*dpr;c.stroke();c.strokeStyle='rgba(255,225,170,.12)';c.beginPath();c.roundRect?c.roundRect(M.x+3*dpr,M.y+3*dpr,M.w-6*dpr,M.h-6*dpr,W*.02):c.rect(M.x,M.y,M.w,M.h);c.stroke()}
       c.strokeStyle='rgba(217,172,82,.35)';c.lineWidth=1*dpr;c.beginPath();c.moveTo(M.x+cw*5,M.y+M.h*.05);c.lineTo(M.x+cw*5,M.y+M.h*.95);c.stroke();
       for(let i=0;i<7;i++){const x=M.x+cw*(i+.5);c.fillStyle=chCol(i);c.font=`700 ${Math.min(cw*.2,H*.016)}px "Federo",sans-serif`;c.textAlign='center';c.textBaseline='middle';
         c.fillStyle=i<5?'#efd9a8':'#d9ac52';c.fillText(CH[i],x,M.y+M.h*.07);
         if(i<5){const on=((regs[i]>>7)&1)&&st.K[i][9]>.03;c.fillStyle=on?ROWS[i].c:'rgba(239,217,168,.18)';c.beginPath();c.arc(x,M.y+M.h*.135,M.h*.016,0,TAU);c.fill()}
         else{c.font=`${Math.min(cw*.15,H*.012)}px "Federo",sans-serif`;c.fillStyle='#b8a078';c.fillText(FXN[i===5?st.X.ta:st.X.tb],x,M.y+M.h*.135)}
-        fader(x,ty0,ty1,cw,chGet(i),chCol(i),i<4&&st.X.mu[i])}}
+        fader(x,ty0,ty1,cw,chGet(i),chCol(i),i<4&&st.X.mu[i])}
+     c=cMain;
+     // project the flat mixer onto the table: far edge narrower, front edge full width, then the slab's front face and its shadow
+     const N=72,sh=mc.height/N,Y0=MP.Y0,Hd=MP.Hd,ts=MP.ts,wb=MP.w;
+     {c.save();c.translate(W/2,Y0+Hd+H*.012);c.scale(1,.12);const q=c.createRadialGradient(0,0,0,0,0,wb*.62);q.addColorStop(0,'rgba(0,0,0,.8)');q.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=q;c.beginPath();c.arc(0,0,wb*.62,0,TAU);c.fill();c.restore()}
+     for(let k=0;k<N;k++){const v=k/N,s=ts+(1-ts)*(v+.5/N),dw=wb*s;c.drawImage(mc,0,k*sh,mc.width,sh+1,W/2-dw/2,Y0+v*Hd,dw,Hd/N+1)}
+     {const fh=H*.014,fg=c.createLinearGradient(0,Y0+Hd,0,Y0+Hd+fh);fg.addColorStop(0,'#8a6e40');fg.addColorStop(.25,'#3a2614');fg.addColorStop(1,'#120a05');c.fillStyle=fg;c.fillRect(W/2-wb/2+wb*.012,Y0+Hd,wb*.976,fh)}
+     const lg=c.createLinearGradient(0,Y0,0,Y0+Hd);lg.addColorStop(0,'rgba(0,0,0,.35)');lg.addColorStop(.5,'rgba(0,0,0,0)');lg.addColorStop(1,'rgba(255,220,170,.04)');c.fillStyle=lg;c.beginPath();c.moveTo(W/2-wb*ts/2,Y0);c.lineTo(W/2+wb*ts/2,Y0);c.lineTo(W/2+wb/2,Y0+Hd);c.lineTo(W/2-wb/2,Y0+Hd);c.closePath();c.fill()}
     if(st.freeze){c.fillStyle='rgba(170,210,255,.07)';c.fillRect(0,0,W,H)}
   }else drawZoom(view);
   if(confetti>0){if(conf.length<160)for(let i=0;i<4;i++)conf.push({x:Math.random()*W,y:-10,vx:(Math.random()-.5)*60,vy:80+Math.random()*120,r:Math.random()*TAU,c:ROWS[(Math.random()*5)|0].c});confetti-=dt/9}
