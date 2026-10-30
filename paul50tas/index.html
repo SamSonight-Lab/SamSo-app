@@ -844,7 +844,7 @@ const COG='#8a4e24';
 const CANV='#4b2c1a',VACH='#e0b886',VACH2='#d2a46e';
 function geo(){
   // a boston bag seen straight on, like a product photo: rounded barrel body, zip top, tabs, one rolled handle
-  const bw=W*.86,bx=(W-bw)/2,bh=bw*.6,by=H*.27;G.bag={x:bx,y:by,w:bw,h:bh};
+  const bw=Math.min(W*.86,H*.585),bx=(W-bw)/2,bh=bw*.6,need=1.12*bw+H*.345,by=bw*.52+H*.015+Math.max(0,H-need)*.35;G.bag={x:bx,y:by,w:bw,h:bh};
   G.cx=W/2;
   // knob grid on the canvas: 5 rows × 10, aligned with the monogram
   G.gx0=bx+bw*.085;G.gx1=bx+bw*.915;G.gy0=by+bh*.25;G.gy1=by+bh*.86;
@@ -852,7 +852,7 @@ function geo(){
   G.kpos=(r,j)=>[G.gx0+(G.gx1-G.gx0)*j/9,G.gy0+(G.gy1-G.gy0)*r/4];
   G.rowY=r=>G.gy0+(G.gy1-G.gy0)*r/4;
   G.lock={x:W/2,y:by+bh*.035};
-  G.mix={x:W*.05,y:by+bh+H*.05,w:W*.9,h:H*.3};G.list=G.mix;G.mixP={Y0:by+bh+H*.06,Hd:H*.3*.8,ts:.8,w:W*.9,h:H*.3};
+  {const mh=Math.min(H*.27,W*.62),mw=Math.min(W*.9,mh*1.9);G.mix={x:(W-mw)/2,y:by+bh+H*.035,w:mw,h:mh};G.list=G.mix;G.mixP={Y0:by+bh+H*.045,Hd:mh*.85,ts:.8,w:mw,h:mh}}
 }
 function bodyPath(g){const b=G.bag,x0=b.x,x1=b.x+b.w,y0=b.y,y1=b.y+b.h,r=b.w*.06;
   g.beginPath();g.moveTo(x0+b.w*.07,y0+b.h*.03);g.quadraticCurveTo(W/2,y0-b.h*.035,x1-b.w*.07,y0+b.h*.03);
@@ -906,10 +906,12 @@ function buildBag(){const o=offCv('bag');const g=o.getContext('2d'),b=G.bag;
   shd(W/2,b.y+b.h+H*.012,b.w*.66,H*.05,.75);shd(W/2,b.y+b.h,b.w*.5,H*.012,.9);
   // the bag's depth: the far top edge and the top face, lit by the key light
   g.save();g.translate(W/2,b.y-b.h*.11);g.scale(.94,1);g.translate(-W/2,-b.y);bodyPath(g);g.restore();
-  {const tf=g.createLinearGradient(0,b.y-b.h*.13,0,b.y+b.h*.06);tf.addColorStop(0,'#6a4026');tf.addColorStop(.45,'#4a2c1a');tf.addColorStop(1,'#1e120a');g.fillStyle=tf;g.fill();g.save();g.clip();g.fillStyle=peb;g.fillRect(0,0,W,H);g.fillStyle=grain;g.fillRect(0,0,W,H);g.restore();g.strokeStyle='#8c2a1c';g.lineWidth=W*.004;g.stroke()}
+  {const tf=g.createLinearGradient(0,b.y-b.h*.13,0,b.y+b.h*.06);tf.addColorStop(0,'#6a4026');tf.addColorStop(.45,'#4a2c1a');tf.addColorStop(1,'#1e120a');g.fillStyle=tf;g.fill();g.save();g.clip();g.fillStyle=peb;g.fillRect(0,0,W,H);g.fillStyle=grain;g.fillRect(0,0,W,H);g.restore();g.strokeStyle='#b8913f';g.lineWidth=W*.004;g.stroke()}
   // side ends peeking out (the bag's round ends), with red edge paint
-  for(const s of [-1,1]){const x=W/2+s*b.w*.497,yy=b.y+b.h*.52;g.fillStyle=shadeHex(CANV,.55);g.beginPath();g.ellipse(x,yy,b.w*.025,b.h*.47,0,0,TAU);g.fill();
-    g.strokeStyle='#8c2a1c';g.lineWidth=W*.004;g.beginPath();g.ellipse(x,yy,b.w*.025,b.h*.47,0,0,TAU);g.stroke()}
+  for(const s of [-1,1]){const x=W/2+s*b.w*.488,yy=b.y+b.h*.5,rx=b.w*.03,ry=b.h*.5;
+    const eg=g.createLinearGradient(x-s*rx,0,x+s*rx,0);eg.addColorStop(0,shadeHex(CANV,.9));eg.addColorStop(.6,shadeHex(CANV,.6));eg.addColorStop(1,shadeHex(CANV,.35));
+    g.fillStyle=eg;g.beginPath();g.ellipse(x,yy,rx,ry,0,0,TAU);g.fill();g.save();g.clip();g.fillStyle=peb;g.fillRect(0,0,W,H);g.restore();
+    g.strokeStyle='#b8913f';g.lineWidth=W*.0035;g.beginPath();g.ellipse(x,yy,rx,ry,0,0,TAU);g.stroke()}
   // body: coated canvas with the PT 50 monogram aligned to the knob grid
   g.save();bodyPath(g);g.clip();
   g.fillStyle=CANV;g.fillRect(0,0,W,H);
@@ -922,7 +924,7 @@ function buildBag(){const o=offCv('bag');const g=o.getContext('2d'),b=G.bag;
   const sp=g.createRadialGradient(b.x+b.w*.3,b.y+b.h*.22,0,b.x+b.w*.3,b.y+b.h*.22,b.w*.45);sp.addColorStop(0,'rgba(255,245,230,.13)');sp.addColorStop(1,'rgba(255,245,230,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
   g.restore();
   // vachetta piping with red edge paint all round
-  g.strokeStyle='#7d2618';g.lineWidth=b.w*.016;bodyPath(g);g.stroke();g.strokeStyle=VACH2;g.lineWidth=b.w*.011;bodyPath(g);g.stroke();g.strokeStyle='rgba(255,250,240,.45)';g.lineWidth=b.w*.003;bodyPath(g);g.stroke();
+  g.strokeStyle='#8a6a2a';g.lineWidth=b.w*.016;bodyPath(g);g.stroke();g.strokeStyle=VACH2;g.lineWidth=b.w*.011;bodyPath(g);g.stroke();g.strokeStyle='rgba(255,250,240,.45)';g.lineWidth=b.w*.003;bodyPath(g);g.stroke();
   // zip top: dark tape with brass teeth following the curve, and two pulls meeting at the lock
   const zy=x=>b.y+b.h*.03+(-b.h*.065)*(1-Math.pow((x-W/2)/(b.w*.43),2))+b.h*.04;
   g.strokeStyle='#2a1810';g.lineWidth=b.h*.03;g.beginPath();for(let x=b.x+b.w*.08;x<=b.x+b.w*.92;x+=b.w*.01){const y=zy(x);x===b.x+b.w*.08?g.moveTo(x,y):g.lineTo(x,y)}g.stroke();
@@ -933,7 +935,7 @@ function buildBag(){const o=offCv('bag');const g=o.getContext('2d'),b=G.bag;
     g.save();g.filter=`blur(${H*.004}px)`;g.fillStyle='rgba(0,0,0,.45)';poly(g,[[tx-tw/2+3,ty+3],[tx+tw/2+3,ty+3],[tx+tw*.08+3,ty+th+4],[tx-tw*.08+3,ty+th+4]]);g.fill();g.restore();g.filter='none';
     const tg=g.createLinearGradient(tx-tw/2,0,tx+tw/2,0);tg.addColorStop(0,shadeHex(VACH.replace('#','#'),.86));tg.addColorStop(.4,VACH);tg.addColorStop(1,shadeHex(VACH,.8));
     g.beginPath();g.moveTo(tx-tw/2,ty);g.lineTo(tx+tw/2,ty);g.quadraticCurveTo(tx+tw*.45,ty+th*.6,tx+tw*.06,ty+th);g.quadraticCurveTo(tx,ty+th*1.04,tx-tw*.06,ty+th);g.quadraticCurveTo(tx-tw*.45,ty+th*.6,tx-tw/2,ty);g.closePath();
-    g.fillStyle=tg;g.fill();g.save();g.clip();g.fillStyle=peb;g.fillRect(0,0,W,H);g.restore();g.strokeStyle='#8c2a1c';g.lineWidth=W*.0028;g.stroke();
+    g.fillStyle=tg;g.fill();g.save();g.clip();g.fillStyle=peb;g.fillRect(0,0,W,H);g.restore();g.strokeStyle='#b8913f';g.lineWidth=W*.0028;g.stroke();
     stitch(g,()=>{g.beginPath();g.moveTo(tx-tw*.38,ty+th*.06);g.quadraticCurveTo(tx-tw*.34,ty+th*.6,tx,ty+th*.9);g.quadraticCurveTo(tx+tw*.34,ty+th*.6,tx+tw*.38,ty+th*.06)},'rgba(200,140,60,.95)',Math.max(1,W*.0025),[W*.008,W*.006]);
     g.fillStyle=brass(g,tx,ty+th*.45,W*.012);g.beginPath();g.arc(tx,ty+th*.45,W*.012,0,TAU);g.fill();
     g.strokeStyle=brass(g,tx,ty-b.h*.04,W*.03);g.lineWidth=W*.009;g.beginPath();g.moveTo(tx-W*.022,ty+b.h*.005);g.lineTo(tx-W*.022,ty-b.h*.035);g.quadraticCurveTo(tx,ty-b.h*.075,tx+W*.022,ty-b.h*.035);g.lineTo(tx+W*.022,ty+b.h*.005);g.stroke()}
@@ -941,7 +943,7 @@ function buildBag(){const o=offCv('bag');const g=o.getContext('2d'),b=G.bag;
   const a=[tabs[0],zy(tabs[0])-b.h*.06],c2=[tabs[1],zy(tabs[1])-b.h*.06],top=a[1]-b.h*.74;
   const hp=()=>{g.beginPath();g.moveTo(a[0],a[1]);g.bezierCurveTo(a[0]-b.w*.02,top,c2[0]+b.w*.02,top,c2[0],c2[1])};
   g.save();g.filter=`blur(${H*.012}px)`;g.lineCap='round';g.strokeStyle='rgba(40,25,15,.22)';g.lineWidth=b.w*.06;g.translate(b.w*.05,b.h*.05);hp();g.stroke();g.restore();g.filter='none';
-  g.lineCap='round';for(const[w,col]of [[b.w*.075,'#8c2a1c'],[b.w*.066,shadeHex(VACH,.72)],[b.w*.052,shadeHex(VACH,.92)],[b.w*.036,VACH],[b.w*.016,'#f6e2c6'],[b.w*.006,'rgba(255,255,255,.55)']]){hp();g.lineWidth=w;g.strokeStyle=col;g.stroke()}
+  g.lineCap='round';for(const[w,col]of [[b.w*.075,'#b8913f'],[b.w*.066,shadeHex(VACH,.72)],[b.w*.052,shadeHex(VACH,.92)],[b.w*.036,VACH],[b.w*.016,'#f6e2c6'],[b.w*.006,'rgba(255,255,255,.55)']]){hp();g.lineWidth=w;g.strokeStyle=col;g.stroke()}
   stitch(g,()=>{g.beginPath();g.moveTo(a[0]+b.w*.012,a[1]);g.bezierCurveTo(a[0]-b.w*.008,top+b.h*.03,c2[0]+b.w*.008,top+b.h*.03,c2[0]-b.w*.012,c2[1])},'rgba(196,136,60,.9)',Math.max(1,W*.0022),[W*.008,W*.006]);
   // hot-stamped text running along the handle
   {const P0=a,P1=[a[0]-b.w*.02,top],P2=[c2[0]+b.w*.02,top],P3=c2,bz=(t,i)=>{const u=1-t;return u*u*u*P0[i]+3*u*u*t*P1[i]+3*u*t*t*P2[i]+t*t*t*P3[i]};
@@ -961,7 +963,7 @@ let swing=0,bgImg=null;
 const LV={pos:0,ang:0,fr:null,fd:null,fc:0,t:0};
 function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tempo),sp=Math.min(bpm,420)/120;LV.pos+=dt*sp*W*.05;LV.t+=dt*(.3+sp*.4);
   // two real-proportioned clear loop cassettes (100 x 64 mm); the endless loop winds over guide rollers INSIDE the shell
-  const cw=W*.28,ch=cw*.635,eye={x:W/2,y:b.y-bh*.27,r:bh*.14};
+  const cw=b.w*.325,ch=cw*.635,eye={x:W/2,y:b.y-bh*.27,r:bh*.14};
   // A runs with the master tempo; B stutters and wanders, driven by the CHAOS row and the Accidentinator/Drift settings
   if(LV.vB===undefined){LV.vB=1;LV.tB=1;LV.posB=0}
   if(fl[4]>.9||Math.random()<dt*(.3+st.DR*2)){const wild=.3+st.K[4][2]*.9+RX()*.6+st.DR*.6,r=Math.random();LV.tB=r<.12*wild?0:r<.25*wild?-(.4+Math.random()*1.2):(.2+Math.random()*1.8*wild)}
@@ -999,7 +1001,7 @@ function drawLive(now,dt){const b=G.bag,bh=b.h,U=Math.min(W,H),bpm=BPMF(st.M.tem
     // screws
     for(const[fx,fy]of [[.04,.06],[.96,.06],[.04,.94],[.96,.94],[.5,.68]]){const[sx,sy]=P(fx,fy);c.fillStyle='#b8b0a4';c.beginPath();c.arc(sx,sy,cw*.012,0,TAU);c.fill();c.strokeStyle='#3a3430';c.lineWidth=U*.001;c.beginPath();c.moveTo(sx-cw*.008,sy);c.lineTo(sx+cw*.008,sy);c.stroke()}};
   const tnow=performance.now()/1000;
-  for(const[C,pos,ph,tilt] of [[{x:W*.15,y:b.y-bh*.68,t1:'PT · 50',t2:'A · TEMPO',tint:'201,164,100'},LV.pos,0,-.06],[{x:W*.85,y:b.y-bh*.68,t1:'50 Years',t2:'B · CHAOS',tint:'184,64,42'},LV.posB,1.7,.07]]){
+  for(const[C,pos,ph,tilt] of [[{x:W/2-b.w*.405,y:b.y-bh*.68,t1:'PT · 50',t2:'A · TEMPO',tint:'201,164,100'},LV.pos,0,-.06],[{x:W/2+b.w*.405,y:b.y-bh*.68,t1:'50 Years',t2:'B · CHAOS',tint:'184,64,42'},LV.posB,1.7,.07]]){
     const bob=Math.sin(tnow*.9+ph)*ch*.06,rot=tilt+Math.sin(tnow*.6+ph)*.02;
     c.save();c.translate(C.x+cw*.04,C.y+ch*.95);c.scale(1,.22);const q=c.createRadialGradient(0,0,0,0,0,cw*.55);q.addColorStop(0,`rgba(0,0,0,${.5-bob/ch})`);q.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=q;c.beginPath();c.arc(0,0,cw*.55,0,TAU);c.fill();c.restore();
     c.save();c.translate(C.x,C.y+bob);c.rotate(rot);c.translate(-C.x,-C.y);cass(C,pos);c.restore()}
