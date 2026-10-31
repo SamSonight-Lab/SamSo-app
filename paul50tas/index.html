@@ -693,9 +693,15 @@ IDB.open().then(()=>IDB.all()).then(o=>{for(const k in o)userS[k]=o[k];pushUsed(
 function cycleBank(sl,dir){const list=(userS[sl]?['EIGEN']:[]).concat(sl.length===1?[...SBANK,...DKIT].map(b=>b.n):ALLB.map(b=>b.n));let i=list.indexOf(st.SB[sl]);i=((i<0?0:i+dir)%list.length+list.length)%list.length;st.SB[sl]=list[i];save();pushSlot(sl);say('SAMPLE · '+(list[i]==='EIGEN'?'OWN · '+userS[sl].name:list[i]),1,1300)}
 function decodeA(arr){return new Promise((res,rej)=>{try{const p=ctx.decodeAudioData(arr,res,rej);if(p&&p.then)p.then(res,rej)}catch(e){rej(e)}})}
 function useUser(sl,ab,name){const ch=ab.numberOfChannels,n=Math.min(ab.length,Math.round(ab.sampleRate*(sl.length===1?12:3))),m=new Float32Array(n);for(let c2=0;c2<ch;c2++){const d=ab.getChannelData(c2);for(let i=0;i<n;i++)m[i]+=d[i]/ch}
-  let a=0;while(a<n-1&&Math.abs(m[a])<.01)a++;let e=n-1;while(e>a&&Math.abs(m[e])<.01)e--;e=Math.min(n,e+Math.round(ctx.sampleRate*.04));   // trim silence at both ends, keep 40 ms of natural decay
-  let pk=0;for(let i=a;i<e;i++)pk=Math.max(pk,Math.abs(m[i]));if(pk<.002||e-a<ctx.sampleRate*.03){say('too short or too quiet · try again',0,2200);return}
-  let o=m.slice(a,e);for(let i=0;i<o.length;i++)o[i]*=.9/pk;if(sl.length===1){const X=Math.min(Math.floor(o.length/4),Math.round(ctx.sampleRate*.08)),L=o.length-X,q=new Float32Array(L);for(let i=0;i<L;i++)q[i]=o[i];for(let i=0;i<X;i++){const t=i/X;q[i]=o[i]*Math.sin(t*Math.PI/2)+o[L+i]*Math.cos(t*Math.PI/2)}o=q}
+  let pk0=0;for(let i=0;i<n;i++)pk0=Math.max(pk0,Math.abs(m[i]));const th=Math.max(.0015,pk0*.04);   // silence threshold follows the recording's own level
+  let a=0;while(a<n-1&&Math.abs(m[a])<th)a++;let e=n-1;while(e>a&&Math.abs(m[e])<th)e--;a=Math.max(0,a-Math.round(ctx.sampleRate*.003));e=Math.min(n,e+Math.round(ctx.sampleRate*.04));   // trim silence at both ends, keep 40 ms of natural decay
+  if(pk0<.0015||e-a<ctx.sampleRate*.03){say('too short or too quiet · try again',0,2200);return}
+  let o=m.slice(a,e);
+  // loudness: bring the body of the sound to the level of the built-in sounds, a soft limiter catches the peaks
+  {const W2=sl.length===1?o.length:Math.min(o.length,Math.round(ctx.sampleRate*.15));let ss=0,pk=0;for(let i=0;i<W2;i++)ss+=o[i]*o[i];for(let i=0;i<o.length;i++)pk=Math.max(pk,Math.abs(o[i]));
+   const rms=Math.sqrt(ss/W2)||1e-6,tgt=sl.length===1?.28:.3,g=Math.min(tgt/rms,4/pk,80);
+   for(let i=0;i<o.length;i++){const y=o[i]*g,ay=Math.abs(y);o[i]=ay<=.7?y:Math.sign(y)*(.7+.28*Math.tanh((ay-.7)/.28))}}
+  if(sl.length===1){const X=Math.min(Math.floor(o.length/4),Math.round(ctx.sampleRate*.08)),L=o.length-X,q=new Float32Array(L);for(let i=0;i<L;i++)q[i]=o[i];for(let i=0;i<X;i++){const t=i/X;q[i]=o[i]*Math.sin(t*Math.PI/2)+o[L+i]*Math.cos(t*Math.PI/2)}o=q}
   else{const F=Math.min(256,o.length>>2);for(let i=0;i<F;i++)o[o.length-1-i]*=i/F}
   userS[sl]={d:o,name};IDB.put(sl,userS[sl]);st.SB[sl]='EIGEN';save();pushSlot(sl);say('SAMPLE · '+name+' loaded',1,1800)}
 const fileIn=document.createElement('input');fileIn.type='file';fileIn.accept='.wav,.mp3,.m4a,.aif,.aiff,.aifc,.caf,.flac,.ogg,.aac';fileIn.style.display='none';document.body.appendChild(fileIn);let fileSlot='b';
@@ -1301,7 +1307,7 @@ function frameBody(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   if(now>msgHold)say(!running?'tap to open the bag':view===7?'CROSS-MOD · '+(st.CG>.02?'MADNESS '+Math.round(st.CG*99):'tame'):view===6?'MIXER · reverb, delay, ring and feedback on the master':view<0?'Benjolin 50.0 · '+fmtB(st.M.tempo)+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]:view===5?'MASTER':ROWS[view].j+' '+ROWS[view].n+' · swipe for the next one',false);
 }
 size();showFreeze();setView(-1);msgHold=0;requestAnimationFrame(frame);
-window.__b50=()=>({st,view,running});window.__t={setView:v=>setView(v),ZK:()=>{const r=cv.getBoundingClientRect();return ZK.map(k=>({t:k.t,x:r.left+k.x*r.width/cv.width,y:r.top+(k.yc||k.y)*r.height/cv.height}))},info:()=>[st.SB.b,userS.b&&userS.b.name,userS.b&&userS.b.d.length,ctx.state,master.gain.value,$("msg").textContent,REC.on]};window.__party=()=>party();
+window.__b50=()=>({st,view,running});window.__t={rms:nm=>{const b=bankItem(nm),d=b.gen(ctx.sampleRate);let s=0,p=0,N=Math.min(d.length,Math.round(ctx.sampleRate*(b.loop?99:.15)));for(let i=0;i<N;i++){s+=d[i]*d[i];p=Math.max(p,Math.abs(d[i]))}return [nm,+Math.sqrt(s/N).toFixed(3),+p.toFixed(2)]},bank:()=>ALLB.map(b=>b.n),setView:v=>setView(v),ZK:()=>{const r=cv.getBoundingClientRect();return ZK.map(k=>({t:k.t,x:r.left+k.x*r.width/cv.width,y:r.top+(k.yc||k.y)*r.height/cv.height}))},info:()=>[st.SB.b,userS.b&&userS.b.name,userS.b&&userS.b.d.length,ctx.state,master.gain.value,$("msg").textContent,REC.on]};window.__party=()=>party();
 })();
 </script>
 
