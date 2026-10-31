@@ -391,7 +391,7 @@ class Band extends AudioWorkletProcessor{
     this.reg=[0,0,0,0,0].map(()=>(R()*255)|0);this.pa=[0,0,0,0,0].map(R);this.pb=[0,0,0,0,0].map(R);this.st=0;this.step=0;
     this.B={v:new Voice(sr),f:55,tf:55,ps:0,env:0,acc:0,L:new Ladder()};
     this.L={v:new Voice(sr),f:220,tf:220,env:0,gate:0,gl:0,F:new SVF(),cb:[new Float32Array(2048),new Float32Array(2048)],cw:0,lfo:0};
-    this.D={kp:0,ke:0,kf:0,se:0,he:0,te:0,tp:0,sF:new SVF(),hF:new SVF(),rF:new SVF(),crc:0,crh:0,hp:new Float64Array(6),bt:0,mp:0};
+    this.D={ka:0,kpe:0,kpe2:0,tpe:0,s8a:0,s8b:0,kp:0,ke:0,kf:0,se:0,he:0,te:0,tp:0,sF:new SVF(),hF:new SVF(),rF:new SVF(),crc:0,crh:0,hp:new Float64Array(6),bt:0,mp:0};
     this.P={v:[0,1,2,3,4].map(()=>({o:new Voice(sr),f:110,tf:110})),env:0,F:new SVF(),F2:new SVF(),cb:[new Float32Array(4096),new Float32Array(4096)],cw:0,lfo:0};
     this.mb=[new Float32Array(sr*2|0),new Float32Array(sr*2|0)];this.mw=0;this.rep=null;this.rp=0;this.rf=200;this.sw=new SVF();this.swc=20000;this.swt=20000;this.drop=1;this.dropT=1;this.fcr=0;this.fcrh=[0,0];
     this.dl=[new Float32Array(sr*2|0),new Float32Array(sr*2|0)];this.dw=0;this.dlp=[0,0];this.wow=0;
@@ -434,11 +434,11 @@ class Band extends AudioWorkletProcessor{
       this.cpT=(cv-.5)*2;this.rf=50*Math.pow(2,cv*6);this.swt=Math.max(150,20000*Math.pow(2,-K[5]*cv*7));this.dropT=R()<K[6]*.8?0:1}}
   drums(){const K=this.KS[2],g=this.reg[2],D=this.D,s=this.step,dens=K[2];
     if(this.S[2]===2){const e=(i,k)=>{i=((i%16)+16)%16;return Math.floor((i+1)*k/16)!==Math.floor(i*k/16)},kk=2+Math.round(dens*4),ks=1+Math.round(dens*2),kh=4+Math.round(dens*10);
-      if(e(s,kk)){D.ke=1;D.kp=0;D.mp=0}if(e(s-4,ks))D.se=1;if(e(s+1,kh))D.he=.6+(e(s,3)?.4:0);if(e(s+2,1+Math.round(dens*3))&&dens>.4){D.te=1;D.tf=1+(s&3)}return}
+      if(e(s,kk)){D.ke=1;D.ka=1;D.kpe=1;D.kpe2=1;D.kp=0;D.mp=0}if(e(s-4,ks))D.se=1;if(e(s+1,kh))D.he=.6+(e(s,3)?.4:0);if(e(s+2,1+Math.round(dens*3))&&dens>.4){D.te=1;D.tpe=1;D.tf=1+(s&3)}return}
     const kick=((g>>7)&1)&&(s%4===0||R()<dens*.5)||(s%16===0&&dens>.2);
     const snare=(s%8===4&&((g>>5)&1||dens>.3))||(((g>>3)&1)&&R()<dens*.35);
     const hat=R()<.08+dens*.6&&(((g>>1)&1)||s%2===0),tom=((g>>2)&1)&&R()<dens*.3;
-    if(kick){D.ke=1;D.kp=0;D.mp=0}if(snare)D.se=1;if(hat)D.he=.6+((g&1)?.4:0);if(tom){D.te=1;D.tf=1+((g>>4)&3)}}
+    if(kick){D.ke=1;D.ka=1;D.kpe=1;D.kpe2=1;D.kp=0;D.mp=0}if(snare)D.se=1;if(hat)D.he=.6+((g&1)?.4:0);if(tom){D.te=1;D.tpe=1;D.tf=1+((g>>4)&3)}}
   process(ins,outs){
     const o=outs[0],Lo=o[0],Ro=o[1]||o[0],n=Lo.length,sr=this.sr,M=this.M,KS=this.KS,K=this.K,E=this.E;
     const bpm=BPMF(M.tempo);this.stepLen=bpm>0?sr*60/bpm/4:Infinity;const hs=Math.min(1,bpm/30);   // at 0 BPM everything hangs
@@ -451,8 +451,8 @@ class Band extends AudioWorkletProcessor{
     for(let i=0;i<8;i++)CR[i]+=(Math.max(this.C[i],this.CG*.85)-CR[i])*.05;
     const bdec=Math.exp(-hs/(sr*(.07+KB[7]*.6))),bk=KB[6]*3.9,bdrv=1+KB[8]*7;
     Ld.F.set(150*Math.pow(2,Math.min(7.6,KL[5]*7+Ld.env*1.6+CR[6]*D.se*4)),.7+KL[6]*KL[6]*9,sr);const lgl=1-Math.exp(-1/(sr*(.003+KL[7]*KL[7]*.4)));
-    const de=E[2],kdec=Math.exp(-hs/(sr*(.06+KD[4]*.7))),sdec=Math.exp(-hs/(sr*(.05+KD[5]*.22))),hdec=Math.exp(-hs/(sr*(.012+KD[6]*.28))),tdec=Math.pow(.9994,hs),ldec=Math.pow(.9996,hs),kf0=32+KD[3]*60,swing=KD[7]*.33;
-    D.sF.set(de===3?400+KD[5]*2000:900+KD[5]*2600,de===3?8:1.2,sr);D.hF.set(de===1?9000:7000,.8,sr);
+    const de=E[2],kdec=Math.exp(-hs/(sr*(.06+KD[4]*.7))),sdec=Math.exp(-hs/(sr*(.05+KD[5]*.22))),hdec=Math.exp(-hs/(sr*(.012+KD[6]*.28))),tdec=Math.pow(.9994,hs),ldec=Math.pow(.9996,hs),kf0=32+KD[3]*60,swing=KD[7]*.33,kpdec=Math.exp(-hs/(sr*.022)),kpdec2=Math.exp(-hs/(sr*.07)),tpdec=Math.exp(-hs/(sr*.045)),k8dec=Math.exp(-hs/(sr*(.12+KD[4]*1.5)));
+    D.sF.set(de===3?400+KD[5]*2000:900+KD[5]*2600,de===3?8:1.2,sr);D.hF.set(de===1?9000:7000,.8,sr);if(de===6){D.sF.set(6500,.8,sr);D.hF.set(7800,1.6,sr)}else if(de===7){D.sF.set(3200+KD[5]*4500,.7,sr);D.hF.set(9500,1.2,sr)}
     const pat=1/(sr*(.05+KP[7]*KP[7]*5));P.F.set(110*Math.pow(2,KP[5]*7),.7+KP[6]*6,sr);P.F2.set(130*Math.pow(2,KP[5]*7),.7+KP[6]*6,sr);
     const dlen=Math.round(this.stepLen*3),fb=.25+KF[7]*.6;
     for(let s=0;s<n;s++){
@@ -472,11 +472,11 @@ class Band extends AudioWorkletProcessor{
       const lyL=lx*.75+CB[0][(cw-Math.round(dA)+2048)&2047]*.45,lyR=lx*.75+CB[0][(cw-Math.round(dB)+2048)&2047]*.45;
       // 三 DRUMS: four kits
       let dk=0,ds=0,dh=0,dt=0;const nz=R()*2-1;
-      D.ke*=kdec;D.se*=sdec;D.he*=hdec;D.te*=tdec;
-      if(de===0){D.kf=kf0*(1+4*D.ke*D.ke);D.kp+=D.kf/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ke*2.2)*.9+(D.ke>.985?nz*.5:0);
+      D.ke*=kdec;D.se*=sdec;D.he*=hdec;D.te*=tdec;D.kpe*=kpdec;D.kpe2*=kpdec2;D.tpe*=tpdec;
+      if(de===0){D.kf=kf0*(1+2.6*D.kpe+.25*D.kpe2);D.kp+=D.kf/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ke*2.2)*.9+(D.ke>.985?nz*.5:0);
         D.sF.run(nz);ds=(D.sF.bp*D.sF.k*1.8+Math.sin(TAU*D.kp*4.3)*.3)*D.se*(.5+KD[5]*.5);
         let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]*(1+KD[3]*.5)/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.run(m*.17);dh=D.hF.hp*D.he*.7}
-      else if(de===1){D.kf=kf0*(1+3*D.ke);D.kp+=D.kf/sr;if(D.kp>1)D.kp-=1;D.mp+=D.kf*1.5/sr;if(D.mp>1)D.mp-=1;dk=Math.sin(TAU*D.kp+D.ke*D.ke*4*Math.sin(TAU*D.mp))*D.ke*1.1;
+      else if(de===1){D.kf=kf0*(1+2.2*D.kpe+.2*D.kpe2);D.kp+=D.kf/sr;if(D.kp>1)D.kp-=1;D.mp+=D.kf*1.5/sr;if(D.mp>1)D.mp-=1;dk=Math.sin(TAU*D.kp+D.kpe*3.2*Math.sin(TAU*D.mp))*D.ke*1.1;
         D.bt+=(220+KD[5]*300)/sr;if(D.bt>1)D.bt-=1;ds=Math.sin(TAU*D.bt+D.se*9*Math.sin(TAU*D.bt*1.414)+nz*D.se*2)*D.se*.7;
         D.hp[0]+=(3200+KD[3]*2000)/sr;if(D.hp[0]>1)D.hp[0]-=1;D.hp[1]+=4720/sr;if(D.hp[1]>1)D.hp[1]-=1;D.hF.run(Math.sin(TAU*D.hp[0]+6*Math.sin(TAU*D.hp[1])));dh=D.hF.hp*D.he*.6}
       else if(de===2){D.bt+=1;const T=D.bt|0;const v=((T*(T>>5|T>>8))&255)/127.5-1;dk=v*D.ke*D.ke*.9;D.kp+=kf0*(1+6*D.ke)/sr;if(D.kp>1)D.kp-=1;dk+=Math.sin(TAU*D.kp)*D.ke*.7;
@@ -484,7 +484,7 @@ class Band extends AudioWorkletProcessor{
       else if(de===3){D.rF.set(kf0*(1+2*D.ke)*(1+KD[3]),18+KD[4]*40,sr);D.rF.run(D.ke>.97?nz*8:0);dk=Math.tanh(D.rF.bp*D.rF.k*30)*.9*Math.min(1,D.ke*2);
         D.sF.run(nz*(((this.reg[2]>>((D.bt++>>9)&7))&1)?1:.2));ds=D.sF.bp*D.sF.k*2*D.se;D.hp[0]+=3100/sr;if(D.hp[0]>1)D.hp[0]-=1;D.hp[1]+=4377/sr;if(D.hp[1]>1)D.hp[1]-=1;D.hF.run(((D.hp[0]<.5)!==(D.hp[1]<.5))?1:-1);dh=D.hF.hp*D.he*.5}
       else if(de===4){ // TR: punchy kick with pitch sweep and click, tone+noise snare with clap bursts, metallic hats
-        const ke2=D.ke*D.ke;D.kp+=kf0*(1+7*ke2*ke2)/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ke*1.8)+(D.ke>.97?nz*.6:0);
+        const ke2=D.ke*D.ke;D.kp+=kf0*(1+5*D.kpe*D.kpe+.3*D.kpe2)/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ke*1.8)+(D.ke>.97?nz*.6:0);
         D.bt+=1;D.sF.set(1800+KD[5]*3000,.9,sr);D.sF.run(nz);const clap=D.se>.55?(((D.bt>>8)&1)?1:.25):1;
         ds=(Math.sin(TAU*D.kp*3.1)*.35*D.se*D.se+D.sF.hp*.9*D.se)*clap;
         let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]*1.6/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.set(10500,1.2,sr);D.hF.run(m*.17+nz*.08);dh=D.hF.hp*D.he*.8}
@@ -492,10 +492,22 @@ class Band extends AudioWorkletProcessor{
         D.kp+=kf0*(1+3*D.ke)/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*Math.sin(TAU*D.kp*1.47+1)*D.ke*7)*.85;
         D.bt+=(1250+KD[5]*1500)/sr;if(D.bt>1)D.bt-=1;ds=(D.bt<.5?1:-1)*nz*D.se*.75;
         D.hp[0]+=(5300+KD[3]*3000)/sr;if(D.hp[0]>1)D.hp[0]-=1;D.hp[1]+=7417/sr;if(D.hp[1]>1)D.hp[1]-=1;dh=Math.sin(TAU*D.hp[0]+4*Math.sin(TAU*D.hp[1]))*D.he*D.he*.5}
-      else if(de===6){ // SAMPLES: four sample slots, TUNE = speed, decays gate them
+      else if(de===6){ // 808: long round sine kick with a small pitch dip, two-tone + noise snare, six-square metallic hats, sine toms
+        D.ka*=k8dec;D.kp+=(38+KD[3]*34)*(1+.5*D.kpe)/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ka*1.3)*.95+(D.kpe>.9?Math.sin(TAU*D.kp*7)*.3*(D.kpe-.9)*10:0);
+        D.s8a+=(180+KD[5]*60)/sr;if(D.s8a>1)D.s8a-=1;D.s8b+=(330+KD[5]*110)/sr;if(D.s8b>1)D.s8b-=1;D.sF.run(nz);const s2=D.se*D.se;
+        ds=(Math.sin(TAU*D.s8a)*.55+Math.sin(TAU*D.s8b)*.3)*s2*s2+D.sF.hp*D.se*.5;
+        let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.run(m*.17);dh=D.hF.bp*D.hF.k*D.he*D.he*1.3;
+        if(D.te>.002){D.tp+=(62+D.tf*38)*(1+.18*D.tpe)*(.8+KD[3]*.4)/sr;if(D.tp>1)D.tp-=1;dt=Math.sin(TAU*D.tp)*D.te*.6}}
+      else if(de===7){ // 909: punchy kick with a fast sweep and a click, snappy snare, crunchy hats, toms with a pitch drop
+        const pe=D.kpe;D.kp+=(46+KD[3]*26)*(1+4.5*pe*pe+.4*D.kpe2)/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ke*2.4)*.88+(pe>.88?nz*.45*(pe-.88)*8:0);
+        D.s8a+=(175+KD[5]*70)*(1+.3*D.se*D.se)/sr;if(D.s8a>1)D.s8a-=1;D.s8b+=(325+KD[5]*120)/sr;if(D.s8b>1)D.s8b-=1;D.sF.run(nz);const s2=D.se*D.se;
+        ds=Math.tanh((Math.sin(TAU*D.s8a)*.6+Math.sin(TAU*D.s8b)*.35)*s2*s2*1.4+D.sF.bp*D.sF.k*1.5*D.se*(.6+KD[5]*.6));
+        let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]*1.71/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.run(m*.1+nz*.13);dh=Math.round(D.hF.hp*D.he*D.he*40)/40*1.25;
+        if(D.te>.002){D.tp+=(58+D.tf*36)*(1+.7*D.tpe)*(.8+KD[3]*.4)/sr;if(D.tp>1)D.tp-=1;dt=(Math.sin(TAU*D.tp)+nz*.05)*D.te*.6}}
+      else if(de===8){ // SAMPLES: four sample slots, TUNE = speed, decays gate them
         const S=this.SM,rt=Math.pow(2,(KD[3]-.5)*1.6),rd=(sl,k,g)=>{const B0=S[sl];if(!B0)return 0;const p=D[k],dd=B0.d;if(p>=dd.length-1)return 0;const i=p|0,f=p-i;D[k]=p+rt;return(dd[i]+(dd[i+1]-dd[i])*f)*g};
         dk=rd('dk','pk',Math.min(1,D.ke*2.5));ds=rd('ds','ps',Math.min(1,D.se*2.5));dh=rd('dh','ph',Math.min(1,D.he*2));if(D.pt<1e8)dt=rd('dt','pt',Math.min(1,D.te*2.5))}
-      if(de!==6&&D.te>.002){D.tp+=(70*D.tf+KD[3]*80)*(1+D.te)/sr;if(D.tp>1)D.tp-=1;dt=Math.sin(TAU*D.tp)*D.te*.5}
+      if(de<6&&D.te>.002){D.tp+=(70*D.tf+KD[3]*80)*(1+.45*D.tpe)/sr;if(D.tp>1)D.tp-=1;dt=Math.sin(TAU*D.tp)*D.te*.5}
       const DM=this.X.dm||[.9,.9,.9,.9],DU=this.X.dmu||[0,0,0,0],dg=i=>DU[i]?0:DM[i]*DM[i]*1.23;let dx=Math.tanh((dk*dg(0)+ds*dg(1)+dh*dg(2)+dt*dg(3))*1.4);if(KD[8]>.02){if(++D.crc>=1+Math.round(KD[8]*20)){D.crc=0;const lv=Math.pow(2,9-KD[8]*6);D.crh2=Math.round(dx*lv)/lv}dx=dx+((D.crh2||0)-dx)*Math.min(1,KD[8]*2)}
       dx*=KD[9]*KD[9]*1.1;if(CR[3]>.003)dx=dx*(1-CR[3])+Math.tanh(dx*this.pp*14)*CR[3]*1.2;
       // 四 PAD: five voices of the chosen engine, wide chorus, slow swell
@@ -570,7 +582,7 @@ const ROWS=[{n:'BASS',j:'一',c:'#ff6a4d',kl:['RATE','LOOP','RANGE','X-MOD','SUB
   {n:'DRUMS',j:'三',c:'#7fe0a0',kl:['RATE','LOOP','DENSITY','KICK','K-DECAY','SNARE','HAT','SWING','CRUSH','LEVEL']},
   {n:'PAD',j:'四',c:'#6fd3ff',kl:['RATE','LOOP','CHORD','DETUNE','SHIMMER','CUTOFF','RESO','SWELL','SPACE','LEVEL']},
   {n:'CHAOS FX',j:'五',c:'#d9a2ff',kl:['RATE','LOOP','STUTTER','RING','CRUSH','SWEEP','DROP','TAPE','SPRING','MIX']}];
-const EN=['BENJOLIN','FM','WAVETABLE','ALGO','NOISE','SUPERSAW','PLUCK','FORMANT','ORGAN','PHASE-DIST','WESTCOAST','MODAL','SAMPLE'],DEN=['ANALOG','FM','GLITCH','BENJOLIN','TR','METAL','SAMPLES'];
+const EN=['BENJOLIN','FM','WAVETABLE','ALGO','NOISE','SUPERSAW','PLUCK','FORMANT','ORGAN','PHASE-DIST','WESTCOAST','MODAL','SAMPLE'],DEN=['ANALOG','FM','GLITCH','BENJOLIN','TR','METAL','808','909','SAMPLES'];
 const SQN=['RUNGLER','TURING','EUCLID','CELLULAR','LOGISTIC','RANDOM WALK','ARP'],SQL=['LOOP','CHANGE','HITS','RULE','CHAOS','WANDER','SPAN'];
 const TL=[['X-MOD','RUNGLER'],['RATIO','INDEX'],['MORPH','WARP'],['FORMULA','SHIFT'],['CRACKLE','PITCH Q'],['DETUNE','MIX'],['DAMP','PICK'],['VOWEL','SHARP'],['DRAWBAR','PERC'],['WARP','RESO'],['FOLD','GATE'],['MATERIAL','DECAY'],['OCTAVE','START']];
 const RATEL=[['1/4 BAR','1/8','1/16 ×4','1/8 ×2','1/16'],['1/4 BAR','1/8','1/4','1/8','1/16'],['1/4','1/8','1/16'],['8 BARS','4 BARS','2 BARS','1 BAR'],['1/4 BAR','1/8','1/4','1/8','1/16']];
@@ -580,7 +592,7 @@ const fmtB=t=>{const b=BPMF(t);return b<=0?'0 BPM':b<1200?Math.round(b)+' BPM':M
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],SCN=['MINOR','MAJOR','PENTA','M.PENTA','DORIAN','HIRAJOSHI','PHRYG.DOM'];
 const DEF={K:[[.75,.35,.45,.3,.55,.35,.45,.5,.35,.8],[.75,.3,.55,.25,.35,.5,.3,.25,.5,.5],[1,.15,.45,.45,.45,.45,.3,.15,0,.85],[.33,.6,.6,.45,.4,.45,.25,.55,.6,.45],[.75,.4,.15,0,0,.2,.05,.35,.4,.35]],
   E:[0,1,0,2,0],S:[0,0,0,0,0],C:[0,0,0,0,0,0,0,0],CG:0,SB:{b:'MELLO STRINGS',l:'MELLO FLUTE',p:'MELLO CHOIR',dk:'KICK 808',ds:'SNARE',dh:'HAT',dt:'TOM'},A:{},AL:2,X:{g:[.8,.75,.8,.7],sa:[0,.25,0,.3],sb:[0,.2,.15,0],mu:[0,0,0,0],ra:.6,rb:.5,ta:1,tb:0,pa:[.6,.45,.5],pb:[.5,.5,.5],rv:.35,dl:.2,rm:0,fb:.35},M:{tempo:.42,key:0,scale:0,glue:.5,vol:.75,ring:0},freeze:0,scenes:[null,null,null,null,null]};
-const st=Object.assign(JSON.parse(JSON.stringify(DEF)),LS.get('b50c',{}));if(st.lockT===undefined)st.lockT=0;if(st.X.rv===undefined)Object.assign(st.X,{rv:.35,dl:.2,rm:0,fb:.35,pa:[.6,.45,.5],pb:[.5,.5,.5]});if(st.RX===undefined)st.RX=.35;if(st.DR===undefined)st.DR=0;if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);const save=()=>LS.set('b50c',st);
+const st=Object.assign(JSON.parse(JSON.stringify(DEF)),LS.get('b50c',{}));if(!st.dk2){if(st.E&&st.E[2]===6)st.E[2]=8;(st.scenes||[]).forEach(S=>{if(S&&S.E&&S.E[2]===6)S.E[2]=8});st.dk2=1}if(st.lockT===undefined)st.lockT=0;if(st.X.rv===undefined)Object.assign(st.X,{rv:.35,dl:.2,rm:0,fb:.35,pa:[.6,.45,.5],pb:[.5,.5,.5]});if(st.RX===undefined)st.RX=.35;if(st.DR===undefined)st.DR=0;if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);const save=()=>LS.set('b50c',st);
 function klab(r,j){if(j===1)return SQL[st.S[r]||0];if(r!==2&&r!==4&&(j===3||j===4))return TL[st.E[r]][j-3];if(r===2&&j===3)return 'TUNE';if(r===2&&j===4)return 'DECAY';return ROWS[r].kl[j]}
 function engName(r){return r===4?'FX':r===2?DEN[st.E[2]]:EN[st.E[r]]}
 
@@ -692,7 +704,7 @@ function slotOf(r){return r===2?DSL[dSlot]:['b','l',null,'p'][r]}
 function slotData(sl){const nm=st.SB[sl];if(nm==='EIGEN'&&userS[sl])return{d:userS[sl].d,root:60,loop:sl.length===1?1:0,name:userS[sl].name};
   const b=bankItem(nm);if(!bankCache[b.n])bankCache[b.n]=b.gen(ctx.sampleRate);return{d:bankCache[b.n],root:b.root,loop:sl.length===1?b.loop:0,name:b.n}}
 function pushSlot(sl){if(!node||!ctx)return;try{const S=slotData(sl);node.port.postMessage({smp:{slot:sl,d:S.d,rf:440*Math.pow(2,(S.root-69)/12),loop:S.loop}})}catch(e){console.error(e)}}
-function pushUsed(){for(const r of [0,1,3])if(st.E[r]===12)pushSlot(['b','l',null,'p'][r]);if(st.E[2]===6)DSL.forEach(pushSlot)}
+function pushUsed(){for(const r of [0,1,3])if(st.E[r]===12)pushSlot(['b','l',null,'p'][r]);if(st.E[2]===8)DSL.forEach(pushSlot)}
 const IDB={db:null,open(){return new Promise(res=>{try{const q=indexedDB.open('b50smp',1);q.onupgradeneeded=()=>q.result.createObjectStore('s');q.onsuccess=()=>{this.db=q.result;res(this.db)};q.onerror=()=>res(null)}catch(e){res(null)}})},
   put(k,v){try{if(this.db)this.db.transaction('s','readwrite').objectStore('s').put(v,k)}catch(e){}},
   all(){return new Promise(res=>{try{if(!this.db)return res({});const o={},t=this.db.transaction('s').objectStore('s').openCursor();t.onsuccess=e=>{const c=e.target.result;if(c){o[c.key]=c.value;c.continue()}else res(o)};t.onerror=()=>res({})}catch(e){res({})}})}};
@@ -797,7 +809,7 @@ $('bFreeze').addEventListener('click',()=>{st.freeze=st.freeze?0:1;save();showFr
 const RLIM=[[[0,1],[.1,.7],[.2,.8],[0,.7],[0,1],[.15,.6],[.1,.75],[.2,.8],[0,.7],[.6,.85]],[[.3,1],[.1,.8],[.2,.9],[0,.6],[0,.8],[.3,.8],[0,.6],[0,.6],[.1,.8],[.25,.65]],
   [[.5,1],[0,.5],[.2,.8],[.2,.7],[.2,.7],[.1,.9],[.1,.7],[0,.5],[0,.4],[.55,.9]],[[0,.67],[.2,.9],[0,1],[.2,.8],[0,.8],[.2,.7],[0,.5],[.2,.9],[.3,.9],[.2,.6]],[[0,1],[.1,.9],[0,.5],[0,.4],[0,.4],[0,.6],[0,.3],[0,.7],[.1,.7],[.1,.6]]];
 // how wild each choice is (0 = musical, 1 = experimental chaos); the Accidentinator prefers choices near its setting
-const WE=[.5,.4,.2,.9,.9,.1,.1,.3,.1,.35,.45,.25,.55],WD=[.1,.3,.9,.7,.1,.8,.45],WS=[.5,.3,.1,.7,.9,.45,.1],WF=[.2,.1,.2,.45,.75,.55,.35,.8],WSC=[.1,.1,.15,.25,.3,.6,.8];
+const WE=[.5,.4,.2,.9,.9,.1,.1,.3,.1,.35,.45,.25,.55],WD=[.1,.3,.9,.7,.1,.8,.05,.1,.45],WS=[.5,.3,.1,.7,.9,.45,.1],WF=[.2,.1,.2,.45,.75,.55,.35,.8],WSC=[.1,.1,.15,.25,.3,.6,.8];
 const wildOf=(n,sl)=>{if(sl.length>1)return DKIT.some(d=>d.n===n)?.2:.85;if(DKIT.some(d=>d.n===n))return .85;return /CHOIR|KIDS|MELLO/.test(n)?.1:.7};
 const RX=()=>st.RX===undefined?.35:st.RX;
 function pickW(ws,x){const w=ws.map(v=>.04+Math.exp(-Math.pow(v-x,2)/.06));let t=w.reduce((p,q)=>p+q,0)*Math.random();for(let i=0;i<w.length;i++){t-=w[i];if(t<=0)return i}return w.length-1}
@@ -812,7 +824,7 @@ function symphonize(){const K=st.K,X=st.X,rr=RR,pk=PKR;
   K[2]=[rr(.5,1),rr(0,.25),rr(.05,.25),rr(0,.35),rr(.4,.8),rr(.2,.5),rr(0,.25),0,0,Math.random()<.5?0:rr(.3,.5)];
   K[3]=[rr(0,.5),rr(.1,.3),rr(.65,.98),rr(.3,.6),rr(.2,.5),rr(.45,.7),rr(.1,.3),rr(.45,.75),rr(.55,.8),rr(.6,.78)];
   K[4]=[K[4][0],rr(0,.2),0,0,0,rr(0,.1),0,rr(.2,.4),rr(.4,.65),rr(.08,.2)];
-  st.E[0]=pk([8,12,2,5]);st.E[1]=pk([6,7,2,12,1]);st.E[2]=pk([0,6]);st.E[3]=pk([12,8,5,2]);st.S=[pk([1,6,0]),6,2,pk([1,0]),1];
+  st.E[0]=pk([8,12,2,5]);st.E[1]=pk([6,7,2,12,1]);st.E[2]=pk([0,6,8,6]);st.E[3]=pk([12,8,5,2]);st.S=[pk([1,6,0]),6,2,pk([1,0]),1];
   st.SB.b=pk(['MELLO STRINGS','MELLO CHOIR']);st.SB.l=pk(['MELLO FLUTE','MELLO STRINGS','CHOIR']);st.SB.p=pk(['MELLO STRINGS','MELLO CHOIR','CHOIR','KIDS']);st.SB.dk='TOM';st.SB.ds=pk(['SNARE','RIM']);st.SB.dh='SHAKER';st.SB.dt='TOM';
   X.g=[.72,.78,.55,.82];X.mu=[0,0,0,0];X.sa=[rr(.1,.3),rr(.3,.55),rr(.2,.4),rr(.35,.6)];X.sb=[0,rr(.15,.35),0,rr(.1,.3)];X.ta=1;X.tb=pk([2,0]);
   X.pa=[rr(.6,.9),rr(.3,.6),rr(.4,.55)];X.pb=[rr(.2,.6),rr(.2,.5),rr(.4,.6)];X.ra=rr(.6,.8);X.rb=rr(.35,.55);
@@ -823,14 +835,14 @@ function technoize(){const K=st.K,X=st.X,rr=RR,pk=PKR;
   K[2]=[1,rr(0,.2),rr(.45,.8),rr(.3,.6),rr(.35,.6),rr(.4,.7),rr(.35,.7),rr(0,.12),rr(0,.2),rr(.82,.92)];
   K[3]=[rr(.33,.67),rr(0,.2),rr(.3,.6),rr(.3,.6),rr(0,.3),rr(.2,.45),rr(.2,.5),rr(.1,.35),rr(.3,.6),rr(.2,.38)];
   K[4]=[K[4][0],rr(0,.3),rr(.1,.35),0,rr(0,.2),rr(.2,.5),rr(0,.2),rr(.3,.55),rr(.2,.4),rr(.2,.35)];
-  st.E[0]=pk([0,1,5,10,9]);st.E[1]=pk([1,3,9,5]);st.E[2]=pk([4,0,1,6]);st.E[3]=pk([5,2,1]);st.S=[pk([0,1,2]),pk([1,2,0]),2,1,pk([0,2])];
+  st.E[0]=pk([0,1,5,10,9]);st.E[1]=pk([1,3,9,5]);st.E[2]=pk([7,7,6,4,0,1,8]);st.E[3]=pk([5,2,1]);st.S=[pk([0,1,2]),pk([1,2,0]),2,1,pk([0,2])];
   st.SB.dk=pk(['KICK 808','KICK PUNCH']);st.SB.ds=pk(['CLAP','SNARE','RIM']);st.SB.dh=pk(['HAT','OPEN HAT','SHAKER']);st.SB.dt=pk(['COWBELL','TOM','RIM']);
   X.g=[.85,.65,.88,.55];X.mu=[0,0,0,0];X.sa=[0,rr(.3,.6),rr(0,.15),rr(.2,.4)];X.sb=[rr(0,.15),rr(.1,.3),rr(0,.2),rr(.2,.5)];X.ta=0;X.tb=pk([1,3,5]);
   X.pa=[pk([.3,.55,.7]),rr(.35,.7),rr(.45,.65)];X.pb=[rr(.2,.6),rr(.2,.6),rr(.4,.6)];X.ra=rr(.5,.7);X.rb=rr(.35,.55);
   st.C=[rr(.45,.8),0,Math.random()<.4?rr(.2,.5):0,0,0,0,Math.random()<.3?rr(.2,.5):0,0];st.CG=0;st.M.ring=0;st.M.glue=rr(.65,.85);st.M.scale=pk([0,3,4,6])/6;if(!st.lockT)st.M.tempo=+TOF(120+Math.random()*16).toFixed(4);sendC()}
 function glitchize(){const K=st.K,X=st.X,rr=RR,pk=PKR;
   for(let r=0;r<5;r++)for(let j=0;j<9;j++)K[r][j]=rr(0,1);for(const r of [0,1,2,3])K[r][9]=rr(.45,.8);K[4]=[K[4][0],rr(.5,1),rr(.5,1),rr(.3,.9),rr(.3,.9),rr(.3,.9),rr(.2,.7),rr(.3,.8),rr(.2,.6),rr(.45,.8)];
-  st.E[0]=pk([3,4,0,10,9]);st.E[1]=pk([3,4,1,11]);st.E[2]=pk([2,5,3,6]);st.E[3]=pk([3,4,2,12]);st.S=[pk([3,4]),pk([3,4,5]),pk([3,4,0]),pk([3,4]),pk([3,4])];
+  st.E[0]=pk([3,4,0,10,9]);st.E[1]=pk([3,4,1,11]);st.E[2]=pk([2,5,3,8]);st.E[3]=pk([3,4,2,12]);st.S=[pk([3,4]),pk([3,4,5]),pk([3,4,0]),pk([3,4]),pk([3,4])];
   for(const sl of ['b','l','p','dk','ds','dh','dt'])st.SB[sl]=pk(['CAT','V8','BLACKBIRD','KIDS','RIM','COWBELL','WIND','KICK PUNCH','SHAKER']);
   X.g=[.75,.7,.8,.65];X.mu=[0,0,0,0];X.sa=[0,1,2,3].map(()=>rr(.2,.8));X.sb=[0,1,2,3].map(()=>rr(.2,.8));X.ta=pk([4,7,3]);do{X.tb=pk([7,4,5,3,6])}while(X.tb===X.ta);
   X.pa=[rr(0,1),rr(.4,1),rr(0,1)];X.pb=[rr(0,1),rr(.4,1),rr(0,1)];X.ra=rr(.5,.85);X.rb=rr(.5,.85);
@@ -842,7 +854,7 @@ function ambientize(){const rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),pk=a=>
   K[2]=[K[2][0],rr(0,.2),rr(0,.15),rr(.2,.5),rr(.5,.9),rr(.2,.5),rr(0,.3),0,0,Math.random()<.7?0:rr(.12,.25)];
   K[3]=[0,rr(.05,.25),rr(.4,.85),rr(.3,.6),rr(.5,.85),rr(.35,.65),rr(.1,.3),rr(.75,.98),rr(.7,.92),rr(.55,.72)];
   K[4]=[K[4][0],rr(0,.2),0,0,0,rr(0,.15),0,rr(.4,.7),rr(.5,.8),rr(.12,.28)];
-  st.E[0]=pk([2,7,8,12,5]);st.E[1]=pk([6,11,2,7,1]);st.E[2]=pk([0,6]);st.E[3]=pk([5,2,8,7,12]);st.S=[pk([1,5]),pk([1,5,6]),2,1,pk([1,5])];
+  st.E[0]=pk([2,7,8,12,5]);st.E[1]=pk([6,11,2,7,1]);st.E[2]=pk([0,6,8]);st.E[3]=pk([5,2,8,7,12]);st.S=[pk([1,5]),pk([1,5,6]),2,1,pk([1,5])];
   for(const sl of ['b','l','p'])st.SB[sl]=pk(['CHOIR','KIDS','MELLO FLUTE','MELLO STRINGS','MELLO CHOIR','WIND','WAVES']);
   X.g=[.75,.7,.6,.8];X.mu=[0,0,0,0];X.sa=[rr(.1,.3),rr(.4,.7),0,rr(.4,.7)];X.sb=[0,rr(.3,.55),0,rr(.2,.45)];X.ta=pk([1,6]);X.tb=pk([0,7,2]);
   X.pa=[rr(.7,.95),rr(.2,.5),rr(.35,.55)];X.pb=[rr(.3,.8),rr(.3,.6),rr(.35,.55)];X.ra=rr(.6,.8);X.rb=rr(.45,.65);
@@ -875,8 +887,8 @@ function showLock(){const b=$('bLockT');b.classList.toggle('on',!!st.lockT);b.fi
 $('bLockT').addEventListener('click',()=>{st.lockT=st.lockT?0:1;save();showLock();say(st.lockT?'TEMPO LOCKED · the Accidentinator leaves the tempo alone':'TEMPO free · the Accidentinator may change it',1,1800)});showLock();
 // ---------- presets: save what you found, load it back, export/import as a file ----------
 const PK='b50p';let PR=LS.get(PK,[]);const savePR=()=>LS.set(PK,PR);
-const snap=()=>JSON.parse(JSON.stringify({DR:st.DR,K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,SB:st.SB,X:st.X,M:st.M,A:st.A,AL:st.AL,regs:Array.from(regs)}));
-function applyP(p){const q=JSON.parse(JSON.stringify(p));const keepVol=st.M.vol,keepT=st.M.tempo;for(const k of ['K','E','S','C','CG','SB','X','A','AL','DR'])if(q[k]!==undefined)st[k]=q[k];
+const snap=()=>JSON.parse(JSON.stringify({dk2:1,DR:st.DR,K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,SB:st.SB,X:st.X,M:st.M,A:st.A,AL:st.AL,regs:Array.from(regs)}));
+function applyP(p){const q=JSON.parse(JSON.stringify(p));if(!q.dk2&&q.E&&q.E[2]===6)q.E[2]=8;const keepVol=st.M.vol,keepT=st.M.tempo;for(const k of ['K','E','S','C','CG','SB','X','A','AL','DR'])if(q[k]!==undefined)st[k]=q[k];
   if(q.M)st.M=Object.assign(st.M,q.M);st.M.vol=keepVol;if(st.lockT)st.M.tempo=keepT;recRow=-1;save();sync();pushUsed();showTempo();showSl();if(node&&q.regs)node.port.postMessage({setreg:q.regs})}
 function nextName(){let i=PR.length+1,n;do{n='PBAG '+String(i).padStart(3,'0');i++}while(PR.some(p=>p.n===n));return n}
 function renderPR(){const L=$('pList');L.innerHTML='';if(!PR.length){L.innerHTML='<div class="pempty">No presets yet. Found something good? Give it a name and tap SAVE.</div>';return}
