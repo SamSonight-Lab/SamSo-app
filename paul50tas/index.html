@@ -555,6 +555,11 @@ registerProcessor('band',Band);
 </script>
 
 <script>
+// iPhone camera cutout: if the web view reports no safe area (app with hidden status bar), reserve it ourselves
+(()=>{try{const t=document.createElement('div');t.style.cssText='position:fixed;left:0;top:0;width:1px;height:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';document.body.appendChild(t);const r=t.getBoundingClientRect(),top=r.height-parseFloat(getComputedStyle(t).paddingBottom),bot=parseFloat(getComputedStyle(t).paddingBottom);t.remove();
+  if(top<1&&/iPhone/.test(navigator.userAgent)){const h=Math.max(screen.height,screen.width),T=h>=852?59:h>=812?47:0;if(T){document.body.style.setProperty('padding-top',T+'px','important');if(bot<1)document.body.style.setProperty('padding-bottom','22px','important')}}}catch(e){}})();
+</script>
+<script>
 (()=>{
 const TAU=Math.PI*2,$=id=>document.getElementById(id);
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
