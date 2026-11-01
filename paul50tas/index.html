@@ -268,7 +268,7 @@ html,body{background:#050403}
 const TAU=Math.PI*2,R=Math.random;
 const BPMF=t=>t<.03?0:t<.8?10*Math.pow(30,(t-.03)/.77):300*Math.pow(200,(t-.8)/.2);
 // clean helpers: soft-knee limiter (linear below .7), fractional delay reads (no zipper crackle)
-const SLIM=x=>{const a=Math.abs(x);return a<.7?x:(x<0?-1:1)*(.7+.3*Math.tanh((a-.7)/.3))};
+const SLIM=x=>{const a=Math.abs(x);return a<.9?x:(x<0?-1:1)*(.9+.1*Math.tanh((a-.9)/.1))};
 const FRD=(b,m,p)=>{const i=Math.floor(p),f=p-i,a=b[i&m];return a+(b[(i+1)&m]-a)*f};
 const FRDN=(b,N,p)=>{p=((p%N)+N)%N;const i=p|0,f=p-i,a=b[i];return a+(b[(i+1)%N]-a)*f};
 // GROOVE: real drum patterns (x hit, X accent, g ghost, 1-4 tom pitch) · k kick, s snare, c clap, h closed hat, o open hat, t toms
@@ -474,6 +474,9 @@ class Band extends AudioWorkletProcessor{
       c=G.o[i];if(c!=='.')this.hit(3,vel(c));
       else{c=G.h[i];if(c!=='.')this.hit(2,vel(c)*(.85+R()*.15));else if(R()<dens*.45)this.hit(2,.32)}
       c=G.t[i];if(c!=='.')this.hit(4,.8,+c);return}
+    if(this.S[2]>=3&&this.S[2]<=5){   // CELLULAR / LOGISTIC / RANDOM WALK: free rhythms, no grid, the sequence bits decide, with stutters
+      const b=k=>(g>>k)&1;if(b(7)&&R()<.35+dens*.5)this.hit(0,.55+R()*.45);if(b(5)&&b(2)&&R()<.3+dens*.5)this.hit(1,.4+R()*.6);
+      if(b(1)&&R()<.2+dens*.7)this.hit(b(0)&&R()<.3?3:2,.35+R()*.65);if(b(4)&&b(3)&&R()<.2+dens*.35)this.hit(4,.8,1+((g>>5)&3));if(R()<dens*.08)this.hit(5,.7);return}
     if(this.S[2]===2){const e=(i,k)=>{i=((i%16)+16)%16;return Math.floor((i+1)*k/16)!==Math.floor(i*k/16)},kk=2+Math.round(dens*4),ks=1+Math.round(dens*2),kh=4+Math.round(dens*10);
       if(e(s,kk))this.hit(0,1);if(e(s-4,ks))this.hit(1,1);if(e(s+1,kh))this.hit(e(s,3)&&R()<.2?3:2,e(s,3)?1:.7);if(e(s+2,1+Math.round(dens*3))&&dens>.4)this.hit(4,.9,1+(s&3));return}
     const kick=((g>>7)&1)&&(s%4===0||R()<dens*.5)||(s%16===0&&dens>.2);
@@ -508,7 +511,7 @@ class Band extends AudioWorkletProcessor{
       let by=B.L.run(bx*.4*bdrv,bg,bk);by=Math.tanh(by*(1+KB[8]*1.5))*Math.min(1,B.env*4+(E[0]===4||E[0]===3?.15:0))*KB[9]*KB[9]*1.1;
       // 二 LEAD: engine → filter → stereo chorus
       Ld.f+=(Ld.tf-Ld.f)*lgl;if(Ld.gate){Ld.gl--;Ld.env+=(1-Ld.env)*.004;if(Ld.gl<=0)Ld.gate=0}else Ld.env*=ldec;
-      {const lu=Ld.v.run(E[1],Ld.f*pm*Math.max(.05,1+CR[1]*3*by),KL[3],KL[4],Ld.env)*1.2*EGL[E[1]]*(1+CR[6]*D.se*3),lc=lu*.7/(1+Math.abs(lu)*.2);Ld.F.run(lc+(Math.tanh(lu)-lc)*dtM)}let lx=Ld.F.lp*Ld.env*KL[9]*KL[9]*.8;this.lf+=(Math.min(1,Math.abs(lx)*4)-this.lf)*.003;
+      {const lu=Ld.v.run(E[1],Ld.f*pm*Math.max(.05,1+CR[1]*3*by),KL[3],KL[4],Ld.env)*1.2*EGL[E[1]]*(1+CR[6]*D.se*3),lc=lu*.62;Ld.F.run(lc+(Math.tanh(lu)-lc)*dtM)}let lx=Ld.F.lp*Ld.env*KL[9]*KL[9]*.8;this.lf+=(Math.min(1,Math.abs(lx)*4)-this.lf)*.003;
       Ld.lfo+=.7/sr;if(Ld.lfo>1)Ld.lfo-=1;const CB=Ld.cb,cw=Ld.cw;CB[0][cw]=lx;Ld.cw=(cw+1)&2047;const dA=sr*(.006+.002*Math.sin(TAU*Ld.lfo)),dB=sr*(.008+.002*Math.cos(TAU*Ld.lfo));
       const lyL=lx*.75+FRD(CB[0],2047,cw-dA)*.45,lyR=lx*.75+FRD(CB[0],2047,cw-dB)*.45;
       // 三 DRUMS: four kits
@@ -553,7 +556,7 @@ class Band extends AudioWorkletProcessor{
         const S=this.SM,rt=Math.pow(2,(KD[3]-.5)*1.6),rd=(sl,k,g)=>{const B0=S[sl];if(!B0)return 0;const p=D[k],dd=B0.d;if(p>=dd.length-1)return 0;const i=p|0,f=p-i;D[k]=p+rt;return(dd[i]+(dd[i+1]-dd[i])*f)*g};
         dk=rd('dk','pk',Math.min(1,D.ke*2.5));ds=rd('ds','ps',Math.min(1,D.se*2.5));dh=rd('dh','ph',Math.min(1,D.he*2));if(D.pt<1e8)dt=rd('dt','pt',Math.min(1,D.te*2.5))}
       if(de<6&&D.te>.002){D.tp+=(70*D.tf+KD[3]*80)*(1+.45*D.tpe)/sr;if(D.tp>1)D.tp-=1;dt=Math.sin(TAU*D.tp)*D.te*.5}
-      if(de!==6&&de!==7){dk*=D.kv;ds*=D.sv;dh*=D.hv*(de<6?1.8:1);dt*=D.tv*(de<6?1.6:1)}const DM=this.X.dm||[.9,.9,.9,.9],DU=this.X.dmu||[0,0,0,0],dg=i=>DU[i]?0:DM[i]*DM[i]*1.23;const dsum=dk*dg(0)+ds*dg(1)+dh*dg(2)+dt*dg(3);let dx=dsum*1.1/(1+Math.abs(dsum)*.3);if(dtM>.01)dx+=(Math.tanh(dsum*1.4)-dx)*Math.min(1,dtM*1.5);if(KD[8]>.02){if(++D.crc>=1+Math.round(KD[8]*20)){D.crc=0;const lv=Math.pow(2,9-KD[8]*6);D.crh2=Math.round(dx*lv)/lv}dx=dx+((D.crh2||0)-dx)*Math.min(1,KD[8]*2)}
+      if(de!==6&&de!==7){dk*=D.kv;ds*=D.sv;dh*=D.hv*(de<6?1.8:1);dt*=D.tv*(de<6?1.6:1)}const DM=this.X.dm||[.9,.9,.9,.9],DU=this.X.dmu||[0,0,0,0],dg=i=>DU[i]?0:DM[i]*DM[i]*1.23;const dsum=dk*dg(0)+ds*dg(1)+dh*dg(2)+dt*dg(3);let dx=dsum*.95;if(dtM>.01)dx+=(Math.tanh(dsum*1.4)-dx)*Math.min(1,dtM*1.5);if(KD[8]>.02){if(++D.crc>=1+Math.round(KD[8]*20)){D.crc=0;const lv=Math.pow(2,9-KD[8]*6);D.crh2=Math.round(dx*lv)/lv}dx=dx+((D.crh2||0)-dx)*Math.min(1,KD[8]*2)}
       dx*=KD[9]*KD[9]*1.1;if(CR[3]>.003)dx=dx*(1-CR[3])+Math.tanh(dx*this.pp*14)*CR[3]*1.2;
       // 四 PAD: five voices of the chosen engine, wide chorus, slow swell
       P.env+=((KP[9]>.01?1:0)-P.env)*pat;let pl=0,pr=0;
@@ -601,11 +604,12 @@ class Band extends AudioWorkletProcessor{
       for(let j=0;j<6;j++){const F=this.fdn[j];F[this.fdi[j]]=rin*.4+.86*(this.fdl[j]-rv/3);this.fdi[j]=(this.fdi[j]+1)%F.length}
       oL+=this.dlp[0]*(.4+KF[7]*.5)+(this.fdl[0]+this.fdl[2]+this.fdl[4])*.35;oR+=this.dlp[1]*(.4+KF[7]*.5)+(this.fdl[1]+this.fdl[3]+this.fdl[5])*.35;
       const lvl=Math.max(Math.abs(oL),Math.abs(oR));this.cmp+=(lvl-this.cmp)*(lvl>this.cmp?.003:.00008);
-      const thr=.32,gr=this.cmp>thr?Math.pow(thr/this.cmp,M.glue*.65):1,g=gr*M.vol*(1.3+M.glue*.45);
-      {let a=oL*g,b=oR*g;if(dtM>.01){const dr=1+dtM*2.5,sk=1/Math.sqrt(dr),w=Math.min(1,dtM*1.6);a+=(Math.tanh(a*dr)*sk-a)*w;b+=(Math.tanh(b*dr)*sk-b)*w}oL=SLIM(a)*.95;oR=SLIM(b)*.95}
+      const thr=.32,gr=this.cmp>thr?Math.pow(thr/this.cmp,M.glue*.65):1,g=gr*M.vol*(1.12+M.glue*.4);
+      {let a=oL*g,b=oR*g;if(dtM>.01){const dr=1+dtM*2.5,sk=1/Math.sqrt(dr),w=Math.min(1,dtM*1.6);a+=(Math.tanh(a*dr)*sk-a)*w;b+=(Math.tanh(b*dr)*sk-b)*w}oL=a*.95;oR=b*.95}
       const d=this.dc;let yl=oL-d[0]+.995*d[1];d[0]=oL;d[1]=yl;let yr=oR-d[2]+.995*d[3];d[2]=oR;d[3]=yr;
       if(!(yl===yl&&yr===yr)){yl=yr=0;B.L.y=[0,0,0,0];Ld.F.reset();P.F.reset();P.F2.reset();this.sw.reset();D.rF.reset();D.sF.reset();this.dl[0].fill(0);this.dl[1].fill(0);for(const F of this.fdn)F.fill(0)}
-      Lo[s]=SLIM(yl);Ro[s]=SLIM(yr)}
+      {const LB=this.lb||(this.lb=[new Float32Array(64),new Float32Array(64)]),li=this.li|0,ql=LB[0][li],qr=LB[1][li];LB[0][li]=yl;LB[1][li]=yr;this.li=(li+1)&63;   // look-ahead limiter: turns the level down just before a peak instead of clipping it
+       let pk=Math.max(Math.abs(yl),Math.abs(yr));if(pk>=(this.hv||0)||--this.hcn<=0){this.hv=pk;this.hcn=72}pk=this.hv;const tg=pk>.88?.88/pk:1;let lg=this.lg===undefined?1:this.lg;lg+=(tg-lg)*(tg<lg?.06:.00012);this.lg=lg;Lo[s]=SLIM(ql*lg);Ro[s]=SLIM(qr*lg)}}
     if(++this.post>=4){this.post=0;const pm2={regs:this.reg,fl:this.flash.slice(),step:this.step,apos:this.apos,lvl:this.cmp};if(++this.dpost>=4){this.dpost=0;if(this.DR>.001||this.dro[1]!==0)pm2.dro=this.dro.slice()}this.port.postMessage(pm2);this.flash.fill(0)}
     return true}
 }
@@ -907,7 +911,7 @@ function berlinize(){const K=st.K,X=st.X,rr=RR,pk=PKR;    // Berlin School: Schu
   st.M.dirt=rr(0,.08);st.M.prog=pk([3,3,8,1,5])/8;st.M.arr=rr(.2,.45);st.DR=+RR(.3,.5).toFixed(3);showSl();sendC()}
 function glitchize(){const K=st.K,X=st.X,rr=RR,pk=PKR;
   for(let r=0;r<5;r++)for(let j=0;j<9;j++)K[r][j]=rr(0,1);for(const r of [0,1,2,3])K[r][9]=rr(.45,.8);K[4]=[K[4][0],rr(.5,1),rr(.5,1),rr(.3,.9),rr(.3,.9),rr(.3,.9),rr(.2,.7),rr(.3,.8),rr(.2,.6),rr(.45,.8)];
-  st.E[0]=pk([3,4,0,10,9]);st.E[1]=pk([3,4,1,11]);st.E[2]=pk([2,5,3,8]);st.E[3]=pk([3,4,2,12]);st.S=[pk([3,4]),pk([3,4,5]),pk([3,4,0]),pk([3,4]),pk([3,4])];
+  st.E[0]=pk([3,4,0,10,9]);st.E[1]=pk([3,4,1,11]);st.E[2]=pk([2,5,3,8]);st.E[3]=pk([3,4,2,12]);st.S=[pk([3,4,5]),pk([3,4,5]),pk([3,4,5]),pk([3,4]),pk([3,4])];
   for(const sl of ['b','l','p','dk','ds','dh','dt'])st.SB[sl]=pk(['CAT','V8','BLACKBIRD','KIDS','RIM','COWBELL','WIND','KICK PUNCH','SHAKER']);
   X.g=[.75,.7,.8,.65];X.mu=[0,0,0,0];X.sa=[0,1,2,3].map(()=>rr(.2,.8));X.sb=[0,1,2,3].map(()=>rr(.2,.8));X.ta=pk([4,7,3]);do{X.tb=pk([7,4,5,3,6])}while(X.tb===X.ta);
   X.pa=[rr(0,1),rr(.4,1),rr(0,1)];X.pb=[rr(0,1),rr(.4,1),rr(0,1)];X.ra=rr(.5,.85);X.rb=rr(.5,.85);
@@ -932,10 +936,11 @@ function randomize(){const x=RX(),rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),
   st.M.glue=rr(.35+.2*(1-x),.85);st.M.ring=Math.random()<x*.55?1:0;st.C=st.C.map(()=>Math.random()<x*.75?rr(.03,.15+.75*x):0);st.CG=x>.55?rr(0,(x-.5)*1.5):0;sendC();
   for(const sl of ['b','l','p',...DSL])rndSlot(sl);st.AL=[1,2,4][Math.floor(Math.random()*3)];if(node)node.port.postMessage({alen:st.AL*16});setTimeout(pushUsed,0);if(node)for(let r=0;r<5;r++)node.port.postMessage({reseed:r});
   if(!st.lockT){const q=Math.random();let bp=80+Math.random()*50;if(x>.3)bp=60+Math.random()*(70+150*x);if(q<x*x*.35)bp=Math.random()<.5?Math.random()*25:600+Math.random()*40000*x;st.M.tempo=+TOF(bp).toFixed(4)}
-  st.M.key=Math.round(Math.random()*11)/11;st.M.scale=pickW(WSC,x)/6;const wts=[['',.24],['AMBIENT',.17*(1-x*.7)],['SYMPHONIC',.15*(1-x*.6)],['MINIMAL BERLIN',.08],['80s ELECTRO',.09*(1-x*.4)],['BERLIN SCHOOL',.14*(1-x*.5)],['GLITCH CHAOS',.07+.42*x]];let tot=wts.reduce((p,q)=>p+q[1],0)*Math.random(),amb='';for(const[w,v]of wts){tot-=v;if(tot<=0){amb=w;break}}if(typeof window.__amb==='string')amb=window.__amb;
+  st.M.key=Math.round(Math.random()*11)/11;st.M.scale=pickW(WSC,x)/6;const ix=1-x,wts=[['',.2+.25*x],['AMBIENT',.18*ix*ix],['SYMPHONIC',.15*ix*ix],['MINIMAL BERLIN',.08*ix*ix],['80s ELECTRO',.09*ix*ix],['BERLIN SCHOOL',.14*ix*ix],['GLITCH CHAOS',.01+1.0*Math.pow(x,2.2)]];let tot=wts.reduce((p,q)=>p+q[1],0)*Math.random(),amb='';for(const[w,v]of wts){tot-=v;if(tot<=0){amb=w;break}}if(typeof window.__amb==='string')amb=window.__amb;
   {const X=st.X;X.rv=RR(.15,.5);X.dl=Math.random()<.5?RR(.05,.35):0;X.rm=Math.random()<x*.4?RR(.1,.5):0;X.fb=RR(.2,.55);X.pa=[RR(.3,.9),RR(.2,.6),.5];X.pb=[RR(0,1),.5,.5]}
-  st.M.dirt=+Math.min(1,Math.max(0,x*.85+(Math.random()-.5)*.3)).toFixed(3);st.M.prog=x<.45&&Math.random()<.6?Math.ceil(Math.random()*8)/8:0;st.M.arr=x<.6&&Math.random()<.5?RR(.1,.4):0;
+  st.M.dirt=+(x<.35?0:Math.min(1,Math.pow((x-.35)/.65,1.2)*(.75+Math.random()*.35))).toFixed(3);st.M.prog=x<.45&&Math.random()<.6?Math.ceil(Math.random()*8)/8:0;st.M.arr=x<.6&&Math.random()<.5?RR(.1,.4):0;
   if(amb==='AMBIENT')ambientize();else if(amb==='SYMPHONIC')symphonize();else if(amb==='MINIMAL BERLIN')technoize();else if(amb==='80s ELECTRO')electroize();else if(amb==='BERLIN SCHOOL')berlinize();else if(amb==='GLITCH CHAOS')glitchize();
+  if(st.M.dirt<.3){st.K[0][8]=Math.min(st.K[0][8],.12+st.M.dirt*.5);st.K[2][8]=Math.min(st.K[2][8],st.M.dirt*.4);st.K[4][4]=Math.min(st.K[4][4],st.M.dirt*.5)}
   {const X=st.X;if(amb==='AMBIENT')Object.assign(X,{rv:RR(.6,.85),dl:RR(.25,.5),rm:0,fb:RR(.45,.65),pa:[RR(.75,.98),RR(.2,.45),.5]});
    if(amb==='SYMPHONIC')Object.assign(X,{rv:RR(.5,.75),dl:RR(0,.2),rm:0,fb:RR(.2,.4),pa:[RR(.6,.85),RR(.3,.55),.5]});
    if(amb==='MINIMAL BERLIN')Object.assign(X,{rv:RR(.12,.3),dl:RR(.25,.5),rm:0,fb:RR(.3,.55),pb:[PKR([.3,.55,.7]),.5,.5]});
