@@ -641,7 +641,7 @@ const fmtB=t=>{const b=BPMF(t);return b<=0?'0 BPM':b<1200?Math.round(b)+' BPM':M
 const KEYS=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],SCN=['MINOR','MAJOR','PENTA','M.PENTA','DORIAN','HIRAJOSHI','PHRYG.DOM'];
 const DEF={K:[[.75,.35,.45,.3,.55,.35,.45,.5,.35,.8],[.75,.3,.55,.25,.35,.5,.3,.25,.5,.5],[1,.15,.45,.45,.45,.45,.3,.15,0,.85],[.33,.6,.6,.45,.4,.45,.25,.55,.6,.45],[.75,.4,.15,0,0,.2,.05,.35,.4,.35]],
   E:[0,1,0,2,0],S:[0,0,0,0,0],C:[0,0,0,0,0,0,0,0],CG:0,SB:{b:'MELLO STRINGS',l:'MELLO FLUTE',p:'MELLO CHOIR',dk:'KICK 808',ds:'SNARE',dh:'HAT',dt:'TOM'},A:{},AL:2,X:{g:[.8,.75,.8,.7],sa:[0,.25,0,.3],sb:[0,.2,.15,0],mu:[0,0,0,0],ra:.6,rb:.5,ta:1,tb:0,pa:[.6,.45,.5],pb:[.5,.5,.5],rv:.35,dl:.2,rm:0,fb:.35},M:{tempo:.42,key:0,scale:0,glue:.5,vol:.75,ring:0,dirt:.2,prog:0,arr:0},freeze:0,scenes:[null,null,null,null,null]};
-const st=Object.assign(JSON.parse(JSON.stringify(DEF)),LS.get('b50c',{}));if(!st.dk2){if(st.E&&st.E[2]===6)st.E[2]=8;(st.scenes||[]).forEach(S=>{if(S&&S.E&&S.E[2]===6)S.E[2]=8});st.dk2=1}if(st.lockT===undefined)st.lockT=0;if(st.X.rv===undefined)Object.assign(st.X,{rv:.35,dl:.2,rm:0,fb:.35,pa:[.6,.45,.5],pb:[.5,.5,.5]});if(st.RX===undefined)st.RX=.35;if(st.DR===undefined)st.DR=0;if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);if(st.M.dirt===undefined)Object.assign(st.M,{dirt:.3,prog:0,arr:0});const save=()=>LS.set('b50c',st);
+const st=Object.assign(JSON.parse(JSON.stringify(DEF)),(()=>{try{if(window.__p50state)return JSON.parse(window.__p50state)}catch(e){}return LS.get('b50c',{})})());if(!st.dk2){if(st.E&&st.E[2]===6)st.E[2]=8;(st.scenes||[]).forEach(S=>{if(S&&S.E&&S.E[2]===6)S.E[2]=8});st.dk2=1}if(st.lockT===undefined)st.lockT=0;if(st.X.rv===undefined)Object.assign(st.X,{rv:.35,dl:.2,rm:0,fb:.35,pa:[.6,.45,.5],pb:[.5,.5,.5]});if(st.RX===undefined)st.RX=.35;if(st.DR===undefined)st.DR=0;if(st.tv!==2){st.M.tempo=TOF(60+st.M.tempo*120);for(const S of st.scenes||[])if(S&&S.M)S.M.tempo=TOF(60+S.M.tempo*120);st.tv=2}if(!st.S)st.S=[0,0,0,0,0];if(!st.C)st.C=DEF.C.slice();if(st.CG===undefined)st.CG=0;if(!st.SB)st.SB=Object.assign({},DEF.SB);if(st.X.pa.length<3)st.X.pa.push(.5);if(st.X.pb.length<3)st.X.pb.push(.5);if(st.M.dirt===undefined)Object.assign(st.M,{dirt:.3,prog:0,arr:0});let save=()=>LS.set('b50c',st);
 function klab(r,j){if(j===1)return SQL[st.S[r]||0];if(r!==2&&r!==4&&(j===3||j===4))return TL[st.E[r]][j-3];if(r===2&&j===3)return 'TUNE';if(r===2&&j===4)return 'DECAY';return ROWS[r].kl[j]}
 function engName(r){return r===4?'FX':r===2?DEN[st.E[2]]:EN[st.E[r]]}
 
@@ -778,7 +778,7 @@ const REC={on:false,busy:false,lvl:0};const SLN={b:'BASS',l:'LEAD',p:'PAD',dk:'K
 function restoreAudio(){try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
   const kick=()=>{try{if(ctx&&ctx.state!=='running')ctx.resume()}catch(e){}if(master&&ctx)master.gain.setTargetAtTime(.95,ctx.currentTime,.08)};
   kick();setTimeout(kick,300);setTimeout(()=>{kick();if(running&&ctx&&ctx.state!=='running')rescue()},1200)}
-async function micRec(sl){if(REC.on){stopRec();return}if(REC.busy)return;makeCtx();
+async function micRec(sl){if(typeof PLUG!=='undefined'&&PLUG){say('in the plugin: use FILE to load a sound',0,2500);return}if(REC.on){stopRec();return}if(REC.busy)return;makeCtx();
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){say('no microphone here · use FILE',0,2500);return}
   REC.busy=true;REC.slot=sl;REC.max=sl.length===1?10:3;REC.lvl=0;REC.t0=performance.now();
   try{if(navigator.audioSession)navigator.audioSession.type='play-and-record'}catch(e){}
@@ -834,11 +834,21 @@ async function makeNode(){if(node){try{node.disconnect()}catch(e){}}
   node.port.onmessage=e=>{regs=e.data.regs;if(e.data.dro)drO=e.data.dro;if(e.data.lvl!==undefined)lvl=e.data.lvl;if(e.data.apos!==undefined)apos=e.data.apos;for(let i=0;i<5;i++)if(e.data.fl[i])flash[i]=1;lastHb=performance.now()};node.onprocessorerror=()=>rescue();node.connect(master);lastHb=performance.now();sync();pushUsed()}
 async function rescue(){if(rebuilding)return;rebuilding=true;try{if(ctx.state!=='running')await ctx.resume();await makeNode();say('▸ engine restarted',0,1200)}catch(e){}rebuilding=false}
 function boot(){if(ready)return ready;makeCtx();ready=(async()=>{await addModule();master=ctx.createGain();master.gain.value=0;
-  const lim=ctx.createDynamicsCompressor();lim.threshold.value=-3;lim.ratio.value=20;lim.attack.value=.002;lim.release.value=.12;master.connect(lim).connect(ctx.destination);await makeNode()})();return ready}
+  master.connect(ctx.destination);await makeNode()})();return ready}
 function start(){if(running)return;makeCtx();try{ctx.resume();const ub=ctx.createBufferSource();ub.buffer=ctx.createBuffer(1,1,22050);ub.connect(ctx.destination);ub.start(0)}catch(e){}   // resume inside the tap itself: WebKit only unlocks audio during the gesture
   boot().catch(e=>console.error(e)).then(async()=>{if(!node)return;await ctx.resume();running=true;master.gain.setTargetAtTime(.95,ctx.currentTime,.05);say('Benjolin 50.0 · the band is playing · happy birthday Paul!',1,2800)})}
 $('intro').addEventListener('click',()=>{$('intro').classList.add('gone');start()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running&&ctx)ctx.resume()});
+// ---------- plugin mode (VST3 / AU): the page is the editor, the C++ engine in the plugin makes the sound ----------
+const PLUG=!!(window.__JUCE__&&window.__JUCE__.backend);
+if(PLUG){const BE=window.__JUCE__.backend,pack=d=>JSON.parse(JSON.stringify(d,(k,v)=>v instanceof Float32Array?Array.from(v):v));
+  makeCtx=function(){if(ctx)return;ctx=new OfflineAudioContext(2,4800,window.__p50sr||48000);ctx.resume=()=>Promise.resolve()};
+  rescue=function(){};
+  start=function(){if(running)return;makeCtx();node={port:{postMessage:d=>BE.emitEvent('msg',pack(d))},disconnect(){}};master={gain:{value:1,setTargetAtTime(){}}};
+    BE.addEventListener('eng',d=>{if(!d)return;regs=d.regs;if(d.dro)drO=d.dro;if(d.lvl!==undefined)lvl=d.lvl;if(d.apos!==undefined)apos=d.apos;if(d.fl)for(let i=0;i<5;i++)if(d.fl[i])flash[i]=1;lastHb=performance.now()});
+    running=true;lastHb=performance.now();sync();pushUsed();say('The Paul 50 Bag · plugin · the band is playing',1,2500)};
+  const sv0=save;save=function(){sv0();try{BE.emitEvent('state',JSON.stringify(st))}catch(e){}};
+  setTimeout(()=>{if(!running){$('intro').classList.add('gone');start()}},300)}
 
 // ---------- views & buttons ----------
 let view=-1;
