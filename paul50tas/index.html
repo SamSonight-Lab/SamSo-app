@@ -256,7 +256,9 @@ html,body{background:#050403}
     <div class="hap">
       <div class="hctl"><div class="htitle">HAPPY ACCIDENTINATOR</div>
         <div class="sld" id="sRX"><span class="sl">MUSICAL</span><div class="trk"><div class="fill"></div><div class="thumb"></div></div><span class="sr">CHAOS</span></div>
-        <div class="sld" id="sDR"><span class="sl">DRIFT</span><div class="trk"><div class="fill"></div><div class="thumb"></div></div><span class="sr" id="drv">0%</span></div></div>
+        <div class="sld" id="sDR"><span class="sl">DRIFT</span><div class="trk"><div class="fill"></div><div class="thumb"></div></div><span class="sr" id="drv">0%</span></div>
+        <div class="sld" id="sDS"><button type="button" class="sl dmode" id="dmode">~ GLIDE</button><div class="trk"><div class="fill"></div><div class="thumb"></div></div><span class="sr" id="dsv">1×</span></div></div>
+<style>.dmode{font:inherit;font-size:9.5px;letter-spacing:.06em;color:#f4dc9a;background:rgba(40,18,6,.55);border:1px solid #b88a3c;border-radius:9px;padding:2px 0;cursor:pointer;width:100%}.dmode.on{background:#d9ac52;color:#1a0c04}</style>
       <button type="button" id="bRnd" class="dome" aria-label="Happy Accidentinator: a brand new band"><span></span></button>
       <button type="button" id="bLockT" class="lockb"><span>🔓</span><small>TEMPO</small></button></div>
     <div class="status"><span class="ar">▸▸▸</span><span id="msg">tap to start</span><span class="ar">◂◂◂</span></div>
@@ -268,6 +270,7 @@ html,body{background:#050403}
 const TAU=Math.PI*2,R=Math.random;
 const BPMF=t=>t<.03?0:t<.8?10*Math.pow(30,(t-.03)/.77):300*Math.pow(200,(t-.8)/.2);
 // clean helpers: soft-knee limiter (linear below .7), fractional delay reads (no zipper crackle)
+const HF6=[205.3,304.4,369.6,522.7,540,800],MODG=[1,.7,.45,.3],MULT=[1,2,3,4,6,8],DM0=[.9,.9,.9,.9],DU0=[0,0,0,0],DRDIV=[2,4,8,16,32,64];
 const SLIM=x=>{const a=Math.abs(x);return a<.9?x:(x<0?-1:1)*(.9+.1*Math.tanh((a-.9)/.1))};
 const FRD=(b,m,p)=>{const i=Math.floor(p),f=p-i,a=b[i&m];return a+(b[(i+1)&m]-a)*f};
 const FRDN=(b,N,p)=>{p=((p%N)+N)%N;const i=p|0,f=p-i,a=b[i];return a+(b[(i+1)%N]-a)*f};
@@ -356,7 +359,7 @@ class Voice{constructor(sr){this.sr=sr;this.p=new Float64Array(8);for(let i=0;i<
       if(!this.md){this.md=[new SVF(),new SVF(),new SVF(),new SVF()];this.mf=0}
       if(Math.abs(f-this.mf)>f*.003||this.mq!==B||this.ma!==A){this.mf=f;this.mq=B;this.ma=A;const mp=Math.min(1.999,A*2),mi=mp|0,mr=mp-mi;
         for(let k=0;k<4;k++){const ratio=MOD[mi][k]+(MOD[mi+1][k]-MOD[mi][k])*mr;this.md[k].set(Math.min(sr*.45,f*ratio),20+B*B*500,sr)}}
-      const x=(R()*2-1)*this.exc;this.exc*=.97;let o=0;const G=[1,.7,.45,.3];for(let k=0;k<4;k++){this.md[k].run(x);o+=this.md[k].bp*G[k]}return Math.tanh(o*(5+B*6))}
+      const x=(R()*2-1)*this.exc;this.exc*=.97;let o=0;const G=MODG;for(let k=0;k<4;k++){this.md[k].run(x);o+=this.md[k].bp*G[k]}return Math.tanh(o*(5+B*6))}
     if(e===12){ // SAMPLE: the slot's sample, pitched to the note; A = octave, B = start point
       const S=this.sm;if(!S)return 0;const d=S.d,N=d.length,st=Math.min(.9,B)*N;if(this.sp<0){this.sp=st;this.son=1}if(!this.son)return 0;
       const i=this.sp|0,fr=this.sp-i,a=d[i%N],b=d[(i+1)%N];this.sp+=f/S.rf*Math.pow(2,Math.round(A*4)-2);
@@ -381,7 +384,7 @@ class Rack{constructor(sr){this.sr=sr;this.d=[new Float32Array(sr*2|0),new Float
     if(Math.abs(p3-.5)>.03){if(this.tp3!==p3){this.tp3=p3;const fc=p3<.5?300*Math.pow(2,p3*2*6):40*Math.pow(2,(p3-.5)*2*6);this.tk=1-Math.exp(-TAU*fc/this.sr)}
       const k=this.tk,z=this.tz||(this.tz=[0,0]);z[0]+=(o[0]-z[0])*k;z[1]+=(o[1]-z[1])*k;if(p3<.5){o[0]=z[0];o[1]=z[1]}else{o[0]-=z[0];o[1]-=z[1]}}return o}
   run0(t,x,p1,p2,step){const sr=this.sr;let l=0,r=0;
-    if(t===0){const mult=[1,2,3,4,6,8][Math.min(5,Math.floor(p1*6))],N=this.d[0].length,len=Math.min(N-2,Math.round(step*mult));
+    if(t===0){const mult=MULT[Math.min(5,Math.floor(p1*6))],N=this.d[0].length,len=Math.min(N-2,Math.round(step*mult));
       const a=this.d[0][(this.w-len+N)%N],b=this.d[1][(this.w-len+N)%N];this.lp[0]+=(a-this.lp[0])*.45;this.lp[1]+=(b-this.lp[1])*.45;
       this.d[0][this.w]=Math.tanh(x+this.lp[1]*p2*.88);this.d[1][this.w]=Math.tanh(this.lp[0]*p2*.88+x*.3);this.w=(this.w+1)%N;l=this.lp[0];r=this.lp[1]}
     else if(t===1||t===6){let v=x;
@@ -421,7 +424,7 @@ class Band extends AudioWorkletProcessor{
     this.port.onmessage=e=>{const d=e.data;
       if(d.K)d.K.forEach((k,r)=>this.K[r].set(k));if(d.r!==undefined)this.K[d.r][d.j]=d.v;if(d.E)this.E=d.E.slice();if(d.S)this.S=d.S.slice();
       if(d.M)Object.assign(this.M,d.M);if(d.freeze!==undefined)this.freeze=d.freeze;
-      if(d.X)Object.assign(this.X,d.X);if(d.C)this.C.set(d.C);if(d.song)this.song={n:-1,left:0,f:0,tf:0,ph:0,ph2:0,bp:0,bf:0,env:0,benv:0,st:0,stn:0,hold:0,hc:0,duck:1};if(d.DR!==undefined)this.DR=d.DR;if(d.setreg)for(let r=0;r<5;r++)this.reg[r]=d.setreg[r]|0;if(d.CG!==undefined)this.CG=d.CG;
+      if(d.X)Object.assign(this.X,d.X);if(d.C)this.C.set(d.C);if(d.song)this.song={n:-1,left:0,f:0,tf:0,ph:0,ph2:0,bp:0,bf:0,env:0,benv:0,st:0,stn:0,hold:0,hc:0,duck:1};if(d.DR!==undefined)this.DR=d.DR;if(d.DRS!==undefined)this.DRS=d.DRS;if(d.DRM!==undefined)this.DRM=d.DRM;if(d.setreg)for(let r=0;r<5;r++)this.reg[r]=d.setreg[r]|0;if(d.CG!==undefined)this.CG=d.CG;
       if(d.smp){const m=d.smp,S={d:m.d,rf:m.rf,loop:m.loop};this.SM[m.slot]=S;if(m.slot==='b')this.B.v.sm=S;if(m.slot==='l')this.L.v.sm=S;if(m.slot==='p')for(const v of this.P.v)v.o.sm=S}if(d.hold)this.held[d.hold]=1;if(d.unhold)delete this.held[d.unhold];if(d.reseed!==undefined){const q=this.sq[d.reseed];this.reg[d.reseed]=(R()*255)|1;q.t=(R()*65535)|1;q.c=((R()*65535)|0)||256;q.x=.1+R()*.8;q.m=(R()*16)|0}
       if(d.aclear)this.A={};if(d.alen)this.AL=d.alen;if(d.auto)for(const k in d.auto){const v=d.auto[k];if(v){const[r,j]=k.split('-').map(Number);this.A[k]={r,j,a:Float32Array.from(v)}}else delete this.A[k]}}
     this.A={};this.AL=32;this.apos=0;this.held={};this.RA=new Rack(sr);this.RB=new Rack(sr);
@@ -489,13 +492,17 @@ class Band extends AudioWorkletProcessor{
     // recorded knob movements play back in sync with the clock
     {const sl=this.stepLen||1;const pos=((this.step%this.AL)+Math.min(.999,this.st/sl))/this.AL;this.apos=pos;for(const k in this.A){if(this.held[k])continue;const L=this.A[k],N=L.a.length,x=pos*N,i=Math.floor(x)%N,f=x-Math.floor(x),a=L.a[i],b=L.a[(i+1)%N];K[L.r][L.j]=a+(b-a)*f}}
     // DRIFT: every knob (except RATE and LEVEL) breathes around where you left it; more drift = wider and faster
-    const dr=this.DR;if(dr>.001||this.dro[1]!==0){this.dT+=n/sr*(.5+dr*1.5);for(let i=0;i<50;i++){const j=i%10;this.dro[i]=j===0||j===9?0:dr*.42*Math.sin(this.dT*this.dfw[i]+this.dfp[i])*(.55+.45*Math.sin(this.dT*this.dfw2[i]+this.dfp2[i]))}}
-    for(let r=0;r<5;r++)for(let j=0;j<10;j++){const t=Math.min(1,Math.max(0,K[r][j]+this.dro[r*10+j]));KS[r][j]+=(t-KS[r][j])*.02}
+    const dr=this.DR,drs=this.DRS===undefined?.7:this.DRS,drm=this.DRM|0;
+    if(drm&&dr>.001){   // STEP: tempo-locked, every knob jumps to a new spot on each beat division
+      const dv=DRDIV[Math.min(5,Math.floor(drs*6))];if(this.step!==this.dSeen&&this.step%dv===0){this.dSeen=this.step;for(let i=0;i<50;i++){const j=i%10;this.dro[i]=j===0||j===9?0:dr*.42*(R()*2-1)}}}
+    else if(dr>.001||this.dro[1]!==0){this.dT+=n/sr*(.5+dr*1.5)*.04*Math.pow(100,drs);for(let i=0;i<50;i++){const j=i%10;this.dro[i]=j===0||j===9?0:dr*.42*Math.sin(this.dT*this.dfw[i]+this.dfp[i])*(.55+.45*Math.sin(this.dT*this.dfw2[i]+this.dfp2[i]))}}
+    if(dr<=.001&&drm)this.dro.fill(0);
+    {const ksm=drm&&dr>.001?.3:.02;for(let r=0;r<5;r++)for(let j=0;j<10;j++){const t=Math.min(1,Math.max(0,K[r][j]+this.dro[r*10+j]));KS[r][j]+=(t-KS[r][j])*ksm}}
     const KB=KS[0],KL=KS[1],KD=KS[2],KP=KS[3],KF=KS[4],B=this.B,Ld=this.L,D=this.D,P=this.P,CR=this.CR;
     for(let i=0;i<8;i++)CR[i]+=(Math.max(this.C[i],this.CG*.85)-CR[i])*.05;
     const bdec=Math.exp(-hs/(sr*(.07+KB[7]*.6))),bk=KB[6]*3.9,bdrv=1+KB[8]*7;
     Ld.F.set(150*Math.pow(2,Math.min(7.6,KL[5]*7+Ld.env*1.6+CR[6]*D.se*4)),.7+KL[6]*KL[6]*9,sr);const lgl=1-Math.exp(-1/(sr*(.003+KL[7]*KL[7]*.4)));
-    const de=E[2],kdec=Math.exp(-hs/(sr*(.06+KD[4]*.7))),sdec=Math.exp(-hs/(sr*(.05+KD[5]*.22))),hdec=Math.exp(-hs/(sr*(.012+KD[6]*.28))),tdec=Math.pow(.9994,hs),ldec=Math.pow(.9996,hs),kf0=32+KD[3]*60,swing=KD[7]*.33,kpdec=Math.exp(-hs/(sr*.022)),kpdec2=Math.exp(-hs/(sr*.07)),tpdec=Math.exp(-hs/(sr*.045)),k8dec=Math.exp(-hs/(sr*(.12+KD[4]*1.5))),hcdec=Math.exp(-hs/(sr*(.022+KD[6]*.09))),hodec=Math.exp(-hs/(sr*(.18+KD[6]*.55))),stdec=Math.exp(-hs/(sr*.055)),spdec=Math.exp(-hs/(sr*.009)),cldec=Math.exp(-hs/(sr*(.08+KD[5]*.16))),t8dec=Math.exp(-hs/(sr*(.14+KD[4]*.4))),dtM=M.dirt===undefined?.5:M.dirt,hpk=1-Math.exp(-TAU*6500/sr);
+    const de=E[2],kdec=Math.exp(-hs/(sr*(.06+KD[4]*.7))),sdec=Math.exp(-hs/(sr*(.05+KD[5]*.22))),hdec=Math.exp(-hs/(sr*(.012+KD[6]*.28))),tdec=Math.pow(.9994,hs),ldec=Math.pow(.9996,hs),kf0=32+KD[3]*60,swing=KD[7]*.33,kpdec=Math.exp(-hs/(sr*.022)),kpdec2=Math.exp(-hs/(sr*.07)),tpdec=Math.exp(-hs/(sr*.045)),k8dec=Math.exp(-hs/(sr*(.12+KD[4]*1.5))),hcdec=Math.exp(-hs/(sr*(.022+KD[6]*.09))),hodec=Math.exp(-hs/(sr*(.18+KD[6]*.55))),stdec=Math.exp(-hs/(sr*.055)),spdec=Math.exp(-hs/(sr*.009)),cldec=Math.exp(-hs/(sr*(.08+KD[5]*.16))),t8dec=Math.exp(-hs/(sr*(.14+KD[4]*.4))),dtM=M.dirt===undefined?.5:M.dirt,hpk=1-Math.exp(-TAU*6500/sr),DMb=this.X.dm||DM0,DUb=this.X.dmu||DU0,DG0=DUb[0]?0:DMb[0]*DMb[0]*1.23,DG1=DUb[1]?0:DMb[1]*DMb[1]*1.23,DG2=DUb[2]?0:DMb[2]*DMb[2]*1.23,DG3=DUb[3]?0:DMb[3]*DMb[3]*1.23;
     D.sF.set(de===3?400+KD[5]*2000:900+KD[5]*2600,de===3?8:1.2,sr);D.hF.set(de===1?9000:7000,.8,sr);if(de===6){D.sF.set(1700+KD[5]*1500,.7,sr);D.hF.set(7100,1.3,sr);D.cF.set(1150,1.6,sr)}else if(de===7){D.sF.set(2600+KD[5]*3500,.6,sr);D.hF.set(8800,1.1,sr);D.cF.set(1250,1.5,sr)}
     const pat=1/(sr*(.05+KP[7]*KP[7]*5));P.F.set(110*Math.pow(2,KP[5]*7),.7+KP[6]*6,sr);P.F2.set(130*Math.pow(2,KP[5]*7),.7+KP[6]*6,sr);
     const dlen=Math.round(this.stepLen*3),fb=.25+KF[7]*.6;
@@ -519,7 +526,7 @@ class Band extends AudioWorkletProcessor{
       D.ke*=kdec;D.se*=sdec;D.he*=hdec;D.te*=tdec;D.kpe*=kpdec;D.kpe2*=kpdec2;D.tpe*=tpdec;D.hc*=hcdec;D.ho*=hodec;D.st*=stdec;D.spe*=spdec;D.cl*=cldec;D.t8*=t8dec;if(D.clb>0&&--D.clt<=0){D.cl=1;D.clb--;D.clt=Math.round(sr*.011)}
       if(de===0){D.kf=kf0*(1+2.6*D.kpe+.25*D.kpe2);D.kp+=D.kf/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ke*2.2)*.9+(D.ke>.985?nz*.5:0);
         D.sF.run(nz);ds=(D.sF.bp*D.sF.k*1.8+Math.sin(TAU*D.kp*4.3)*.3)*D.se*(.5+KD[5]*.5);
-        let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]*(1+KD[3]*.5)/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.run(m*.17);dh=D.hF.hp*D.he*.7}
+        let m=0;const HF=HF6;for(let i=0;i<6;i++){D.hp[i]+=HF[i]*(1+KD[3]*.5)/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.run(m*.17);dh=D.hF.hp*D.he*.7}
       else if(de===1){D.kf=kf0*(1+2.2*D.kpe+.2*D.kpe2);D.kp+=D.kf/sr;if(D.kp>1)D.kp-=1;D.mp+=D.kf*1.5/sr;if(D.mp>1)D.mp-=1;dk=Math.sin(TAU*D.kp+D.kpe*3.2*Math.sin(TAU*D.mp))*D.ke*1.1;
         D.bt+=(220+KD[5]*300)/sr;if(D.bt>1)D.bt-=1;ds=Math.sin(TAU*D.bt+D.se*9*Math.sin(TAU*D.bt*1.414)+nz*D.se*2)*D.se*.7;
         D.hp[0]+=(3200+KD[3]*2000)/sr;if(D.hp[0]>1)D.hp[0]-=1;D.hp[1]+=4720/sr;if(D.hp[1]>1)D.hp[1]-=1;D.hF.run(Math.sin(TAU*D.hp[0]+6*Math.sin(TAU*D.hp[1])));dh=D.hF.hp*D.he*.6}
@@ -531,7 +538,7 @@ class Band extends AudioWorkletProcessor{
         const ke2=D.ke*D.ke;D.kp+=kf0*(1+5*D.kpe*D.kpe+.3*D.kpe2)/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*D.ke*1.8)+(D.ke>.97?nz*.6:0);
         D.bt+=1;D.sF.set(1800+KD[5]*3000,.9,sr);D.sF.run(nz);const clap=D.se>.55?(((D.bt>>8)&1)?1:.25):1;
         ds=(Math.sin(TAU*D.kp*3.1)*.35*D.se*D.se+D.sF.hp*.9*D.se)*clap;
-        let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]*1.6/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.set(10500,1.2,sr);D.hF.run(m*.17+nz*.08);dh=D.hF.hp*D.he*.8}
+        let m=0;const HF=HF6;for(let i=0;i<6;i++){D.hp[i]+=HF[i]*1.6/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}D.hF.set(10500,1.2,sr);D.hF.run(m*.17+nz*.08);dh=D.hF.hp*D.he*.8}
       else if(de===5){ // METAL: industrial, ring-modulated and distorted
         D.kp+=kf0*(1+3*D.ke)/sr;if(D.kp>1)D.kp-=1;dk=Math.tanh(Math.sin(TAU*D.kp)*Math.sin(TAU*D.kp*1.47+1)*D.ke*7)*.85;
         D.bt+=(1250+KD[5]*1500)/sr;if(D.bt>1)D.bt-=1;ds=(D.bt<.5?1:-1)*nz*D.se*.75;
@@ -540,7 +547,7 @@ class Band extends AudioWorkletProcessor{
         D.ka*=k8dec;D.kp+=(38+KD[3]*34)*(1+.5*D.kpe)/sr;if(D.kp>1)D.kp-=1;dk=(Math.sin(TAU*D.kp)*D.ka+(D.kpe>.9?Math.sin(TAU*D.kp*7)*.25*(D.kpe-.9)*10:0))*.95;
         D.s8a+=238*(1+.35*D.spe)*(.85+KD[5]*.3)/sr;if(D.s8a>1)D.s8a-=1;D.s8b+=476*(1+.2*D.spe)*(.85+KD[5]*.3)/sr;if(D.s8b>1)D.s8b-=1;D.sF.run(nz);D.cF.run(nz);
         ds=((Math.sin(TAU*D.s8a)*.62+Math.sin(TAU*D.s8b)*.3)*D.st*1.1+D.sF.hp*D.se*.8+nz*D.spe*.25)*D.sv+D.cF.bp*D.cF.k*D.cl*1.9;
-        let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]*(.9+KD[3]*.2)/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}
+        let m=0;const HF=HF6;for(let i=0;i<6;i++){D.hp[i]+=HF[i]*(.9+KD[3]*.2)/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}
         D.hF.run(m*.17);const hb=D.hF.bp*D.hF.k;D.hz+=(hb-D.hz)*hpk;dh=(hb-D.hz)*(D.hc+D.ho*.85)*6.5*D.hv;
         if(D.t8>.002){D.tp+=(62+D.tf*30)*(1+.12*D.tpe)*(.8+KD[3]*.4)/sr;if(D.tp>1)D.tp-=1;dt=(Math.sin(TAU*D.tp)+nz*.03)*D.t8*.75*D.tv}}
       else if(de===7){ // 909: punchy kick with a fast sweep and a click, triangle snare with crack and noise, clap, metallic + noise hats, toms with a pitch drop
@@ -549,14 +556,14 @@ class Band extends AudioWorkletProcessor{
         D.s8a+=185*(1+.6*D.spe)*(.85+KD[5]*.3)/sr;if(D.s8a>1)D.s8a-=1;D.s8b+=330*(1+.4*D.spe)*(.85+KD[5]*.3)/sr;if(D.s8b>1)D.s8b-=1;D.sF.run(nz);D.cF.run(nz);
         const ta=D.s8a<.5?4*D.s8a-1:3-4*D.s8a,tb=D.s8b<.5?4*D.s8b-1:3-4*D.s8b;
         ds=Math.tanh(((ta*.6+tb*.4)*D.st*1.3+D.sF.bp*D.sF.k*D.se*(.8+KD[5]*.8)+nz*D.spe*.5)*1.6)*1.1*D.sv+D.cF.bp*D.cF.k*D.cl*1.9;
-        let m=0;const HF=[205.3,304.4,369.6,522.7,540,800];for(let i=0;i<6;i++){D.hp[i]+=HF[i]*1.71*(.9+KD[3]*.2)/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}
+        let m=0;const HF=HF6;for(let i=0;i<6;i++){D.hp[i]+=HF[i]*1.71*(.9+KD[3]*.2)/sr;if(D.hp[i]>1)D.hp[i]-=1;m+=D.hp[i]<.5?1:-1}
         D.hF.run(m*.09+nz*.14);const hb=D.hF.bp*D.hF.k;D.hz+=(hb-D.hz)*hpk;let hv=(hb-D.hz)*(D.hc+D.ho*.85)*6.5*D.hv;if(dtM>.15)hv=Math.round(hv*64)/64;dh=hv;
         if(D.t8>.002){D.tp+=(58+D.tf*34)*(1+.6*D.tpe)*(.8+KD[3]*.4)/sr;if(D.tp>1)D.tp-=1;dt=(Math.sin(TAU*D.tp)+nz*.06)*D.t8*.7*D.tv}}
       else if(de===8){ // SAMPLES: four sample slots, TUNE = speed, decays gate them
         const S=this.SM,rt=Math.pow(2,(KD[3]-.5)*1.6),rd=(sl,k,g)=>{const B0=S[sl];if(!B0)return 0;const p=D[k],dd=B0.d;if(p>=dd.length-1)return 0;const i=p|0,f=p-i;D[k]=p+rt;return(dd[i]+(dd[i+1]-dd[i])*f)*g};
         dk=rd('dk','pk',Math.min(1,D.ke*2.5));ds=rd('ds','ps',Math.min(1,D.se*2.5));dh=rd('dh','ph',Math.min(1,D.he*2));if(D.pt<1e8)dt=rd('dt','pt',Math.min(1,D.te*2.5))}
       if(de<6&&D.te>.002){D.tp+=(70*D.tf+KD[3]*80)*(1+.45*D.tpe)/sr;if(D.tp>1)D.tp-=1;dt=Math.sin(TAU*D.tp)*D.te*.5}
-      if(de!==6&&de!==7){dk*=D.kv;ds*=D.sv;dh*=D.hv*(de<6?1.8:1);dt*=D.tv*(de<6?1.6:1)}const DM=this.X.dm||[.9,.9,.9,.9],DU=this.X.dmu||[0,0,0,0],dg=i=>DU[i]?0:DM[i]*DM[i]*1.23;const dsum=dk*dg(0)+ds*dg(1)+dh*dg(2)+dt*dg(3);let dx=dsum*.95;if(dtM>.01)dx+=(Math.tanh(dsum*1.4)-dx)*Math.min(1,dtM*1.5);if(KD[8]>.02){if(++D.crc>=1+Math.round(KD[8]*20)){D.crc=0;const lv=Math.pow(2,9-KD[8]*6);D.crh2=Math.round(dx*lv)/lv}dx=dx+((D.crh2||0)-dx)*Math.min(1,KD[8]*2)}
+      if(de!==6&&de!==7){dk*=D.kv;ds*=D.sv;dh*=D.hv*(de<6?1.8:1);dt*=D.tv*(de<6?1.6:1)}const dsum=dk*DG0+ds*DG1+dh*DG2+dt*DG3;let dx=dsum*.95;if(dtM>.01)dx+=(Math.tanh(dsum*1.4)-dx)*Math.min(1,dtM*1.5);if(KD[8]>.02){if(++D.crc>=1+Math.round(KD[8]*20)){D.crc=0;const lv=Math.pow(2,9-KD[8]*6);D.crh2=Math.round(dx*lv)/lv}dx=dx+((D.crh2||0)-dx)*Math.min(1,KD[8]*2)}
       dx*=KD[9]*KD[9]*1.1;if(CR[3]>.003)dx=dx*(1-CR[3])+Math.tanh(dx*this.pp*14)*CR[3]*1.2;
       // 四 PAD: five voices of the chosen engine, wide chorus, slow swell
       P.env+=((KP[9]>.01?1:0)-P.env)*pat;let pl=0,pr=0;
@@ -566,7 +573,7 @@ class Band extends AudioWorkletProcessor{
       const pd1=sr*(.012+.004*Math.sin(TAU*P.lfo)),pd2=sr*(.015+.004*Math.cos(TAU*P.lfo));pL=pL*.7+FRD(PC[1],4095,pw-pd1)*.5;pR=pR*.7+FRD(PC[0],4095,pw-pd2)*.5;
       if(CR[7]>.003){const rm=(1-CR[7])+CR[7]*Math.tanh(bx*2)*2.2;pL*=rm;pR*=rm}this.pp=pL+pR;
       // DJ mixer: channel faders, two sends into two effect racks, returns
-      const X=this.X,AG=this.ag;for(let i=0;i<4;i++)AG[i]+=(this.agT[i]-AG[i])*.00003;const gg=i=>X.mu[i]?0:X.g[i]*X.g[i]*1.3*AG[i],g0=gg(0),g1=gg(1),g2=gg(2),g3=gg(3);
+      const X=this.X,AG=this.ag;for(let i=0;i<4;i++)AG[i]+=(this.agT[i]-AG[i])*.00003;const g0=X.mu[0]?0:X.g[0]*X.g[0]*1.3*AG[0],g1=X.mu[1]?0:X.g[1]*X.g[1]*1.3*AG[1],g2=X.mu[2]?0:X.g[2]*X.g[2]*1.3*AG[2],g3=X.mu[3]?0:X.g[3]*X.g[3]*1.3*AG[3];
       const duck=1-CR[0]*Math.min(1,D.ke*1.6),cb=by*g0*duck,cl=lyL*g1*duck,cr=lyR*g1*duck,cd=dx*g2,cpl=pL*g3*duck,cpr=pR*g3*duck,cm1=(cl+cr)*.5,cm3=(cpl+cpr)*.5;
       // master bus: everything goes to one reverb and one delay (FEEDBK = how long the echoes keep going, up to self-oscillation), then a ring modulator
       let dryL=cb+cl+cd+cpl,dryR=cb+cr+cd+cpr;
@@ -610,7 +617,7 @@ class Band extends AudioWorkletProcessor{
       if(!(yl===yl&&yr===yr)){yl=yr=0;B.L.y=[0,0,0,0];Ld.F.reset();P.F.reset();P.F2.reset();this.sw.reset();D.rF.reset();D.sF.reset();this.dl[0].fill(0);this.dl[1].fill(0);for(const F of this.fdn)F.fill(0)}
       {const LB=this.lb||(this.lb=[new Float32Array(64),new Float32Array(64)]),li=this.li|0,ql=LB[0][li],qr=LB[1][li];LB[0][li]=yl;LB[1][li]=yr;this.li=(li+1)&63;   // look-ahead limiter: turns the level down just before a peak instead of clipping it
        let pk=Math.max(Math.abs(yl),Math.abs(yr));if(pk>=(this.hv||0)||--this.hcn<=0){this.hv=pk;this.hcn=72}pk=this.hv;const tg=pk>.88?.88/pk:1;let lg=this.lg===undefined?1:this.lg;lg+=(tg-lg)*(tg<lg?.06:.00012);this.lg=lg;Lo[s]=SLIM(ql*lg);Ro[s]=SLIM(qr*lg)}}
-    if(++this.post>=4){this.post=0;const pm2={regs:this.reg,fl:this.flash.slice(),step:this.step,apos:this.apos,lvl:this.cmp};if(++this.dpost>=4){this.dpost=0;if(this.DR>.001||this.dro[1]!==0)pm2.dro=this.dro.slice()}this.port.postMessage(pm2);this.flash.fill(0)}
+    if(++this.post>=12){this.post=0;const pm2={regs:this.reg,fl:this.flash.slice(),step:this.step,apos:this.apos,lvl:this.cmp};if(++this.dpost>=2){this.dpost=0;if(this.DR>.001||this.dro[1]!==0)pm2.dro=this.dro.slice()}this.port.postMessage(pm2);this.flash.fill(0)}
     return true}
 }
 registerProcessor('band',Band);
@@ -647,7 +654,7 @@ function engName(r){return r===4?'FX':r===2?DEN[st.E[2]]:EN[st.E[r]]}
 
 // ---------- audio ----------
 let ctx=null,node=null,ready=null,running=false,lastHb=0,regs=[0,0,0,0,0],flash=[0,0,0,0,0];
-function makeCtx(){if(ctx)return;try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({latencyHint:'interactive'})}
+function makeCtx(){if(ctx)return;try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({latencyHint:'playback'})}
 async function addModule(){const src=$('dsp').textContent,errs=[];
   // inside the iOS app the engine ships as a real file (blob:/data: worklets can fail in an app web view); on the web we build it from the page
   const tries=[];if(location.protocol==='capacitor:'||location.protocol==='file:')tries.push(()=>ctx.audioWorklet.addModule('dsp.js'));
@@ -656,7 +663,7 @@ async function addModule(){const src=$('dsp').textContent,errs=[];
   for(const t of tries){try{await t();return}catch(e){errs.push(String(e&&e.message||e))}}
   say('audio engine could not start · '+errs.join(' | '),1,15000);throw new Error('worklet')}
 let master=null,rebuilding=false;
-function sync(){if(node)node.port.postMessage({K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,DR:st.DR,M:st.M,X:st.X,freeze:st.freeze,aclear:1,auto:st.A,alen:st.AL*16})}
+function sync(){if(node)node.port.postMessage({K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,DR:st.DR,DRS:st.DRS??.7,DRM:st.DRM|0,M:st.M,X:st.X,freeze:st.freeze,aclear:1,auto:st.A,alen:st.AL*16})}
 // ---------- built-in one-shots for the sample slots (synthesized, no files needed) ----------
 const DKIT=(()=>{const TP=Math.PI*2;let seed=12345;const nz=()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return((seed>>>0)/4294967296)*2-1};
   const mk=(sr,sec,f)=>{const N=Math.round(sr*sec),b=new Float32Array(N);f(b,sr,N);let m=0;for(const v of b)m=Math.max(m,Math.abs(v));if(m)for(let i=0;i<N;i++)b[i]*=.92/m;return b};
@@ -957,19 +964,22 @@ function randomize(){const x=RX(),rr=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3),
    if(amb==='GLITCH CHAOS')Object.assign(X,{rv:RR(.2,.7),dl:RR(.3,.8),rm:RR(.3,.85),fb:RR(.6,1)})}save();sync();showTempo();
   say('HAPPY ACCIDENT '+(amb?'· '+amb+' ':'')+Math.round(x*100)+'% · '+st.E.slice(0,4).map((e,r)=>engName(r)).join(' / ')+' · '+KEYS[Math.round(st.M.key*11)]+' '+SCN[Math.round(st.M.scale*6)]+' · '+fmtB(st.M.tempo)+' · FX '+FXN[st.X.ta]+'/'+FXN[st.X.tb],1,2500);shake=1}
 $('bRnd').addEventListener('click',randomize);
-function showSl(){for(const[id,v]of [['sRX',RX()],['sDR',st.DR]]){const e=$(id);e.querySelector('.fill').style.width=(v*100)+'%';e.querySelector('.thumb').style.left=(v*100)+'%'}$('drv').textContent=Math.round(st.DR*100)+'%'}
-for(const id of ['sRX','sDR']){const e=$(id),tr=e.querySelector('.trk');let on=false;const set=ev=>{const r=tr.getBoundingClientRect();let v=Math.min(1,Math.max(0,(ev.clientX-r.left)/r.width));v=+v.toFixed(3);
+const DRDN=['1/8','1/4','1/2','1 BAR','2 BARS','4 BARS'],drsTxt=()=>{const v=st.DRS??.7;return st.DRM?DRDN[Math.min(5,Math.floor(v*6))]:(.04*Math.pow(100,v)).toFixed(v<.35?2:1)+'×'};
+$('dmode').addEventListener('click',ev=>{ev.stopPropagation();st.DRM=st.DRM?0:1;if(node)node.port.postMessage({DRM:st.DRM});say(st.DRM?'DRIFT STEP · tempo-locked: knobs jump on the beat · RATE picks how often':'DRIFT GLIDE · knobs breathe smoothly · RATE sets the speed',1,2200);showSl();save()});
+function showSl(){$('dmode').textContent=st.DRM?'⌗ STEP':'~ GLIDE';$('dmode').classList.toggle('on',!!st.DRM);$('dsv').textContent=drsTxt();for(const[id,v]of [['sRX',RX()],['sDR',st.DR],['sDS',st.DRS??.7]]){const e=$(id);e.querySelector('.fill').style.width=(v*100)+'%';e.querySelector('.thumb').style.left=(v*100)+'%'}$('drv').textContent=Math.round(st.DR*100)+'%'}
+for(const id of ['sRX','sDR','sDS']){const e=$(id),tr=e.querySelector('.trk');let on=false;const set=ev=>{const r=tr.getBoundingClientRect();let v=Math.min(1,Math.max(0,(ev.clientX-r.left)/r.width));v=+v.toFixed(3);
     if(id==='sRX'){st.RX=v;say('HAPPY ACCIDENTS · '+(v<.2?'musical':v<.45?'musical with a twist':v<.7?'adventurous':v<.9?'experimental':'total chaos')+' · '+Math.round(v*100)+'%',1,900)}
+    else if(id==='sDS'){st.DRS=v;if(node)node.port.postMessage({DRS:v});say(st.DRM?'DRIFT STEP · knobs jump every '+drsTxt():'DRIFT SPEED · '+drsTxt(),1,900)}
     else{st.DR=v;if(node)node.port.postMessage({DR:v});say('DRIFT '+Math.round(v*100)+'% · '+(v<.02?'patch stays put':v<.35?'gently breathing':v<.7?'drifting and transforming':'shape-shifting'),1,900)}showSl()};
-  e.addEventListener('pointerdown',ev=>{on=true;e.setPointerCapture(ev.pointerId);set(ev);ev.preventDefault()});e.addEventListener('pointermove',ev=>{if(on)set(ev)});
+  e.addEventListener('pointerdown',ev=>{if(ev.target.closest('.dmode'))return;on=true;e.setPointerCapture(ev.pointerId);set(ev);ev.preventDefault()});e.addEventListener('pointermove',ev=>{if(on)set(ev)});
   const end=()=>{if(on){on=false;save()}};e.addEventListener('pointerup',end);e.addEventListener('pointercancel',end)}
 showSl();
 function showLock(){const b=$('bLockT');b.classList.toggle('on',!!st.lockT);b.firstChild.textContent=st.lockT?'🔒':'🔓'}
 $('bLockT').addEventListener('click',()=>{st.lockT=st.lockT?0:1;save();showLock();say(st.lockT?'TEMPO LOCKED · the Accidentinator leaves the tempo alone':'TEMPO free · the Accidentinator may change it',1,1800)});showLock();
 // ---------- presets: save what you found, load it back, export/import as a file ----------
 const PK='b50p';let PR=LS.get(PK,[]);const savePR=()=>LS.set(PK,PR);
-const snap=()=>JSON.parse(JSON.stringify({dk2:1,DR:st.DR,K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,SB:st.SB,X:st.X,M:st.M,A:st.A,AL:st.AL,regs:Array.from(regs)}));
-function applyP(p){const q=JSON.parse(JSON.stringify(p));if(!q.dk2&&q.E&&q.E[2]===6)q.E[2]=8;const keepVol=st.M.vol,keepT=st.M.tempo;for(const k of ['K','E','S','C','CG','SB','X','A','AL','DR'])if(q[k]!==undefined)st[k]=q[k];
+const snap=()=>JSON.parse(JSON.stringify({dk2:1,DR:st.DR,DRS:st.DRS,DRM:st.DRM,K:st.K,E:st.E,S:st.S,C:st.C,CG:st.CG,SB:st.SB,X:st.X,M:st.M,A:st.A,AL:st.AL,regs:Array.from(regs)}));
+function applyP(p){const q=JSON.parse(JSON.stringify(p));if(!q.dk2&&q.E&&q.E[2]===6)q.E[2]=8;const keepVol=st.M.vol,keepT=st.M.tempo;for(const k of ['K','E','S','C','CG','SB','X','A','AL','DR','DRS','DRM'])if(q[k]!==undefined)st[k]=q[k];
   if(q.M)st.M=Object.assign(st.M,q.M);st.M.vol=keepVol;if(st.lockT)st.M.tempo=keepT;recRow=-1;save();sync();pushUsed();showTempo();showSl();if(node&&q.regs)node.port.postMessage({setreg:q.regs})}
 function nextName(){let i=PR.length+1,n;do{n='PBAG '+String(i).padStart(3,'0');i++}while(PR.some(p=>p.n===n));return n}
 function renderPR(){const L=$('pList');L.innerHTML='';if(!PR.length){L.innerHTML='<div class="pempty">No presets yet. Found something good? Give it a name and tap SAVE.</div>';return}
